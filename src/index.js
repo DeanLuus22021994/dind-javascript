@@ -60,7 +60,7 @@ app.use(cookieParser());
 
 // Session configuration
 if (config.redis.url) {
-  const RedisStore = connectRedis(session);
+  const RedisStore = connectRedis.default ? connectRedis.default(session) : connectRedis(session);
   app.use(session({
     store: new RedisStore({ client: redisClient.client }),
     secret: config.sessionSecret,
