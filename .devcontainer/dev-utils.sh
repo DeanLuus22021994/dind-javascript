@@ -251,7 +251,6 @@ install_dependencies() {
     fi
 
     if [ $result -eq 0 ]; then
-    if [ $result -eq 0 ]; then
         print_status "$GREEN" "$SUCCESS" "Dependencies installed successfully"
         return 0
     else
