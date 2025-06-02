@@ -129,7 +129,7 @@ class AuthService {
    * Authorization middleware (role-based)
    */
   authorize(roles = []) {
-    return(req, res, next) => {
+    return (req, res, next) => {
       if (!req.user) {
         return res.status(401).json({
           error: 'Authentication required',
