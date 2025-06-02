@@ -3,7 +3,8 @@ const bcrypt = require('bcryptjs');
 const config = require('../config');
 const logger = require('./logger');
 
-class AuthService { /**
+class AuthService {
+  /**
    * Generate JWT token
    */
   generateToken(payload) {

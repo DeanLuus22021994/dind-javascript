@@ -4,7 +4,6 @@ const mongoose = require('mongoose');
 let mongod;
 
 // Setup test database
-// Setup test database
 global.beforeAll(async() => {
   if (!mongod) {
     mongod = await MongoMemoryServer.create();
@@ -14,14 +13,10 @@ global.beforeAll(async() => {
     process.env.NODE_ENV = 'test';
     process.env.DATABASE_URL = uri;
 
-    await mongoose.connect(uri, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true
-    });
+    await mongoose.connect(uri);
   }
 });
 
-// Cleanup after tests
 // Cleanup after tests
 global.afterAll(async() => {
   if (mongod) {
@@ -30,7 +25,6 @@ global.afterAll(async() => {
   }
 });
 
-// Clean up between tests
 // Clean up between tests
 global.afterEach(async() => {
   if (mongoose.connection.readyState === 1) {
