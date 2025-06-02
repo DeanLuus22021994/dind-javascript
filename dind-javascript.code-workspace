@@ -14,12 +14,8 @@
     "files.associations": {
       "*.env*": "dotenv"
     },
-    "jest.autoRun": {
-      "watch": true,
-      "onSave": "test-src-file"
-    },
-    "jest.jestCommandLine": "npm test",
-    "jest.showCoverageOnLoad": false
+    "jest.runMode": "watch",
+    "jest.jestCommandLine": "npm test"
   },
   "extensions": {
     "recommendations": [
