@@ -1,5 +1,4 @@
 const dotenv = require('dotenv');
-const path = require('path');
 
 // Load environment variables
 dotenv.config();
@@ -10,11 +9,11 @@ const config = {
   nodeEnv: process.env.NODE_ENV || 'development',
   apiVersion: process.env.API_VERSION || 'v1',
   maxRequestSize: process.env.MAX_REQUEST_SIZE || '10mb',
-
   // Database Configuration
   database: {
     url: process.env.DATABASE_URL || 'mongodb://localhost:27017/dind-javascript',
-    testUrl: process.env.DATABASE_TEST_URL || 'mongodb://localhost:27017/dind-javascript-test'
+    testUrl: process.env.DATABASE_TEST_URL || 'mongodb://localhost:27017/dind-javascript-test',
+    useInMemory: process.env.USE_MEMORY_DB === 'true' || (process.env.NODE_ENV === 'development' && !process.env.DATABASE_URL)
   },
 
   // Redis Configuration
@@ -71,10 +70,9 @@ const config = {
   jobConcurrency: parseInt(process.env.JOB_CONCURRENCY) || 5,
 
   // GraphQL
-  enableGraphQL: process.env.ENABLE_GRAPHQL === 'true',
+  // GraphQL
   graphqlIntrospection: process.env.GRAPHQL_INTROSPECTION === 'true',
   graphqlPlayground: process.env.GRAPHQL_PLAYGROUND === 'true',
-
   // External Services
   externalApi: {
     key: process.env.EXTERNAL_API_KEY || '',

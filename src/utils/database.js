@@ -2,6 +2,7 @@
 const mongoose = require('mongoose');
 const logger = require('./logger');
 const config = require('../config');
+const memoryDatabase = require('./memoryDatabase');
 
 class Database {
   constructor() {
@@ -14,11 +15,19 @@ class Database {
       if (this.isConnected) {
         logger.info('Database already connected');
         return this.connection;
+      } let dbUrl;
+
+      // Use in-memory database if configured
+      if (config.database.useInMemory) {
+        dbUrl = await memoryDatabase.start();
+        logger.info('Using in-memory MongoDB for development');
+      } else {
+        dbUrl = config.isTesting ? config.database.testUrl : config.database.url;
       }
 
-      const dbUrl = config.isTesting ? config.database.testUrl : config.database.url;
-      logger.info(`Connecting to database: ${dbUrl.replace(/\/\/.*@/, '//***:***@')}`); // Connection options
-      logger.info(`Connecting to database: ${dbUrl.replace(/\/\/.*@/, '//***:***@')}`); // Connection options
+      logger.info(`Connecting to database: ${dbUrl.replace(/\/\/.*@/, '//***:***@')}`);
+
+      // Connection options
       const options = {
         maxPoolSize: 10,
         serverSelectionTimeoutMS: 5000,
@@ -59,10 +68,14 @@ class Database {
       if (!this.isConnected) {
         logger.info('Database not connected');
         return;
+      } await mongoose.disconnect();
+      this.isConnected = false;
+
+      // Stop in-memory database if it was used
+      if (config.database.useInMemory) {
+        await memoryDatabase.stop();
       }
 
-      await mongoose.disconnect();
-      this.isConnected = false;
       logger.info('Database disconnected successfully');
     } catch (error) {
       logger.error('Error disconnecting from database:', error);
