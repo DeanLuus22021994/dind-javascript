@@ -1,0 +1,78 @@
+{
+  "folders": [
+    {
+      "name": "dind-javascript",
+      "path": "."
+    }
+  ],
+  "settings": {
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "explicit"
+    },
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "files.associations": {
+      "*.env*": "dotenv"
+    },
+    "jest.autoRun": {
+      "watch": true,
+      "onSave": "test-src-file"
+    },
+    "jest.jestCommandLine": "npm test",
+    "jest.showCoverageOnLoad": false
+  },
+  "extensions": {
+    "recommendations": [
+      "esbenp.prettier-vscode",
+      "dbaeumer.vscode-eslint",
+      "orta.vscode-jest",
+      "ms-vscode.vscode-json",
+      "humao.rest-client",
+      "ms-vscode.powershell",
+      "christian-kohler.npm-intellisense"
+    ]
+  },
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Run All Tests (Workspace)",
+        "type": "node",
+        "request": "launch",
+        "program": "${workspaceFolder}/node_modules/.bin/jest",
+        "args": [
+          "--runInBand",
+          "--detectOpenHandles",
+          "--forceExit"
+        ],
+        "console": "integratedTerminal",
+        "internalConsoleOptions": "neverOpen",
+        "env": {
+          "NODE_ENV": "test"
+        }
+      }
+    ]
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "Test All (Workspace)",
+        "type": "shell",
+        "command": "npm",
+        "args": [
+          "test"
+        ],
+        "group": {
+          "kind": "test",
+          "isDefault": true
+        },
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "panel": "shared"
+        }
+      }
+    ]
+  }
+}

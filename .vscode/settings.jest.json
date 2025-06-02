@@ -1,0 +1,18 @@
+{
+  "jest.pathToJest": "npm test --",
+  "jest.jestCommandLine": "npm test",
+  "jest.rootPath": ".",
+  "jest.testPathPattern": "src/tests/.*\\.test\\.js$",
+  "jest.debugMode": true,
+  "jest.autoRevealOutput": "on-exec-error",
+  "jest.showCoverageOnLoad": false,
+  "jest.coverageFormatter": "DefaultFormatter",
+  "jest.enableSnapshotUpdateMessages": true,
+  "jest.enableSnapshotPreviews": true,
+  "jest.restartJestOnSnapshotUpdate": true,
+  "jest.showTerminalOnLaunch": false,
+  "jest.shell": "pwsh.exe",
+  "jest.nodeEnv": {
+    "NODE_ENV": "test"
+  }
+}

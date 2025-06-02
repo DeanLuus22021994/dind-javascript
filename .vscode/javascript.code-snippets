@@ -1,0 +1,85 @@
+{
+  "Jest Test Block": {
+    "prefix": ["test", "it"],
+    "body": ["test('$1', async () => {", "  $2", "});"],
+    "description": "Create a Jest test block"
+  },
+  "Jest Describe Block": {
+    "prefix": ["describe", "desc"],
+    "body": ["describe('$1', () => {", "  $2", "});"],
+    "description": "Create a Jest describe block"
+  },
+  "Jest Before Each": {
+    "prefix": ["beforeEach", "before"],
+    "body": ["beforeEach(async () => {", "  $1", "});"],
+    "description": "Create a Jest beforeEach hook"
+  },
+  "Jest After Each": {
+    "prefix": ["afterEach", "after"],
+    "body": ["afterEach(async () => {", "  $1", "});"],
+    "description": "Create a Jest afterEach hook"
+  },
+  "Express Route Test": {
+    "prefix": ["route-test", "rt"],
+    "body": [
+      "test('$1', async () => {",
+      "  const response = await request(app)",
+      "    .$2('$3')",
+      "    .expect($4);",
+      "  ",
+      "  expect(response.body).$5;",
+      "});"
+    ],
+    "description": "Create an Express route test with supertest"
+  },
+  "GraphQL Test": {
+    "prefix": ["gql-test", "gt"],
+    "body": [
+      "test('$1', async () => {",
+      "  const query = `",
+      "    $2",
+      "  `;",
+      "  ",
+      "  const response = await request(app)",
+      "    .post('/graphql')",
+      "    .send({ query })",
+      "    .expect(200);",
+      "  ",
+      "  expect(response.body.data).$3;",
+      "});"
+    ],
+    "description": "Create a GraphQL test"
+  },
+  "Auth Test Setup": {
+    "prefix": ["auth-test", "at"],
+    "body": [
+      "let authToken;",
+      "",
+      "beforeEach(async () => {",
+      "  const user = await User.create({",
+      "    email: 'test@example.com',",
+      "    password: 'password123',",
+      "    roles: ['user']",
+      "  });",
+      "  ",
+      "  authToken = authService.generateToken(user._id);",
+      "});"
+    ],
+    "description": "Setup authentication for tests"
+  },
+  "Mock Function": {
+    "prefix": ["mock", "jest-mock"],
+    "body": ["const $1 = jest.fn()$2;"],
+    "description": "Create a Jest mock function"
+  },
+  "Spy Function": {
+    "prefix": ["spy", "jest-spy"],
+    "body": ["const $1 = jest.spyOn($2, '$3')$4;"],
+    "description": "Create a Jest spy function"
+  },
+  "Expect Assertions": {
+    "prefix": ["expect-assertions", "ea"],
+    "body": ["expect.assertions($1);"],
+    "description": "Set expected number of assertions"
+  }
+}

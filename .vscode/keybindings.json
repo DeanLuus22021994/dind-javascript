@@ -1,0 +1,57 @@
+[
+  {
+    "key": "ctrl+shift+t",
+    "command": "workbench.action.tasks.runTask",
+    "args": "npm: test"
+  },
+  {
+    "key": "ctrl+shift+w",
+    "command": "workbench.action.tasks.runTask",
+    "args": "npm: test:watch"
+  },
+  {
+    "key": "ctrl+shift+c",
+    "command": "workbench.action.tasks.runTask",
+    "args": "npm: test:coverage"
+  },
+  {
+    "key": "ctrl+shift+f5",
+    "command": "workbench.action.debug.start",
+    "args": {
+      "name": "Debug Current Test File"
+    }
+  },
+  {
+    "key": "f6",
+    "command": "workbench.action.tasks.runTask",
+    "args": "Jest: Run Current File"
+  },
+  {
+    "key": "ctrl+f6",
+    "command": "workbench.action.debug.start",
+    "args": {
+      "name": "Run Current Test File"
+    }
+  },
+  {
+    "key": "ctrl+shift+r",
+    "command": "workbench.action.debug.restart"
+  },
+  {
+    "key": "ctrl+shift+e",
+    "command": "workbench.action.tasks.runTask",
+    "args": "ESLint: Fix All"
+  },
+  {
+    "key": "ctrl+shift+p",
+    "command": "workbench.action.tasks.runTask",
+    "args": "Prettier: Format All"
+  },
+  {
+    "key": "ctrl+shift+d",
+    "command": "workbench.action.debug.start",
+    "args": {
+      "name": "Run App (Development)"
+    }
+  }
+]
