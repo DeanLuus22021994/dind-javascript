@@ -252,8 +252,9 @@ const resolvers = {
     },
 
     uploadFile: async (_, { file }, context) => {
-      // Get user but mark as unused with comment to avoid linting errors
-      const _user = await getUser(context); // Authentication check only
+      // Get user but explicitly ignore it - only needed for authentication check
+      /* eslint-disable-next-line no-unused-vars */
+      const _user = await getUser(context);
 
       // This would be implemented with file storage
       return {
