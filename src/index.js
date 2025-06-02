@@ -322,58 +322,54 @@ async function startServer() {
       apolloServer.applyMiddleware({
         app,
         path: '/graphql',
-        cors: false // Use our existing CORS setup
-      });
-
-      // Install subscription handlers
-      apolloServer.installSubscriptionHandlers(server);
+        cors: false // Use our existing CORS setup      });
 
       logger.info('✅ GraphQL server initialized');
-    } catch (error) {
-      logger.error('Failed to initialize GraphQL server:', error);
-      if (config.isProduction) {
-        process.exit(1);
+      } catch (error) {
+        logger.error('Failed to initialize GraphQL server:', error);
+        if (config.isProduction) {
+          process.exit(1);
+        }
       }
     }
-  }
 
   const serverInstance = server.listen(config.port, '0.0.0.0', () => {
-    logger.info(`🚀 Server running on http://localhost:${config.port}`);
-    logger.info(`📦 Node.js version: ${process.version}`);
-    logger.info(`🌍 Environment: ${config.nodeEnv}`); if (config.enableSwagger) {
-      logger.info(`📚 API Documentation: http://localhost:${config.port}/docs`);
-    }
+      logger.info(`🚀 Server running on http://localhost:${config.port}`);
+      logger.info(`📦 Node.js version: ${process.version}`);
+      logger.info(`🌍 Environment: ${config.nodeEnv}`); if (config.enableSwagger) {
+        logger.info(`📚 API Documentation: http://localhost:${config.port}/docs`);
+      }
 
-    if (config.enableGraphQL) {
-      logger.info(`🔗 GraphQL Playground: http://localhost:${config.port}/graphql`);
-    }
+      if (config.enableGraphQL) {
+        logger.info(`🔗 GraphQL Playground: http://localhost:${config.port}/graphql`);
+      }
 
-    logger.info(`💊 Health Check: http://localhost:${config.port}/health`);
+      logger.info(`💊 Health Check: http://localhost:${config.port}/health`);
 
-    if (config.enableMetrics) {
-      logger.info(`📊 Metrics: http://localhost:${config.port}/metrics`);
-    }
+      if (config.enableMetrics) {
+        logger.info(`📊 Metrics: http://localhost:${config.port}/metrics`);
+      }
 
-    if (config.enableWebSocket) {
-      logger.info(`🔌 WebSocket: ws://localhost:${config.port}`);
-    }
+      if (config.enableWebSocket) {
+        logger.info(`🔌 WebSocket: ws://localhost:${config.port}`);
+      }
 
-    if (config.database.url) {
-      logger.info(`🗄️  Database: Connected`);
-    }
+      if (config.database.url) {
+        logger.info(`🗄️  Database: Connected`);
+      }
 
-    if (config.redis.url) {
-      logger.info(`🔴 Redis: Connected`);
-    }
+      if (config.redis.url) {
+        logger.info(`🔴 Redis: Connected`);
+      }
+    });
+
+    return serverInstance;
+  }
+
+  // Start the server
+  startServer().catch(error => {
+    logger.error('Failed to start server:', error);
+    process.exit(1);
   });
 
-  return serverInstance;
-}
-
-// Start the server
-startServer().catch(error => {
-  logger.error('Failed to start server:', error);
-  process.exit(1);
-});
-
-module.exports = app;
+  module.exports = app;
