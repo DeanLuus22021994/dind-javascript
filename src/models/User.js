@@ -64,7 +64,7 @@ userSchema.index({ username: 1 });
 userSchema.index({ isActive: 1 });
 
 // Virtual for full name
-userSchema.virtual('fullName').get(function() {
+userSchema.virtual('fullName').get(function () {
   if (this.firstName && this.lastName) {
     return `${this.firstName} ${this.lastName}`;
   }
@@ -72,7 +72,7 @@ userSchema.virtual('fullName').get(function() {
 });
 
 // Hash password before saving
-userSchema.pre('save', async function(next) {
+userSchema.pre('save', async function (next) {
   // Only hash the password if it has been modified (or is new)
   if (!this.isModified('password')) return next();
 
@@ -87,13 +87,13 @@ userSchema.pre('save', async function(next) {
 });
 
 // Update the updatedAt field before saving
-userSchema.pre('save', function(next) {
+userSchema.pre('save', function (next) {
   this.updatedAt = new Date();
   next();
 });
 
 // Compare password method
-userSchema.methods.comparePassword = async function(candidatePassword) {
+userSchema.methods.comparePassword = async function (candidatePassword) {
   if (!this.password) {
     return false;
   }
@@ -101,7 +101,7 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
 };
 
 // Transform toJSON to exclude password and add virtuals
-userSchema.methods.toJSON = function() {
+userSchema.methods.toJSON = function () {
   const userObject = this.toObject();
   delete userObject.password;
   delete userObject.__v;
@@ -113,12 +113,12 @@ userSchema.methods.toJSON = function() {
 };
 
 // Static method to find by email
-userSchema.statics.findByEmail = function(email) {
+userSchema.statics.findByEmail = function (email) {
   return this.findOne({ email: email.toLowerCase(), isActive: true });
 };
 
 // Static method to find by username
-userSchema.statics.findByUsername = function(username) {
+userSchema.statics.findByUsername = function (username) {
   return this.findOne({ username, isActive: true });
 };
 

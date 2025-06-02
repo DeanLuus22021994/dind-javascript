@@ -8,13 +8,13 @@ module.exports = {
   ],
   testPathIgnorePatterns: [
     '/node_modules/',
-    '/src/tests/setup.js' // Explicitly ignore setup files
+    '/src/tests/test-setup.js' // Updated to ignore the renamed file
   ],
   collectCoverageFrom: [
     'src/**/*.js',
     '!src/tests/**',
     '!src/**/*.test.js',
-    '!src/tests/setup.js'
+    '!src/tests/test-setup.js' // Updated to ignore the renamed file
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
