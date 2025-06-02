@@ -26,9 +26,9 @@ const customFormat = winston.format.combine(
 // Console transport for all environments
 const transports = [
   new winston.transports.Console({
-    level: config.isTest ? 'warn' : 'info', // Reduce logging in test environment to warn and above
+    level: config.isTest ? 'error' : 'info', // Only log errors in test environment
     format: customFormat,
-    silent: config.isTest && process.env.JEST_SILENT === 'true' // Allow silencing in tests
+    silent: config.isTest && process.env.JEST_SILENT === 'true' // Allow complete silencing in tests
   })
 ];
 
@@ -48,7 +48,7 @@ if (!config.isTest) {
 }
 
 const logger = winston.createLogger({
-  level: config.isTest ? 'warn' : config.logLevel, // Only log warnings and errors in test
+  level: config.isTest ? 'error' : config.logLevel, // Only log errors in test
   format: customFormat,
   transports,
   // Don't exit on handled exceptions in test environment

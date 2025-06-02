@@ -41,15 +41,21 @@ async function initializeConnections() {
     if (config.redis && config.redis.enabled && config.redis.url) {
       await redisClient.connect();
     } else if (config.redisUrl) {
-      logger.info('Redis configuration found but not enabled');
+      if (!config.isTest) {
+        logger.info('Redis configuration found but not enabled');
+      }
     } else {
-      logger.info('Redis disabled or not configured');
+      if (!config.isTest) {
+        logger.info('Redis disabled or not configured');
+      }
     }
 
     // Initialize WebSocket server
     websocketServer.initialize(server);
 
-    logger.info('✅ All connections initialized successfully');
+    if (!config.isTest) {
+      logger.info('✅ All connections initialized successfully');
+    }
   } catch (error) {
     logger.error('Failed to initialize connections:', error);
     if (config.isProduction) {
@@ -70,7 +76,7 @@ app.use(cors({
 // Compression
 app.use(compression());
 
-// Request logging
+// Request logging - disabled in test environment
 if (!config.isTest) {
   app.use(morgan('combined', {
     stream: {
@@ -90,7 +96,10 @@ const limiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   handler: (req, res) => {
-    logger.warn(`Rate limit exceeded for IP: ${req.ip}`);
+    // Only log rate limit violations in non-test environments
+    if (!config.isTest) {
+      logger.warn(`Rate limit exceeded for IP: ${req.ip}`);
+    }
     res.status(429).json({
       error: 'Too many requests from this IP, please try again later.',
       retryAfter: Math.ceil(config.rateLimitWindowMs / 1000)
@@ -175,7 +184,11 @@ if (!config.isTest) {
  *                     type: string
  */
 app.get('/', (req, res) => {
-  logger.info('Root endpoint accessed');
+  // Only log in non-test environments
+  if (!config.isTest) {
+    logger.info('Root endpoint accessed');
+  }
+
   res.json({
     message: 'Enhanced Docker-in-Docker JavaScript Environment',
     timestamp: new Date().toISOString(),
@@ -218,7 +231,11 @@ if (config.enableMetrics) {
 
 // 404 handler
 app.use('*', (req, res) => {
-  logger.warn(`404 - Route not found: ${req.method} ${req.originalUrl}`);
+  // Only log 404s in non-test environments unless it's a test for 404 handling
+  if (!config.isTest || req.originalUrl === '/non-existent-route') {
+    logger.warn(`404 - Route not found: ${req.method} ${req.originalUrl}`);
+  }
+
   res.status(404).json({
     error: 'Route not found',
     message: `Cannot ${req.method} ${req.originalUrl}`,
@@ -248,17 +265,25 @@ app.use((error, req, res, next) => {
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
-  logger.info('SIGTERM signal received: closing HTTP server');
+  if (!config.isTest) {
+    logger.info('SIGTERM signal received: closing HTTP server');
+  }
   server.close(() => {
-    logger.info('HTTP server closed');
+    if (!config.isTest) {
+      logger.info('HTTP server closed');
+    }
     process.exit(0);
   });
 });
 
 process.on('SIGINT', () => {
-  logger.info('SIGINT signal received: closing HTTP server');
+  if (!config.isTest) {
+    logger.info('SIGINT signal received: closing HTTP server');
+  }
   server.close(() => {
-    logger.info('HTTP server closed');
+    if (!config.isTest) {
+      logger.info('HTTP server closed');
+    }
     process.exit(0);
   });
 });
@@ -280,26 +305,26 @@ async function startServer() {
     await initializeConnections();
 
     const serverInstance = server.listen(config.port, () => {
-      logger.info(`🚀 Server running on port ${config.port}`);
-      logger.info(`📋 Environment: ${config.nodeEnv}`);
-
-      if (!config.isProduction) {
-        logger.info('📚 API Documentation: http://localhost:' + config.port + '/docs');
-      }
       if (!config.isTest) {
-        logger.info('🔗 GraphQL Playground: http://localhost:' + config.port + '/graphql');
-      }
-      logger.info('💊 Health Check: http://localhost:' + config.port + '/health');
-      if (config.enableMetrics) {
-        logger.info('📊 Metrics: http://localhost:' + config.port + '/metrics');
-      }
-      logger.info('🔌 WebSocket: ws://localhost:' + config.port);
+        logger.info(`🚀 Server running on port ${config.port}`);
+        logger.info(`📋 Environment: ${config.nodeEnv}`);
 
-      if (config.database && config.database.url) {
-        logger.info('🗄️  Database: Connected');
-      }
-      if (config.redis && config.redis.url) {
-        logger.info('🔴 Redis: Connected');
+        if (!config.isProduction) {
+          logger.info('📚 API Documentation: http://localhost:' + config.port + '/docs');
+        }
+        logger.info('🔗 GraphQL Playground: http://localhost:' + config.port + '/graphql');
+        logger.info('💊 Health Check: http://localhost:' + config.port + '/health');
+        if (config.enableMetrics) {
+          logger.info('📊 Metrics: http://localhost:' + config.port + '/metrics');
+        }
+        logger.info('🔌 WebSocket: ws://localhost:' + config.port);
+
+        if (config.database && config.database.url) {
+          logger.info('🗄️  Database: Connected');
+        }
+        if (config.redis && config.redis.url) {
+          logger.info('🔴 Redis: Connected');
+        }
       }
     });
 

@@ -7,8 +7,8 @@ const userResolvers = {
   Query: {
     me: async(parent, args, { user }) => {
       if (!user) {
-        // Only log GraphQL auth errors in non-test environments
-        if (process.env.NODE_ENV !== 'test') {
+        // Don't log authentication errors in test environment - they're expected
+        if (!process.env.NODE_ENV || process.env.NODE_ENV !== 'test') {
           logger.error('GraphQL Error: Authentication required');
         }
         throw new AuthenticationError('Authentication required');
@@ -18,7 +18,8 @@ const userResolvers = {
 
     users: async(parent, args, { user }) => {
       if (!user || user.role !== 'admin') {
-        if (process.env.NODE_ENV !== 'test') {
+        // Don't log authorization errors in test environment - they're expected
+        if (!process.env.NODE_ENV || process.env.NODE_ENV !== 'test') {
           logger.error('GraphQL Error: Admin access required');
         }
         throw new ForbiddenError('Admin access required');
@@ -128,7 +129,8 @@ const userResolvers = {
 
     updateProfile: async(parent, { input }, { user }) => {
       if (!user) {
-        if (process.env.NODE_ENV !== 'test') {
+        // Don't log authentication errors in test environment
+        if (!process.env.NODE_ENV || process.env.NODE_ENV !== 'test') {
           logger.error('GraphQL Error: Authentication required');
         }
         throw new AuthenticationError('Authentication required');
@@ -174,7 +176,8 @@ const userResolvers = {
         const isValidPassword = await dbUser.comparePassword(currentPassword);
 
         if (!isValidPassword) {
-          if (process.env.NODE_ENV !== 'test') {
+          // Don't log password errors in test environment - they're expected
+          if (!process.env.NODE_ENV || process.env.NODE_ENV !== 'test') {
             logger.error('GraphQL Error: Current password is incorrect');
           }
           throw new UserInputError('Current password is incorrect');

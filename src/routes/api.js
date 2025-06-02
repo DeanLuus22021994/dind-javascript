@@ -51,7 +51,10 @@ const handleValidationErrors = (req, res, next) => {
  *                   type: string
  */
 router.get('/info', (req, res) => {
-  logger.info('API info requested');
+  // Only log in non-test environments
+  if (process.env.NODE_ENV !== 'test') {
+    logger.info('API info requested');
+  }
 
   res.json({
     name: 'DIND JavaScript API',
@@ -115,10 +118,13 @@ router.post('/echo',
   (req, res) => {
     const requestId = Math.random().toString(36).substring(2, 15);
 
-    logger.info(`Echo request received: ${requestId}`, {
-      requestId,
-      messageLength: req.body.message?.length || 0
-    });
+    // Only log in non-test environments
+    if (process.env.NODE_ENV !== 'test') {
+      logger.info(`Echo request received: ${requestId}`, {
+        requestId,
+        messageLength: req.body.message?.length || 0
+      });
+    }
 
     res.json({
       echo: {
@@ -224,7 +230,10 @@ router.get('/data',
     const offset = (page - 1) * limit;
     const paginatedData = filteredData.slice(offset, offset + limit);
 
-    logger.info(`Data request: page=${page}, limit=${limit}, search="${search}", results=${paginatedData.length}`);
+    // Only log in non-test environments
+    if (process.env.NODE_ENV !== 'test') {
+      logger.info(`Data request: page=${page}, limit=${limit}, search="${search}", results=${paginatedData.length}`);
+    }
 
     res.json({
       data: paginatedData,

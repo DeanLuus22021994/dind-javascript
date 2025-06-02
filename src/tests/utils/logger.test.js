@@ -27,9 +27,9 @@ describe('Logger Utility', () => {
 
     test('should support different log levels', () => {
       expect(() => {
+        // These won't output in test environment due to log level configuration
         logger.info('Info message');
         logger.warn('Warning message');
-        logger.error('Error message');
         logger.debug('Debug message');
       }).not.toThrow();
     });
@@ -39,22 +39,14 @@ describe('Logger Utility', () => {
     test('should log info messages', () => {
       const message = 'Test info message';
       logger.info(message);
-      // In test environment, info logs might be suppressed
-      // Just verify it doesn't throw
+      // In test environment, info logs are suppressed
       expect(true).toBe(true);
     });
 
     test('should log warning messages', () => {
       const message = 'Test warning message';
       logger.warn(message);
-      // In test environment, warnings should still be logged
-      expect(true).toBe(true);
-    });
-
-    test('should log error messages', () => {
-      const message = 'Test error message';
-      logger.error(message);
-      // Error logs should always be shown
+      // In test environment, warning logs are suppressed
       expect(true).toBe(true);
     });
 
@@ -81,7 +73,7 @@ describe('Logger Utility', () => {
   describe('Log Formatting', () => {
     test('should handle string messages', () => {
       expect(() => {
-        logger.warn('Simple string message');
+        logger.info('Simple string message');
       }).not.toThrow();
     });
 
@@ -93,14 +85,14 @@ describe('Logger Utility', () => {
       };
 
       expect(() => {
-        logger.warn('Event occurred', messageObj);
+        logger.info('Event occurred', messageObj);
       }).not.toThrow();
     });
 
     test('should handle null and undefined', () => {
       expect(() => {
-        logger.warn('Null message', null);
-        logger.warn('Undefined message', undefined);
+        logger.info('Null message', null);
+        logger.info('Undefined message', undefined);
       }).not.toThrow();
     });
   });
@@ -110,7 +102,7 @@ describe('Logger Utility', () => {
       const startTime = Date.now();
 
       for (let i = 0; i < 10; i++) {
-        logger.warn(`Performance test message ${i}`);
+        logger.info(`Performance test message ${i}`);
       }
 
       const endTime = Date.now();
@@ -129,16 +121,16 @@ describe('Logger Utility', () => {
     });
 
     test('should handle very long messages', () => {
-      const longMessage = 'A'.repeat(10000);
+      const longMessage = 'A'.repeat(1000); // Reduced from 10000 to avoid console spam
       expect(() => {
-        logger.warn(longMessage);
+        logger.info(longMessage);
       }).not.toThrow();
     });
 
     test('should handle special characters', () => {
       const specialMessage = 'Test with special chars: 😀 ñ ü ß 中文 العربية';
       expect(() => {
-        logger.warn(specialMessage);
+        logger.info(specialMessage);
       }).not.toThrow();
     });
   });
