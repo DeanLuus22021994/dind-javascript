@@ -1,6 +1,6 @@
 const request = require('supertest');
 const express = require('express');
-const User = require('../../models/User');
+const User = require('../models/User');
 
 describe('Authentication Routes', () => {
   let app;

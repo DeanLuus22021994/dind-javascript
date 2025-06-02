@@ -1,8 +1,8 @@
 const request = require('supertest');
 const express = require('express');
 // Removed unused ApolloServer import
-const { createApolloServer } = require('../../graphql/server');
-const User = require('../../models/User');
+const { createApolloServer } = require('../graphql/server');
+const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const config = require('../../config');
 

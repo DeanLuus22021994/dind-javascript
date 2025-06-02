@@ -86,28 +86,16 @@ class AuthService {
   authenticate() {
     return async(req, res, next) => {
       try {
-        const token = this.extractToken(req);
-
-        if (!token) {
-          return res.status(401).json({
-            error: 'Authentication required',
-            message: 'No token provided',
-            timestamp: new Date().toISOString()
-          });
+        const token = this.extractToken(req); if (!token) {
+          return res.status(401).json({ error: 'Access denied. No token provided.' });
         }
 
         const decoded = this.verifyToken(token);
 
         // Look up the user to get full user object with roles
         const User = require('../models/User');
-        const user = await User.findById(decoded.userId || decoded._id);
-
-        if (!user) {
-          return res.status(401).json({
-            error: 'Authentication failed',
-            message: 'User not found',
-            timestamp: new Date().toISOString()
-          });
+        const user = await User.findById(decoded.userId || decoded._id); if (!user) {
+          return res.status(401).json({ error: 'User not found.' });
         }
 
         req.user = user;
@@ -116,11 +104,7 @@ class AuthService {
         next();
       } catch (error) {
         logger.warn('Authentication failed:', error.message);
-        return res.status(401).json({
-          error: 'Authentication failed',
-          message: 'Invalid or expired token',
-          timestamp: new Date().toISOString()
-        });
+        return res.status(401).json({ error: 'Invalid token.' });
       }
     };
   }
@@ -131,11 +115,7 @@ class AuthService {
   authorize(roles = []) {
     return (req, res, next) => {
       if (!req.user) {
-        return res.status(401).json({
-          error: 'Authentication required',
-          message: 'User not authenticated',
-          timestamp: new Date().toISOString()
-        });
+        return res.status(401).json({ error: 'Access denied. No token provided.' });
       }
 
       // Ensure roles is an array
@@ -146,15 +126,9 @@ class AuthService {
       }
 
       const userRoles = req.user.roles || [];
-      const hasRole = requiredRoles.some(role => userRoles.includes(role));
-
-      if (!hasRole) {
+      const hasRole = requiredRoles.some(role => userRoles.includes(role)); if (!hasRole) {
         logger.warn(`Authorization failed for user ${req.user.userId}: required roles ${requiredRoles}, user roles ${userRoles}`);
-        return res.status(403).json({
-          error: 'Authorization failed',
-          message: 'Insufficient permissions',
-          timestamp: new Date().toISOString()
-        });
+        return res.status(403).json({ error: 'Access denied. Insufficient permissions.' });
       }
 
       next();
@@ -192,7 +166,7 @@ module.exports.generateToken = authService.generateToken.bind(authService);
 module.exports.verifyToken = authService.verifyToken.bind(authService);
 module.exports.hashPassword = authService.hashPassword.bind(authService);
 module.exports.comparePassword = authService.comparePassword.bind(authService);
-module.exports.requireAuth = authService.authenticate.bind(authService);
+module.exports.requireAuth = authService.authenticate();
 module.exports.requireRole = authService.authorize.bind(authService);
-module.exports.optionalAuth = authService.optionalAuth.bind(authService);
+module.exports.optionalAuth = authService.optionalAuth();
 module.exports.AuthService = AuthService;

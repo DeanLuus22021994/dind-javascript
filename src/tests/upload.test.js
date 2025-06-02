@@ -8,10 +8,8 @@ describe('File Upload Routes', () => {
   const uploadDir = path.join(__dirname, '../../uploads/test');
 
   beforeAll(async() => {
-    app = express();
-
-    // Import and use upload routes
-    const uploadRoutes = require('../../routes/upload');
+    app = express(); // Import and use upload routes
+    const uploadRoutes = require('../routes/upload');
     app.use('/api/upload', uploadRoutes);
 
     // Create test upload directory

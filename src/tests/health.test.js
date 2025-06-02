@@ -5,10 +5,8 @@ describe('Health Check Routes', () => {
   let app;
 
   beforeAll(async() => {
-    app = express();
-
-    // Import and use health routes
-    const healthRoutes = require('../../routes/health');
+    app = express(); // Import and use health routes
+    const healthRoutes = require('../routes/health');
     app.use('/api/health', healthRoutes);
   });
 
