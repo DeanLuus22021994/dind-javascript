@@ -26,7 +26,9 @@ const resolvers = {
   },
 
   Mutation: {
-    register: async(parent, { username, email, password, firstName, lastName }) => {
+    register: async(parent, { input }) => {
+      const { username, email, password, firstName, lastName } = input;
+
       // Check if user already exists
       const existingUser = await User.findOne({
         $or: [{ email }, { username }]
@@ -50,11 +52,15 @@ const resolvers = {
 
       return {
         token,
-        user: user.toJSON()
+        refreshToken: token, // In a real app, this would be a separate refresh token
+        user: user.toJSON(),
+        expiresIn: 86400 // 24 hours in seconds
       };
     },
 
-    login: async(parent, { email, password }) => {
+    login: async(parent, { input }) => {
+      const { email, password } = input;
+
       const user = await User.findOne({ email, isActive: true });
 
       if (!user) {
@@ -75,14 +81,18 @@ const resolvers = {
 
       return {
         token,
-        user: user.toJSON()
+        refreshToken: token, // In a real app, this would be a separate refresh token
+        user: user.toJSON(),
+        expiresIn: 86400 // 24 hours in seconds
       };
     },
 
-    updateProfile: async(parent, { firstName, lastName }, context) => {
+    updateProfile: async(parent, { input }, context) => {
       if (!context.user) {
         throw new Error('Authentication required');
       }
+
+      const { firstName, lastName } = input;
 
       const user = await User.findByIdAndUpdate(
         context.user._id,
@@ -91,6 +101,24 @@ const resolvers = {
       );
 
       return user;
+    },
+
+    changePassword: async(parent, { currentPassword, newPassword }, context) => {
+      if (!context.user) {
+        throw new Error('Authentication required');
+      }
+
+      const user = await User.findById(context.user._id);
+      const isValidPassword = await user.comparePassword(currentPassword);
+
+      if (!isValidPassword) {
+        throw new Error('Current password is incorrect');
+      }
+
+      user.password = newPassword;
+      await user.save();
+
+      return true;
     },
 
     deleteAccount: async(parent, args, context) => {

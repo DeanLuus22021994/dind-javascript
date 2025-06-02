@@ -161,22 +161,24 @@ const typeDefs = gql`
     login(input: LoginInput!): AuthPayload!
     logout: Boolean!
     refreshToken: AuthPayload!
-      # Profile
+
+    # Profile
     updateProfile(input: UpdateProfileInput!): User!
     updatePreferences(input: UpdatePreferencesInput!): User!
     changePassword(currentPassword: String!, newPassword: String!): Boolean!
     uploadAvatar(file: Upload!): User!
-    
+    deleteAccount: Boolean!
+
     # Files
     uploadFile(file: Upload!): File!
     uploadFiles(files: [Upload!]!): [File!]!
     deleteFile(id: ID!): Boolean!
-    
+
     # Messages
     sendMessage(room: String!, content: String!): Message!
     editMessage(id: ID!, content: String!): Message!
     deleteMessage(id: ID!): Boolean!
-    
+
     # Admin
     updateUserRole(userId: ID!, role: Role!): User!
     deactivateUser(userId: ID!): User!
@@ -189,12 +191,12 @@ const typeDefs = gql`
     messageAdded(room: String!): Message!
     messageEdited(room: String!): Message!
     messageDeleted(room: String!): ID!
-    
+
     # User presence
     userJoined(room: String!): User!
     userLeft(room: String!): User!
     userTyping(room: String!): TypingEvent!
-    
+
     # System notifications
     systemAlert: SystemAlert!
   }
@@ -234,13 +236,21 @@ const typeDefs = gql`
     systemUptime: Float!
     memoryUsage: MemoryUsage!
     diskUsage: DiskUsage!
+    networkStats: NetworkStats!
   }
 
   type DiskUsage {
     total: Float!
-    used: Float!
     free: Float!
+    used: Float!
     percentage: Float!
+  }
+
+  type NetworkStats {
+    bytesIn: Float!
+    bytesOut: Float!
+    packetsIn: Float!
+    packetsOut: Float!
   }
 `;
 

@@ -1,6 +1,5 @@
 const request = require('supertest');
 const express = require('express');
-// Removed unused ApolloServer import
 const { createApolloServer } = require('../graphql/server');
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
@@ -89,7 +88,7 @@ describe('GraphQL API', () => {
         .expect(200);
 
       expect(response.body.errors).toBeTruthy();
-      expect(response.body.errors[0].message).toContain('authenticated');
+      expect(response.body.errors[0].message).toContain('Authentication required');
     });
   });
 
@@ -112,9 +111,12 @@ describe('GraphQL API', () => {
           lastName: 'Two'
         }
       ]);
+
+      // Update the test user to be admin
+      await User.findByIdAndUpdate(userId, { role: 'admin' });
     });
 
-    test('should return list of users when authenticated', async() => {
+    test('should return list of users when authenticated as admin', async() => {
       const query = `
         query {
           users {

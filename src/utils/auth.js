@@ -50,24 +50,17 @@ async function requireAuth(req, res, next) {
     if (authHeader.startsWith('Bearer ')) {
       token = authHeader.substring(7);
     } else {
-      // Handle token without Bearer prefix - should still reject
       return res.status(401).json({ error: 'Invalid token format. Use Bearer token.' });
     }
 
     const decoded = verifyToken(token);
-
-    // Remove .select() call since it's causing issues in tests
-    const user = await User.findById(decoded.userId);
+    const user = await User.findById(decoded.userId).select('-password');
 
     if (!user || !user.isActive) {
       return res.status(401).json({ error: 'User not found.' });
     }
 
-    // Remove password before setting user
-    const userObj = user.toObject();
-    delete userObj.password;
-
-    req.user = userObj;
+    req.user = user;
     next();
   } catch (error) {
     logger.error('Authentication error:', error);

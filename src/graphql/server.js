@@ -54,6 +54,7 @@ function createApolloServer() {
         try {
           const decoded = jwt.verify(token, config.jwtSecret);
           const user = await User.findById(decoded.userId);
+
           if (!user || !user.isActive) {
             throw new Error('Invalid user!');
           }
@@ -88,42 +89,17 @@ function createApolloServer() {
       if (request.operationName && context.startTime) {
         const duration = Date.now() - context.startTime;
         if (duration > 1000) { // Log queries taking more than 1 second
-          logger.warn('Slow GraphQL query:', {
+          logger.warn('Slow GraphQL query', {
             operationName: request.operationName,
-            duration: `${duration}ms`,
-            user: context.user?.email || 'anonymous'
+            duration
           });
         }
       }
 
       return response;
     },
-    plugins: [
-      // Custom plugin to track execution time
-      {
-        requestDidStart() {
-          return {
-            didResolveOperation({ context }) {
-              context.startTime = Date.now();
-            },
-            willSendResponse({ response, context }) {
-              const duration = Date.now() - (context.startTime || Date.now());
-              response.extensions = response.extensions || {};
-              response.extensions.executionTime = `${duration}ms`;
-            }
-          };
-        }
-      }
-    ],
-    introspection: !config.isProduction,
-    playground: !config.isProduction
-      ? {
-        settings: {
-          'request.credentials': 'include'
-        }
-      }
-      : false,
-    debug: !config.isProduction
+    introspection: process.env.NODE_ENV !== 'production',
+    playground: process.env.NODE_ENV !== 'production'
   });
 
   return server;
