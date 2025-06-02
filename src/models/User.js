@@ -1,21 +1,15 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const logger = require('../utils/logger');
-const { v4: uuidv4 } = require('uuid');
 
 const userSchema = new mongoose.Schema({
-  _id: {
-    type: String,
-    default: uuidv4
-  },
   username: {
     type: String,
     required: [true, 'Username is required'],
     unique: true,
     trim: true,
     minlength: [3, 'Username must be at least 3 characters long'],
-    maxlength: [30, 'Username cannot be more than 30 characters'],
-    match: [/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores']
+    maxlength: [30, 'Username cannot be more than 30 characters']
   },
   email: {
     type: String,
@@ -45,6 +39,10 @@ const userSchema = new mongoose.Schema({
     enum: ['user', 'admin', 'moderator'],
     default: 'user'
   },
+  roles: {
+    type: [String],
+    default: ['user']
+  },
   isActive: {
     type: Boolean,
     default: true
@@ -68,15 +66,11 @@ const userSchema = new mongoose.Schema({
   emailVerificationToken: {
     type: String
   },
-  profile: {
-    avatar: String,
-    bio: {
-      type: String,
-      maxlength: 500
-    },
-    location: String,
-    website: String,
-    dateOfBirth: Date
+  metadata: {
+    loginCount: {
+      type: Number,
+      default: 0
+    }
   },
   preferences: {
     language: {
@@ -97,21 +91,11 @@ const userSchema = new mongoose.Schema({
         default: true
       }
     }
-  },
-  metadata: {
-    loginCount: {
-      type: Number,
-      default: 0
-    },
-    lastIpAddress: String,
-    userAgent: String,
-    referralSource: String
   }
 }, {
   timestamps: true,
   toJSON: { virtuals: true },
-  toObject: { virtuals: true },
-  versionKey: false
+  toObject: { virtuals: true }
 });
 
 // Virtual for full name
@@ -130,12 +114,6 @@ userSchema.virtual('publicProfile').get(function() {
     firstName: this.firstName,
     lastName: this.lastName,
     fullName: this.fullName,
-    profile: {
-      avatar: this.profile?.avatar,
-      bio: this.profile?.bio,
-      location: this.profile?.location,
-      website: this.profile?.website
-    },
     createdAt: this.createdAt
   };
 });
@@ -171,32 +149,7 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
   }
 };
 
-// Method to check if user has role
-userSchema.methods.hasRole = function(role) {
-  return this.roles.includes(role);
-};
-
-// Method to add role
-userSchema.methods.addRole = function(role) {
-  if (!this.roles.includes(role)) {
-    this.roles.push(role);
-  }
-};
-
-// Method to remove role
-userSchema.methods.removeRole = function(role) {
-  this.roles = this.roles.filter(r => r !== role);
-};
-
-// Method to update login info
-userSchema.methods.updateLoginInfo = function(ipAddress, userAgent) {
-  this.lastLogin = new Date();
-  this.metadata.loginCount += 1;
-  this.metadata.lastIpAddress = ipAddress;
-  this.metadata.userAgent = userAgent;
-};
-
-// Method to get user object without sensitive data
+// Method to get user object without password
 userSchema.methods.toJSON = function() {
   const userObject = this.toObject();
   delete userObject.password;
@@ -206,39 +159,11 @@ userSchema.methods.toJSON = function() {
   return userObject;
 };
 
-// Override toObject to exclude password by default
-userSchema.method('toObject', function(options) {
-  const obj = mongoose.Document.prototype.toObject.call(this, options);
-  delete obj.password;
-  return obj;
-}, { suppressWarning: true });
-
 // Update last login
 userSchema.methods.updateLastLogin = function() {
   this.lastLogin = new Date();
   return this.save();
 };
-
-// Static method to find by email or username
-userSchema.statics.findByEmailOrUsername = function(identifier) {
-  return this.findOne({
-    $or: [
-      { email: identifier.toLowerCase() },
-      { username: identifier }
-    ]
-  });
-};
-
-// Static method to get active users
-userSchema.statics.getActiveUsers = function() {
-  return this.find({ isActive: true, emailVerified: true });
-};
-
-// Create indexes
-userSchema.index({ email: 1 });
-userSchema.index({ username: 1 });
-userSchema.index({ isActive: 1 });
-userSchema.index({ createdAt: -1 });
 
 const User = mongoose.model('User', userSchema);
 

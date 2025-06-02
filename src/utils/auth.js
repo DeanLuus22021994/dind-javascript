@@ -25,6 +25,9 @@ function verifyToken(token) {
   try {
     return jwt.verify(token, config.jwtSecret);
   } catch (error) {
+    if (error.name === 'TokenExpiredError') {
+      throw new Error('Token expired');
+    }
     throw new Error('Invalid token');
   }
 }
@@ -40,28 +43,29 @@ async function requireAuth(req, res, next) {
     const authHeader = req.headers.authorization;
 
     if (!authHeader) {
-      return res.status(401).json({ error: 'Authorization header required' });
+      return res.status(401).json({ error: 'Access denied. No token provided.' });
     }
 
     let token;
     if (authHeader.startsWith('Bearer ')) {
       token = authHeader.substring(7);
     } else {
-      token = authHeader;
+      // Handle token without Bearer prefix - should still reject
+      return res.status(401).json({ error: 'Invalid token format. Use Bearer token.' });
     }
 
     const decoded = verifyToken(token);
     const user = await User.findById(decoded.userId).select('-password');
 
     if (!user || !user.isActive) {
-      return res.status(401).json({ error: 'User not found or inactive' });
+      return res.status(401).json({ error: 'User not found.' });
     }
 
     req.user = user;
     next();
   } catch (error) {
     logger.error('Authentication error:', error);
-    return res.status(401).json({ error: 'Invalid token' });
+    return res.status(401).json({ error: 'Invalid token.' });
   }
 }
 
@@ -74,7 +78,7 @@ function requireRole(roles) {
   return async(req, res, next) => {
     try {
       if (!req.user) {
-        return res.status(401).json({ error: 'Authentication required' });
+        return res.status(403).json({ error: 'Access denied. Insufficient permissions.' });
       }
 
       const userRoles = Array.isArray(req.user.role) ? req.user.role : [req.user.role];
@@ -85,9 +89,7 @@ function requireRole(roles) {
       if (!hasRole) {
         logger.warn(`Authorization failed for user ${req.user._id}: required roles ${requiredRoles.join(',')}, user roles ${userRoles.join(',')}`);
         return res.status(403).json({
-          error: 'Insufficient permissions',
-          required: requiredRoles,
-          current: userRoles
+          error: 'Access denied. Insufficient permissions.'
         });
       }
 

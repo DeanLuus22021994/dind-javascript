@@ -9,6 +9,11 @@ describe('Authentication Routes', () => {
   let mongoServer;
 
   beforeAll(async() => {
+    // Close existing connections if any
+    if (mongoose.connection.readyState !== 0) {
+      await mongoose.disconnect();
+    }
+
     // Setup in-memory MongoDB for testing
     mongoServer = await MongoMemoryServer.create();
     const mongoUri = mongoServer.getUri();
@@ -107,8 +112,6 @@ describe('Authentication Routes', () => {
   });
 
   describe('POST /api/auth/login', () => {
-    // removed unused variable
-
     beforeEach(async() => {
       const userData = {
         username: 'testuser',
@@ -121,8 +124,6 @@ describe('Authentication Routes', () => {
       await request(app)
         .post('/api/auth/register')
         .send(userData);
-
-      // removed unused assignment
     });
 
     test('should login with valid credentials', async() => {
