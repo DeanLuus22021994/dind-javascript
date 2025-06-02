@@ -1,25 +1,5 @@
 const User = require('../models/User');
-const { ForbiddenError, AuthenticationError } = require('apollo-server-express');
-const database = require('../utils/database');
-const redisClient = require('../utils/redis');
-const { register } = require('../utils/metrics');
-const websocketServer = require('../utils/websocket');
 const { generateToken } = require('../utils/auth');
-
-// Helper function to get authenticated user from context
-async function getUser(context) {
-  if (!context.user) {
-    throw new AuthenticationError('No token provided');
-  }
-  return context.user;
-}
-
-// Helper function to require admin role
-function requireAdmin(user) {
-  if (user.role !== 'admin') {
-    throw new ForbiddenError('Admin access required');
-  }
-}
 
 const resolvers = {
   Query: {
@@ -42,89 +22,6 @@ const resolvers = {
         throw new Error('Access denied');
       }
       return await User.findById(id);
-    },
-
-    files: async(_, { limit = 20, offset = 0 }, context) => {
-      await getUser(context); // Verify user authentication
-      // Implementation would depend on your file storage system
-      // This is a placeholder
-      return [];
-    },
-
-    file: async(_, { id }, context) => {
-      await getUser(context); // Verify user authentication
-      // Implementation would depend on your file storage system
-      return null;
-    },
-
-    messages: async(_, { room, limit = 50, offset = 0 }, context) => {
-      await getUser(context); // Verify user authentication
-      // Implementation would depend on your message storage system
-      return [];
-    },
-
-    health: async() => {
-      const memUsage = process.memoryUsage();
-
-      return {
-        status: 'healthy',
-        timestamp: new Date(),
-        uptime: process.uptime(),
-        memory: {
-          rss: memUsage.rss / 1024 / 1024,
-          heapTotal: memUsage.heapTotal / 1024 / 1024,
-          heapUsed: memUsage.heapUsed / 1024 / 1024,
-          external: memUsage.external / 1024 / 1024
-        },
-        services: {
-          database: {
-            status: database.getConnectionStatus() === 1 ? 'healthy' : 'unhealthy',
-            connected: database.getConnectionStatus() === 1,
-            details: database.getConnectionStatus() === 1 ? 'Connected' : 'Disconnected'
-          },
-          redis: {
-            status: redisClient.isConnected() ? 'healthy' : 'unhealthy',
-            connected: redisClient.isConnected(),
-            details: redisClient.isConnected() ? 'Connected' : 'Disconnected'
-          },
-          email: {
-            status: 'not-configured',
-            connected: false,
-            details: 'Email service not configured'
-          },
-          websocket: {
-            status: 'healthy',
-            connected: true,
-            details: `${websocketServer.getConnectedUsers()} users connected`
-          }
-        }
-      };
-    },
-
-    metrics: async() => {
-      return register.metrics();
-    },
-
-    systemStats: async(_, __, context) => {
-      const user = await getUser(context);
-      requireAdmin(user);
-
-      const totalUsers = await User.countDocuments();
-      const activeUsers = await User.countDocuments({ isActive: true });
-
-      return {
-        totalUsers,
-        activeUsers,
-        totalFiles: 0, // Implement based on your file storage
-        totalMessages: 0, // Implement based on your message storage
-        systemUptime: process.uptime(),
-        memoryUsage: {
-          rss: process.memoryUsage().rss / 1024 / 1024,
-          heapTotal: process.memoryUsage().heapTotal / 1024 / 1024,
-          heapUsed: process.memoryUsage().heapUsed / 1024 / 1024,
-          external: process.memoryUsage().external / 1024 / 1024
-        }
-      };
     }
   },
 
@@ -207,66 +104,6 @@ const resolvers = {
       );
 
       return true;
-    },
-
-    uploadFile: async(_, { file }, context) => {
-      // Get user but explicitly ignore it - only needed for authentication check
-      /* eslint-disable-next-line no-unused-vars */
-      const _user = await getUser(context);
-
-      // This would be implemented with file storage
-      return {
-        id: 'file-id',
-        filename: file.filename,
-        mimetype: file.mimetype,
-        url: `https://example.com/files/${file.filename}`
-      };
-    },
-
-    deleteFile: async(_, { id }, context) => {
-      await getUser(context);
-
-      // This would be implemented with file storage
-      return true;
-    }
-  },
-
-  User: {
-    // Resolve computed fields or handle references
-    fullName: (user) => {
-      return `${user.firstName || ''} ${user.lastName || ''}`.trim();
-    }
-  },
-
-  Subscription: {
-    messageAdded: {
-      subscribe: () => {
-        return {
-          [Symbol.asyncIterator]: async function* () {
-            // Implementation would go here
-          }
-        };
-      }
-    },
-
-    userTyping: {
-      subscribe: () => {
-        return {
-          [Symbol.asyncIterator]: async function* () {
-            // Implementation would go here
-          }
-        };
-      }
-    },
-
-    systemAlert: {
-      subscribe: () => {
-        return {
-          [Symbol.asyncIterator]: async function* () {
-            // Implementation would go here
-          }
-        };
-      }
     }
   }
 };

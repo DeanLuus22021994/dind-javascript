@@ -45,7 +45,7 @@ describe('Authentication Utilities', () => {
       }).toThrow('Invalid token');
     });
 
-    test('should reject an expired token', () => {
+    test('should reject an expired token', (done) => {
       // Create an expired token
       const expiredToken = jwt.sign(
         { userId: '507f1f77bcf86cd799439011' },
@@ -58,6 +58,7 @@ describe('Authentication Utilities', () => {
         expect(() => {
           verifyToken(expiredToken);
         }).toThrow('Token expired');
+        done();
       }, 100);
     });
   });
@@ -84,7 +85,13 @@ describe('Authentication Utilities', () => {
         _id: userId,
         email: 'test@example.com',
         username: 'testuser',
-        isActive: true
+        isActive: true,
+        toObject: jest.fn().mockReturnValue({
+          _id: userId,
+          email: 'test@example.com',
+          username: 'testuser',
+          isActive: true
+        })
       };
 
       User.findById.mockResolvedValue(mockUser);
@@ -92,7 +99,12 @@ describe('Authentication Utilities', () => {
 
       await requireAuth(req, res, next);
 
-      expect(req.user).toEqual(mockUser);
+      expect(req.user).toEqual({
+        _id: userId,
+        email: 'test@example.com',
+        username: 'testuser',
+        isActive: true
+      });
       expect(next).toHaveBeenCalled();
     });
 

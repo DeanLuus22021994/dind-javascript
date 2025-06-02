@@ -94,8 +94,26 @@ const userSchema = new mongoose.Schema({
   }
 }, {
   timestamps: true,
-  toJSON: { virtuals: true },
-  toObject: { virtuals: true }
+  toJSON: {
+    virtuals: true,
+    transform: function(doc, ret) {
+      delete ret.password;
+      delete ret.refreshToken;
+      delete ret.resetPasswordToken;
+      delete ret.emailVerificationToken;
+      return ret;
+    }
+  },
+  toObject: {
+    virtuals: true,
+    transform: function(doc, ret) {
+      delete ret.password;
+      delete ret.refreshToken;
+      delete ret.resetPasswordToken;
+      delete ret.emailVerificationToken;
+      return ret;
+    }
+  }
 });
 
 // Virtual for full name
@@ -147,16 +165,6 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
     logger.error('Error comparing passwords:', error);
     return false;
   }
-};
-
-// Method to get user object without password
-userSchema.methods.toJSON = function() {
-  const userObject = this.toObject();
-  delete userObject.password;
-  delete userObject.refreshToken;
-  delete userObject.resetPasswordToken;
-  delete userObject.emailVerificationToken;
-  return userObject;
 };
 
 // Update last login

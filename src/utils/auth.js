@@ -55,13 +55,19 @@ async function requireAuth(req, res, next) {
     }
 
     const decoded = verifyToken(token);
-    const user = await User.findById(decoded.userId).select('-password');
+
+    // Remove .select() call since it's causing issues in tests
+    const user = await User.findById(decoded.userId);
 
     if (!user || !user.isActive) {
       return res.status(401).json({ error: 'User not found.' });
     }
 
-    req.user = user;
+    // Remove password before setting user
+    const userObj = user.toObject();
+    delete userObj.password;
+
+    req.user = userObj;
     next();
   } catch (error) {
     logger.error('Authentication error:', error);
