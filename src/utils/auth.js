@@ -4,8 +4,8 @@ const config = require('../config');
 const logger = require('./logger');
 
 /**
- * Generate JWT token for a user
- * @param {string} userId - User ID to include in token
+ * Generate JWT token for user
+ * @param {string} userId - User ID
  * @returns {string} JWT token
  */
 function generateToken(userId) {
@@ -18,100 +18,83 @@ function generateToken(userId) {
 
 /**
  * Verify JWT token
- * @param {string} token - JWT token to verify
- * @returns {Promise<Object>} Decoded token payload
+ * @param {string} token - JWT token
+ * @returns {object} Decoded token payload
  */
-async function verifyToken(token) {
+function verifyToken(token) {
   try {
     return jwt.verify(token, config.jwtSecret);
   } catch (error) {
-    // Re-throw the original error for better test expectations
-    if (error.name === 'TokenExpiredError') {
-      throw new Error('Token expired');
-    } else if (error.name === 'JsonWebTokenError') {
-      throw new Error('Invalid token');
-    } else {
-      throw error;
-    }
+    throw new Error('Invalid token');
   }
 }
 
 /**
- * Auth middleware to protect routes
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
- * @param {Function} next - Express next function
+ * Middleware to require authentication
+ * @param {object} req - Express request object
+ * @param {object} res - Express response object
+ * @param {function} next - Express next function
  */
 async function requireAuth(req, res, next) {
   try {
-    // Get token from header
     const authHeader = req.headers.authorization;
+
     if (!authHeader) {
-      req.user = null;
-      return res.status(401).json({ error: 'Access denied. No token provided.' });
+      return res.status(401).json({ error: 'Authorization header required' });
     }
 
-    // Check if token has correct format
-    if (!authHeader.startsWith('Bearer ')) {
-      req.user = null;
-      return res.status(401).json({ error: 'Invalid token format. Use Bearer token.' });
+    let token;
+    if (authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    } else {
+      token = authHeader;
     }
 
-    // Extract and verify token
-    const token = authHeader.split(' ')[1];
-    let decoded;
-    try {
-      decoded = await verifyToken(token);
-    } catch (error) {
-      req.user = null;
-      return res.status(401).json({ error: 'Invalid token.' });
+    const decoded = verifyToken(token);
+    const user = await User.findById(decoded.userId).select('-password');
+
+    if (!user || !user.isActive) {
+      return res.status(401).json({ error: 'User not found or inactive' });
     }
 
-    // Find user with decoded ID
-    const user = await User.findById(decoded.userId);
-    if (!user) {
-      req.user = null;
-      return res.status(401).json({ error: 'User not found.' });
-    }
-
-    // Set user in request
     req.user = user;
     next();
   } catch (error) {
     logger.error('Authentication error:', error);
-    req.user = null;
-    res.status(500).json({ error: 'Internal server error during authentication.' });
+    return res.status(401).json({ error: 'Invalid token' });
   }
 }
 
 /**
- * Role-based authorization middleware
- * @param {string|string[]} roles - Required role(s) to access the route
+ * Middleware to require specific role(s)
+ * @param {string|array} roles - Required role(s)
+ * @returns {function} Express middleware function
  */
 function requireRole(roles) {
   return async(req, res, next) => {
     try {
-      // Check if user exists in request (requireAuth should run first)
       if (!req.user) {
-        return res.status(403).json({ error: 'Access denied. Insufficient permissions.' });
+        return res.status(401).json({ error: 'Authentication required' });
       }
 
-      // Convert single role to array for consistent checking
+      const userRoles = Array.isArray(req.user.role) ? req.user.role : [req.user.role];
       const requiredRoles = Array.isArray(roles) ? roles : [roles];
 
-      // Check if user has any of the required roles
-      const userRoles = Array.isArray(req.user.roles) ? req.user.roles : [req.user.role];
-      const hasPermission = requiredRoles.some(role => userRoles.includes(role));
+      const hasRole = requiredRoles.some(role => userRoles.includes(role));
 
-      if (!hasPermission) {
-        logger.warn(`Authorization failed for user ${req.user._id}: required roles ${requiredRoles}, user roles ${userRoles}`);
-        return res.status(403).json({ error: 'Access denied. Insufficient permissions.' });
+      if (!hasRole) {
+        logger.warn(`Authorization failed for user ${req.user._id}: required roles ${requiredRoles.join(',')}, user roles ${userRoles.join(',')}`);
+        return res.status(403).json({
+          error: 'Insufficient permissions',
+          required: requiredRoles,
+          current: userRoles
+        });
       }
 
       next();
     } catch (error) {
-      logger.error('Authorization error:', error);
-      res.status(500).json({ error: 'Internal server error during authorization.' });
+      logger.error('Role authorization error:', error);
+      return res.status(500).json({ error: 'Authorization error' });
     }
   };
 }

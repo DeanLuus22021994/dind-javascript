@@ -1,80 +1,94 @@
 const express = require('express');
-const router = express.Router();
 const User = require('../models/User');
 const { generateToken, requireAuth } = require('../utils/auth');
 const logger = require('../utils/logger');
 
+const router = express.Router();
+
 /**
- * @route POST /api/auth/register
- * @description Register a new user
+ * @api {post} /api/auth/register Register a new user
+ * @apiName RegisterUser
+ * @apiGroup Authentication
  */
-router.post('/register', async(req, res) => {
+router.post('/register', async (req, res) => {
   try {
     const { username, email, password, firstName, lastName } = req.body;
 
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({ error: 'Invalid email format' });
-    }
-
-    // Validate password strength
-    if (password.length < 6) {
-      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    // Validate required fields
+    if (!username || !email || !password) {
+      return res.status(400).json({
+        error: 'Username, email, and password are required'
+      });
     }
 
     // Check if user already exists
-    const existingUser = await User.findOne({ $or: [{ email }, { username }] });
+    const existingUser = await User.findOne({
+      $or: [{ email }, { username }]
+    });
+
     if (existingUser) {
-      return res.status(409).json({ error: 'User already exists with that email or username' });
+      return res.status(409).json({
+        error: 'User already exists with this email or username'
+      });
     }
 
     // Create new user
     const user = new User({
       username,
       email,
-      password, // Will be hashed by pre-save hook
+      password,
       firstName,
       lastName
     });
 
     await user.save();
-    logger.info(`New user registered: ${email}`);
 
     // Generate token
     const token = generateToken(user._id);
 
-    // Return user info without password
-    const userObj = user.toObject();
-    delete userObj.password;
+    logger.info(`New user registered: ${email}`);
 
     res.status(201).json({
+      message: 'User registered successfully',
       token,
-      user: userObj
+      user: user.toJSON()
     });
   } catch (error) {
-    logger.error('Registration error:', error);
-    res.status(500).json({ error: 'Registration failed' });
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({ error: errors.join(', ') });
+    }
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 /**
- * @route POST /api/auth/login
- * @description Authenticate user and get token
+ * @api {post} /api/auth/login Login user
+ * @apiName LoginUser
+ * @apiGroup Authentication
  */
-router.post('/login', async(req, res) => {
+router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    // Validate required fields
+    if (!email || !password) {
+      return res.status(400).json({
+        error: 'Email and password are required'
+      });
+    }
+
     // Find user by email
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email, isActive: true });
+
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Check password
-    const isMatch = await user.comparePassword(password);
-    if (!isMatch) {
+    // Compare password
+    const isValidPassword = await user.comparePassword(password);
+
+    if (!isValidPassword) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
@@ -85,95 +99,84 @@ router.post('/login', async(req, res) => {
     // Generate token
     const token = generateToken(user._id);
 
-    // Return user info without password
-    const userObj = user.toObject();
-    delete userObj.password;
+    logger.info(`User logged in: ${email}`);
 
     res.json({
+      message: 'Login successful',
       token,
-      user: userObj
+      user: user.toJSON()
     });
+
   } catch (error) {
     logger.error('Login error:', error);
-    res.status(500).json({ error: 'Login failed' });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 /**
- * @route GET /api/auth/profile
- * @description Get user profile
+ * @api {get} /api/auth/profile Get user profile
+ * @apiName GetProfile
+ * @apiGroup Authentication
  */
+router.get('/profile', requireAuth, async (req, res) => {
+  try {
 router.get('/profile', requireAuth, async(req, res) => {
-  try {
-    // User is already available in req.user from requireAuth middleware
-    const user = req.user;
-
-    // Return user info without password
-    const userObj = user.toObject();
-    delete userObj.password;
-
-    res.json({ user: userObj });
+      user: req.user.toJSON()
+    });
   } catch (error) {
-    logger.error('Profile retrieval error:', error);
-    res.status(500).json({ error: 'Failed to retrieve profile' });
+    logger.error('Profile error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 /**
- * @route PUT /api/auth/profile
- * @description Update user profile
+ * @api {put} /api/auth/profile Update user profile
+ * @apiName UpdateProfile
+ * @apiGroup Authentication
  */
-router.put('/profile', requireAuth, async(req, res) => {
+router.put('/profile', requireAuth, async (req, res) => {
   try {
-    const { firstName, lastName, bio } = req.body;
-    const user = req.user;
+router.put('/profile', requireAuth, async(req, res) => {
 
-    // Update allowed fields
-    if (firstName) user.firstName = firstName;
-    if (lastName) user.lastName = lastName;
-    if (bio) user.bio = bio;
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { firstName, lastName },
+      { new: true, runValidators: true }
+    );
 
-    await user.save();
+    res.json({
+      message: 'Profile updated successfully',
+      user: user.toJSON()
+    });
 
-    // Return updated user info without password
-    const userObj = user.toObject();
-    delete userObj.password;
-
-    res.json({ user: userObj });
   } catch (error) {
     logger.error('Profile update error:', error);
-    res.status(500).json({ error: 'Failed to update profile' });
+
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({ error: errors.join(', ') });
+    }
+
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 /**
- * @route PUT /api/auth/password
- * @description Change password
+ * @api {post} /api/auth/logout Logout user
+ * @apiName LogoutUser
+ * @apiGroup Authentication
  */
-router.put('/password', requireAuth, async(req, res) => {
+router.post('/logout', requireAuth, async (req, res) => {
   try {
-    const { currentPassword, newPassword } = req.body;
-    const user = req.user;
+router.post('/logout', requireAuth, async(req, res) => {
+    // For now, we'll just return success since JWT tokens are stateless
 
-    // Validate current password
-    const isMatch = await user.comparePassword(currentPassword);
-    if (!isMatch) {
-      return res.status(401).json({ error: 'Current password is incorrect' });
-    }
+    logger.info(`User logged out: ${req.user.email}`);
 
-    // Validate new password
-    if (newPassword.length < 6) {
-      return res.status(400).json({ error: 'New password must be at least 6 characters' });
-    }
-
-    // Update password
-    user.password = newPassword;
-    await user.save();
-
-    res.json({ message: 'Password updated successfully' });
+    res.json({ message: 'Logout successful' });
   } catch (error) {
-    logger.error('Password change error:', error);
-    res.status(500).json({ error: 'Failed to change password' });
+    logger.error('Logout error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

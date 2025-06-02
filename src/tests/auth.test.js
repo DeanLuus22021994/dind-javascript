@@ -1,15 +1,29 @@
 const request = require('supertest');
 const express = require('express');
+const mongoose = require('mongoose');
 const User = require('../models/User');
+const { MongoMemoryServer } = require('mongodb-memory-server');
 
 describe('Authentication Routes', () => {
   let app;
+  let mongoServer;
 
   beforeAll(async() => {
+    // Setup in-memory MongoDB for testing
+    mongoServer = await MongoMemoryServer.create();
+    const mongoUri = mongoServer.getUri();
+    await mongoose.connect(mongoUri);
+
+    // Setup Express app with routes
     app = express();
-    app.use(express.json()); // Import and use auth routes
+    app.use(express.json());
     const authRoutes = require('../routes/auth');
     app.use('/api/auth', authRoutes);
+  });
+
+  afterAll(async() => {
+    await mongoose.disconnect();
+    await mongoServer.stop();
   });
 
   afterEach(async() => {
@@ -49,13 +63,14 @@ describe('Authentication Routes', () => {
       // Create first user
       await request(app)
         .post('/api/auth/register')
-        .send(userData);
+        .send(userData)
+        .expect(201);
 
-      // Try to create duplicate
+      // Try to create duplicate user
       const response = await request(app)
         .post('/api/auth/register')
         .send(userData)
-        .expect(400);
+        .expect(409);
 
       expect(response.body).toHaveProperty('error');
     });
@@ -64,9 +79,7 @@ describe('Authentication Routes', () => {
       const userData = {
         username: 'testuser',
         email: 'invalid-email',
-        password: 'password123',
-        firstName: 'Test',
-        lastName: 'User'
+        password: 'password123'
       };
 
       const response = await request(app)
@@ -81,9 +94,7 @@ describe('Authentication Routes', () => {
       const userData = {
         username: 'testuser',
         email: 'test@example.com',
-        password: '123',
-        firstName: 'Test',
-        lastName: 'User'
+        password: '123'
       };
 
       const response = await request(app)
@@ -96,8 +107,9 @@ describe('Authentication Routes', () => {
   });
 
   describe('POST /api/auth/login', () => {
+    // removed unused variable
+
     beforeEach(async() => {
-      // Create a test user
       const userData = {
         username: 'testuser',
         email: 'test@example.com',
@@ -109,6 +121,8 @@ describe('Authentication Routes', () => {
       await request(app)
         .post('/api/auth/register')
         .send(userData);
+
+      // removed unused assignment
     });
 
     test('should login with valid credentials', async() => {
@@ -129,7 +143,7 @@ describe('Authentication Routes', () => {
 
     test('should return error for invalid email', async() => {
       const loginData = {
-        email: 'wrong@example.com',
+        email: 'nonexistent@example.com',
         password: 'password123'
       };
 
@@ -161,7 +175,6 @@ describe('Authentication Routes', () => {
     let userId;
 
     beforeEach(async() => {
-      // Create and login user
       const userData = {
         username: 'testuser',
         email: 'test@example.com',
@@ -172,7 +185,8 @@ describe('Authentication Routes', () => {
 
       const registerResponse = await request(app)
         .post('/api/auth/register')
-        .send(userData);
+        .send(userData)
+        .expect(201);
 
       token = registerResponse.body.token;
       userId = registerResponse.body.user._id;
@@ -186,7 +200,7 @@ describe('Authentication Routes', () => {
 
       expect(response.body).toHaveProperty('user');
       expect(response.body.user._id).toBe(userId);
-      expect(response.body.user.email).toBe('test@example.com');
+      expect(response.body.user).not.toHaveProperty('password');
     });
 
     test('should return error without token', async() => {

@@ -1,10 +1,10 @@
 const User = require('../models/User');
-const { ForbiddenError, AuthenticationError, UserInputError } = require('apollo-server-express');
-const logger = require('../utils/logger');
+const { ForbiddenError, AuthenticationError } = require('apollo-server-express');
 const database = require('../utils/database');
 const redisClient = require('../utils/redis');
 const { register } = require('../utils/metrics');
 const websocketServer = require('../utils/websocket');
+const { generateToken } = require('../utils/auth');
 
 // Helper function to get authenticated user from context
 async function getUser(context) {
@@ -23,32 +23,24 @@ function requireAdmin(user) {
 
 const resolvers = {
   Query: {
-    me: async(_, __, context) => {
-      return await getUser(context);
+    me: async(parent, args, context) => {
+      if (!context.user) {
+        throw new Error('Authentication required');
+      }
+      return context.user;
     },
 
-    users: async(_, { limit = 10, offset = 0 }, context) => {
-      const user = await getUser(context);
-
-      // Only admins can view all users
-      if (user.role !== 'admin') {
-        throw new ForbiddenError('Admin access required');
+    users: async(parent, args, context) => {
+      if (!context.user || context.user.role !== 'admin') {
+        throw new Error('Admin access required');
       }
-
-      return await User.find()
-        .skip(offset)
-        .limit(limit)
-        .sort({ createdAt: -1 });
+      return await User.find({ isActive: true });
     },
 
-    user: async(_, { id }, context) => {
-      const user = await getUser(context);
-
-      // Users can only view their own profile unless they're admin
-      if (user._id.toString() !== id && user.role !== 'admin') {
-        throw new ForbiddenError('Access denied');
+    user: async(parent, { id }, context) => {
+      if (!context.user || (context.user.role !== 'admin' && context.user._id.toString() !== id)) {
+        throw new Error('Access denied');
       }
-
       return await User.findById(id);
     },
 
@@ -137,13 +129,14 @@ const resolvers = {
   },
 
   Mutation: {
-    register: async(_, { input }) => {
-      const { username, email, password, firstName, lastName } = input;
-
+    register: async(parent, { username, email, password, firstName, lastName }) => {
       // Check if user already exists
-      const existingUser = await User.findOne({ $or: [{ email }, { username }] });
+      const existingUser = await User.findOne({
+        $or: [{ email }, { username }]
+      });
+
       if (existingUser) {
-        throw new UserInputError('User already exists with that email or username');
+        throw new Error('User already exists with this email or username');
       }
 
       // Create new user
@@ -156,98 +149,63 @@ const resolvers = {
       });
 
       await user.save();
-      logger.info(`New user registered: ${email}`);
-
-      // Generate token and return user data
       const token = generateToken(user._id);
+
       return {
         token,
-        user
+        user: user.toJSON()
       };
     },
 
-    login: async(_, { email, password }) => {
-      // Find user by email
-      const user = await User.findOne({ email });
+    login: async(parent, { email, password }) => {
+      const user = await User.findOne({ email, isActive: true });
+
       if (!user) {
-        throw new UserInputError('Invalid email or password');
+        throw new Error('Invalid credentials');
       }
 
-      // Check password
-      const isMatch = await user.comparePassword(password);
-      if (!isMatch) {
-        throw new UserInputError('Invalid email or password');
+      const isValidPassword = await user.comparePassword(password);
+
+      if (!isValidPassword) {
+        throw new Error('Invalid credentials');
       }
 
       // Update last login
       user.lastLogin = new Date();
       await user.save();
 
-      // Generate token and return user data
       const token = generateToken(user._id);
+
       return {
         token,
-        user
+        user: user.toJSON()
       };
     },
 
-    updateProfile: async(_, { input }, context) => {
-      const user = await getUser(context);
-
-      // Check required fields
-      if (!input || Object.keys(input).length === 0) {
-        throw new UserInputError('No profile data provided');
+    updateProfile: async(parent, { firstName, lastName }, context) => {
+      if (!context.user) {
+        throw new Error('Authentication required');
       }
 
-      // Update allowed fields
-      const allowedFields = ['firstName', 'lastName', 'bio', 'avatar'];
-      const updateData = {};
-
-      allowedFields.forEach(field => {
-        if (input[field] !== undefined) {
-          updateData[field] = input[field];
-        }
-      });
-
-      // Apply updates
-      Object.assign(user, updateData);
-      await user.save();
+      const user = await User.findByIdAndUpdate(
+        context.user._id,
+        { firstName, lastName },
+        { new: true }
+      );
 
       return user;
     },
 
-    changePassword: async(_, { currentPassword, newPassword }, context) => {
-      const user = await getUser(context);
-
-      // Validate current password
-      const isMatch = await user.comparePassword(currentPassword);
-      if (!isMatch) {
-        throw new UserInputError('Current password is incorrect');
+    deleteAccount: async(parent, args, context) => {
+      if (!context.user) {
+        throw new Error('Authentication required');
       }
 
-      // Validate new password
-      if (!newPassword || newPassword.length < 6) {
-        throw new UserInputError('New password must be at least 6 characters');
-      }
+      await User.findByIdAndUpdate(
+        context.user._id,
+        { isActive: false }
+      );
 
-      // Update password
-      user.password = newPassword;
-      await user.save();
-
-      return true;
-    },
-
-    deleteAccount: async(_, { password }, context) => {
-      const user = await getUser(context);
-
-      // Validate password
-      const isMatch = await user.comparePassword(password);
-      if (!isMatch) {
-        throw new UserInputError('Password is incorrect');
-      }
-
-      // Delete user
-      await User.findByIdAndDelete(user._id);
       return true;
     },
 
@@ -314,14 +272,3 @@ const resolvers = {
 };
 
 module.exports = resolvers;
-
-// Helper function to generate token (imported from auth utils)
-function generateToken(userId) {
-  const jwt = require('jsonwebtoken');
-  const config = require('../config');
-  return jwt.sign(
-    { userId: userId.toString() },
-    config.jwtSecret,
-    { expiresIn: config.jwtExpiresIn }
-  );
-}
