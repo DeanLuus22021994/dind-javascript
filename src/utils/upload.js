@@ -96,29 +96,29 @@ const handleUploadError = (error, req, res, next) => {
     const statusCode = 400;
 
     switch (error.code) {
-    case 'LIMIT_FILE_SIZE':
-      message = `File too large. Maximum size is ${config.upload.maxFileSize / (1024 * 1024)}MB`;
-      break;
-    case 'LIMIT_FILE_COUNT':
-      message = 'Too many files';
-      break;
-    case 'LIMIT_UNEXPECTED_FILE':
-      message = 'Unexpected file field';
-      break;
-    case 'LIMIT_PART_COUNT':
-      message = 'Too many parts';
-      break;
-    case 'LIMIT_FIELD_KEY':
-      message = 'Field name too long';
-      break;
-    case 'LIMIT_FIELD_VALUE':
-      message = 'Field value too long';
-      break;
-    case 'LIMIT_FIELD_COUNT':
-      message = 'Too many fields';
-      break;
-    default:
-      message = error.message;
+      case 'LIMIT_FILE_SIZE':
+        message = `File too large. Maximum size is ${config.upload.maxFileSize / (1024 * 1024)}MB`;
+        break;
+      case 'LIMIT_FILE_COUNT':
+        message = 'Too many files';
+        break;
+      case 'LIMIT_UNEXPECTED_FILE':
+        message = 'Unexpected file field';
+        break;
+      case 'LIMIT_PART_COUNT':
+        message = 'Too many parts';
+        break;
+      case 'LIMIT_FIELD_KEY':
+        message = 'Field name too long';
+        break;
+      case 'LIMIT_FIELD_VALUE':
+        message = 'Field value too long';
+        break;
+      case 'LIMIT_FIELD_COUNT':
+        message = 'Too many fields';
+        break;
+      default:
+        message = error.message;
     }
 
     return res.status(statusCode).json({
@@ -168,7 +168,6 @@ const fileUtils = {
       return false;
     }
   },
-
   // Get file size in human readable format
   formatFileSize: (bytes) => {
     if (bytes === 0) return '0 Bytes';
@@ -179,20 +178,19 @@ const fileUtils = {
   },
 
   // Validate image dimensions (requires sharp package)
-  validateImageDimensions: async(filePath, maxWidth = 2000, maxHeight = 2000) => {
+  validateImageDimensions: async function (filePath, maxWidth = 2000, maxHeight = 2000) {
     try {
-      // This would require the 'sharp' package to be installed
+      // To enable validation, uncomment the following lines and install 'sharp':
       // const sharp = require('sharp');
       // const metadata = await sharp(filePath).metadata();
       // return metadata.width <= maxWidth && metadata.height <= maxHeight;
 
       // For now, just return true
-      // Remove the unconditional return to avoid unreachable code
+      return true;
     } catch (error) {
       logger.error('Error validating image dimensions:', error);
       return false;
     }
-    return true;
   }
 };
 

@@ -293,10 +293,9 @@ function checkEnvironment() {
 async function checkDependencies() {
   // Here you could check database connections, external services, etc.
   // For now, we'll just check if our main dependencies are available
-
   try {
     // Check if express is working (we're using it right now)
-    const express = require('express');
+    require('express'); // Verify express is available
 
     return {
       status: 'pass',
