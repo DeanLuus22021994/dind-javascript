@@ -99,7 +99,7 @@ class AuthService {
           return res.status(401).json({ error: 'Access denied. No token provided.' });
         }
 
-        const decoded = this.verifyToken(token);
+        const decoded = await this.verifyToken(token);
 
         // Look up the user to get full user object with roles
         const User = require('../models/User');
@@ -167,7 +167,7 @@ class AuthService {
         const token = this.extractToken(req);
 
         if (token) {
-          const decoded = this.verifyToken(token);
+          const decoded = await this.verifyToken(token);
           req.user = decoded;
           logger.debug(`Optional auth successful: ${decoded.userId || decoded.email}`);
         }
