@@ -121,8 +121,6 @@ class AuthService {
           return res.status(401).json({ error: 'Token expired' });
         } else if (error.message === 'Invalid token') {
           return res.status(401).json({ error: 'Invalid token' });
-        } else if (error.message.includes('User not found')) {
-          return res.status(401).json({ error: 'User not found.' });
         } else {
           return res.status(401).json({ error: 'Invalid token.' });
         }
