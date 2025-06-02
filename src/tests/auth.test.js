@@ -7,10 +7,8 @@ describe('Authentication Routes', () => {
 
   beforeAll(async() => {
     app = express();
-    app.use(express.json());
-
-    // Import and use auth routes
-    const authRoutes = require('../../routes/auth');
+    app.use(express.json()); // Import and use auth routes
+    const authRoutes = require('../routes/auth');
     app.use('/api/auth', authRoutes);
   });
 

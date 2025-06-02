@@ -4,7 +4,7 @@ const express = require('express');
 const { createApolloServer } = require('../graphql/server');
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
-const config = require('../../config');
+const config = require('../config');
 
 describe('GraphQL API', () => {
   let app;
