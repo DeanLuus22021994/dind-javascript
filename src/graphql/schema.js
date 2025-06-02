@@ -161,10 +161,10 @@ const typeDefs = gql`
     login(input: LoginInput!): AuthPayload!
     logout: Boolean!
     refreshToken: AuthPayload!
-    
-    # Profile
+      # Profile
     updateProfile(input: UpdateProfileInput!): User!
     updatePreferences(input: UpdatePreferencesInput!): User!
+    changePassword(currentPassword: String!, newPassword: String!): Boolean!
     uploadAvatar(file: Upload!): User!
     
     # Files
