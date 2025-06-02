@@ -67,7 +67,10 @@ async function requireAuth(req, res, next) {
     req.user = userObject;
     next();
   } catch (error) {
-    logger.error('Authentication error:', error);
+    // Only log authentication errors in non-test environments to reduce noise
+    if (process.env.NODE_ENV !== 'test') {
+      logger.error('Authentication error:', error);
+    }
     return res.status(401).json({ error: 'Invalid token.' });
   }
 }
@@ -90,7 +93,9 @@ function requireRole(roles) {
       const hasRole = requiredRoles.some(role => userRoles.includes(role));
 
       if (!hasRole) {
-        logger.warn(`Authorization failed for user ${req.user._id}: required roles ${requiredRoles.join(',')}, user roles ${userRoles.join(',')}`);
+        if (process.env.NODE_ENV !== 'test') {
+          logger.warn(`Authorization failed for user ${req.user._id}: required roles ${requiredRoles.join(',')}, user roles ${userRoles.join(',')}`);
+        }
         return res.status(403).json({
           error: 'Access denied. Insufficient permissions.'
         });
@@ -98,7 +103,9 @@ function requireRole(roles) {
 
       next();
     } catch (error) {
-      logger.error('Role authorization error:', error);
+      if (process.env.NODE_ENV !== 'test') {
+        logger.error('Role authorization error:', error);
+      }
       return res.status(500).json({ error: 'Authorization error' });
     }
   };

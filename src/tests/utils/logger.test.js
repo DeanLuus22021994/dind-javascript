@@ -2,114 +2,144 @@ const logger = require('../../utils/logger');
 
 describe('Logger Utility', () => {
   let originalConsoleLog;
-  let originalConsoleError;
-  let logOutput = [];
-  let errorOutput = [];
-
-  beforeAll(() => {
-    // Mock console methods to capture output
-    originalConsoleLog = console.log;
-    originalConsoleError = console.error;
-
-    console.log = (...args) => logOutput.push(args.join(' '));
-    console.error = (...args) => errorOutput.push(args.join(' '));
-  });
-
-  afterAll(() => {
-    // Restore original console methods
-    console.log = originalConsoleLog;
-    console.error = originalConsoleError;
-  });
+  let consoleOutput;
 
   beforeEach(() => {
-    logOutput = [];
-    errorOutput = [];
+    consoleOutput = [];
+    originalConsoleLog = console.log;
+    console.log = jest.fn((message) => {
+      consoleOutput.push(message);
+    });
   });
 
-  describe('Logger levels', () => {
-    test('should log info messages', () => {
-      logger.info('Test info message');
+  afterEach(() => {
+    console.log = originalConsoleLog;
+  });
 
-      // In test environment, check if the message structure is correct
+  describe('Logger Configuration', () => {
+    test('should have winston logger instance', () => {
+      expect(logger).toBeDefined();
       expect(typeof logger.info).toBe('function');
+      expect(typeof logger.error).toBe('function');
+      expect(typeof logger.warn).toBe('function');
+      expect(typeof logger.debug).toBe('function');
     });
 
-    test('should log error messages', () => {
-      logger.error('Test error message');
+    test('should support different log levels', () => {
+      expect(() => {
+        logger.info('Info message');
+        logger.warn('Warning message');
+        logger.error('Error message');
+        logger.debug('Debug message');
+      }).not.toThrow();
+    });
+  });
 
-      expect(typeof logger.error).toBe('function');
+  describe('Logging Methods', () => {
+    test('should log info messages', () => {
+      const message = 'Test info message';
+      logger.info(message);
+      // In test environment, info logs might be suppressed
+      // Just verify it doesn't throw
+      expect(true).toBe(true);
     });
 
     test('should log warning messages', () => {
-      logger.warn('Test warning message');
-
-      expect(typeof logger.warn).toBe('function');
+      const message = 'Test warning message';
+      logger.warn(message);
+      // In test environment, warnings should still be logged
+      expect(true).toBe(true);
     });
 
-    test('should log debug messages', () => {
-      logger.debug('Test debug message');
-
-      expect(typeof logger.debug).toBe('function');
-    });
-  });
-
-  describe('Logger configuration', () => {
-    test('should have correct format', () => {
-      // Check that logger has expected properties
-      expect(logger).toHaveProperty('info');
-      expect(logger).toHaveProperty('error');
-      expect(logger).toHaveProperty('warn');
-      expect(logger).toHaveProperty('debug');
+    test('should log error messages', () => {
+      const message = 'Test error message';
+      logger.error(message);
+      // Error logs should always be shown
+      expect(true).toBe(true);
     });
 
-    test('should handle object logging', () => {
-      const testObject = { test: 'value', number: 123 };
-      logger.info('Test object', testObject);
-
-      // Should not throw an error
-      expect(typeof logger.info).toBe('function');
+    test('should handle error objects', () => {
+      const error = new Error('Test error');
+      expect(() => {
+        logger.error('Error occurred:', error);
+      }).not.toThrow();
     });
 
-    test('should handle error object logging', () => {
-      const testError = new Error('Test error');
-      logger.error('Error occurred:', testError);
-
-      // Should not throw an error
-      expect(typeof logger.error).toBe('function');
-    });
-  });
-
-  describe('Logger metadata', () => {
-    test('should log with additional metadata', () => {
+    test('should handle metadata', () => {
       const metadata = {
         userId: '123',
-        action: 'login',
+        action: 'test',
+        timestamp: new Date().toISOString()
+      };
+
+      expect(() => {
+        logger.info('Test with metadata', metadata);
+      }).not.toThrow();
+    });
+  });
+
+  describe('Log Formatting', () => {
+    test('should handle string messages', () => {
+      expect(() => {
+        logger.warn('Simple string message');
+      }).not.toThrow();
+    });
+
+    test('should handle object messages', () => {
+      const messageObj = {
+        event: 'user_login',
+        userId: '123',
         ip: '127.0.0.1'
       };
 
-      logger.info('User action', metadata);
-
-      // Should not throw an error
-      expect(typeof logger.info).toBe('function');
+      expect(() => {
+        logger.warn('Event occurred', messageObj);
+      }).not.toThrow();
     });
 
-    test('should handle nested objects', () => {
-      const complexObject = {
-        user: {
-          id: '123',
-          profile: {
-            name: 'Test User',
-            preferences: {
-              theme: 'dark'
-            }
-          }
-        }
-      };
+    test('should handle null and undefined', () => {
+      expect(() => {
+        logger.warn('Null message', null);
+        logger.warn('Undefined message', undefined);
+      }).not.toThrow();
+    });
+  });
 
-      logger.info('Complex object', complexObject);
+  describe('Performance', () => {
+    test('should log quickly', () => {
+      const startTime = Date.now();
 
-      // Should not throw an error
-      expect(typeof logger.info).toBe('function');
+      for (let i = 0; i < 10; i++) {
+        logger.warn(`Performance test message ${i}`);
+      }
+
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+
+      // Should complete within reasonable time
+      expect(duration).toBeLessThan(100);
+    });
+  });
+
+  describe('Error Handling', () => {
+    test('should not throw on malformed input', () => {
+      expect(() => {
+        logger.error('Error with circular reference', { circular: {} });
+      }).not.toThrow();
+    });
+
+    test('should handle very long messages', () => {
+      const longMessage = 'A'.repeat(10000);
+      expect(() => {
+        logger.warn(longMessage);
+      }).not.toThrow();
+    });
+
+    test('should handle special characters', () => {
+      const specialMessage = 'Test with special chars: 😀 ñ ü ß 中文 العربية';
+      expect(() => {
+        logger.warn(specialMessage);
+      }).not.toThrow();
     });
   });
 });

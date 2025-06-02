@@ -46,7 +46,10 @@ router.post('/register', async(req, res) => {
     // Generate token
     const token = generateToken(user._id);
 
-    logger.info(`New user registered: ${email}`);
+    // Only log successful registrations in non-test environments
+    if (process.env.NODE_ENV !== 'test') {
+      logger.info(`New user registered: ${email}`);
+    }
 
     res.status(201).json({
       message: 'User registered successfully',
@@ -54,7 +57,10 @@ router.post('/register', async(req, res) => {
       user: user.toJSON()
     });
   } catch (error) {
-    logger.error('Registration error:', error);
+    // Only log validation errors in non-test environments to reduce test noise
+    if (process.env.NODE_ENV !== 'test') {
+      logger.error('Registration error:', error);
+    }
 
     if (error.name === 'ValidationError') {
       const errors = Object.values(error.errors).map(err => err.message);
@@ -101,7 +107,9 @@ router.post('/login', async(req, res) => {
     // Generate token
     const token = generateToken(user._id);
 
-    logger.info(`User logged in: ${email}`);
+    if (process.env.NODE_ENV !== 'test') {
+      logger.info(`User logged in: ${email}`);
+    }
 
     res.json({
       message: 'Login successful',
@@ -109,7 +117,9 @@ router.post('/login', async(req, res) => {
       user: user.toJSON()
     });
   } catch (error) {
-    logger.error('Login error:', error);
+    if (process.env.NODE_ENV !== 'test') {
+      logger.error('Login error:', error);
+    }
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -126,7 +136,9 @@ router.get('/profile', requireAuth, async(req, res) => {
       user: req.user
     });
   } catch (error) {
-    logger.error('Profile error:', error);
+    if (process.env.NODE_ENV !== 'test') {
+      logger.error('Profile error:', error);
+    }
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -151,7 +163,9 @@ router.put('/profile', requireAuth, async(req, res) => {
       user: user.toJSON()
     });
   } catch (error) {
-    logger.error('Profile update error:', error);
+    if (process.env.NODE_ENV !== 'test') {
+      logger.error('Profile update error:', error);
+    }
 
     if (error.name === 'ValidationError') {
       const errors = Object.values(error.errors).map(err => err.message);
@@ -171,11 +185,15 @@ router.post('/logout', requireAuth, async(req, res) => {
   try {
     // In a more sophisticated implementation, you might blacklist the token
     // For now, we'll just return success since JWT tokens are stateless
-    logger.info(`User logged out: ${req.user.email}`);
+    if (process.env.NODE_ENV !== 'test') {
+      logger.info(`User logged out: ${req.user.email}`);
+    }
 
     res.json({ message: 'Logout successful' });
   } catch (error) {
-    logger.error('Logout error:', error);
+    if (process.env.NODE_ENV !== 'test') {
+      logger.error('Logout error:', error);
+    }
     res.status(500).json({ error: 'Internal server error' });
   }
 });

@@ -8,17 +8,14 @@
     "dev": "nodemon src/index.js",
     "test": "cross-env NODE_ENV=test jest",
     "test:silent": "cross-env NODE_ENV=test JEST_SILENT=true jest --silent",
+    "test:quiet": "cross-env NODE_ENV=test jest --silent --verbose=false",
     "test:watch": "cross-env NODE_ENV=test jest --watch",
     "test:coverage": "cross-env NODE_ENV=test jest --coverage",
-    "test:windows": "set NODE_ENV=test&& jest",
     "lint": "eslint src/ __tests__/",
     "lint:fix": "eslint src/ __tests__/ --fix",
     "docker:build": "docker build -t dind-javascript .",
     "docker:run": "docker run -p 3000:3000 dind-javascript",
-    "docs:generate": "node scripts/generate-docs.js",
-    "test:unix": "NODE_ENV=test jest",
-    "test:win": "set NODE_ENV=test&& jest",
-    "test:cross": "cross-env NODE_ENV=test jest"
+    "docs:generate": "node scripts/generate-docs.js"
   },
   "keywords": [
     "docker",
