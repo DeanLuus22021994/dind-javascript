@@ -12,7 +12,9 @@ module.exports = {
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
-  verbose: false, // Reduce verbose output
-  silent: false, // Set to true to silence console.log during tests
-  testTimeout: 30000
+  verbose: false,
+  silent: false,
+  testTimeout: 30000,
+  forceExit: true,
+  detectOpenHandles: true
 };

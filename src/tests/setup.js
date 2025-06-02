@@ -1,39 +1,47 @@
 const { MongoMemoryServer } = require('mongodb-memory-server');
 const mongoose = require('mongoose');
+const path = require('path');
+const fs = require('fs');
 
-let mongod;
+// Set test environment
+process.env.NODE_ENV = 'test';
+process.env.JWT_SECRET = 'test-jwt-secret-key';
 
-// Setup test database
-global.beforeAll(async() => {
-  if (!mongod) {
-    mongod = await MongoMemoryServer.create();
-    const uri = mongod.getUri();
+// Create uploads/test directory if it doesn't exist
+const testUploadDir = path.join(__dirname, '../uploads/test');
+if (!fs.existsSync(testUploadDir)) {
+  fs.mkdirSync(testUploadDir, { recursive: true });
+}
 
-    // Override database URL for tests
-    process.env.NODE_ENV = 'test';
-    process.env.DATABASE_URL = uri;
+let mongoServer;
 
-    await mongoose.connect(uri);
-  }
+beforeAll(async() => {
+  // Start in-memory MongoDB instance
+  mongoServer = await MongoMemoryServer.create();
+  const mongoUri = mongoServer.getUri();
+
+  // Connect to the in-memory database
+  await mongoose.connect(mongoUri);
 });
 
-// Cleanup after tests
-global.afterAll(async() => {
-  if (mongod) {
-    await mongoose.connection.close();
-    await mongod.stop();
-  }
-});
+afterAll(async() => {
+  // Cleanup
+  await mongoose.disconnect();
+  await mongoServer.stop();
 
-// Clean up between tests
-global.afterEach(async() => {
-  if (mongoose.connection.readyState === 1) {
-    const collections = mongoose.connection.collections;
-    for (const key in collections) {
-      await collections[key].deleteMany({});
+  // Clean up test upload directory
+  try {
+    if (fs.existsSync(testUploadDir)) {
+      const files = fs.readdirSync(testUploadDir);
+      files.forEach(file => {
+        fs.unlinkSync(path.join(testUploadDir, file));
+      });
+      fs.rmdirSync(testUploadDir);
     }
+  } catch (error) {
+    // Ignore cleanup errors
   }
 });
 
-// Increase timeout for async operations
+// Set longer timeout for database operations
 jest.setTimeout(30000);

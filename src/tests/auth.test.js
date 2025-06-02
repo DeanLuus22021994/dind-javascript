@@ -2,33 +2,16 @@ const request = require('supertest');
 const express = require('express');
 const mongoose = require('mongoose');
 const User = require('../models/User');
-const { MongoMemoryServer } = require('mongodb-memory-server');
 
 describe('Authentication Routes', () => {
   let app;
-  let mongoServer;
 
   beforeAll(async() => {
-    // Close existing connections if any
-    if (mongoose.connection.readyState !== 0) {
-      await mongoose.disconnect();
-    }
-
-    // Setup in-memory MongoDB for testing
-    mongoServer = await MongoMemoryServer.create();
-    const mongoUri = mongoServer.getUri();
-    await mongoose.connect(mongoUri);
-
     // Setup Express app with routes
     app = express();
     app.use(express.json());
     const authRoutes = require('../routes/auth');
     app.use('/api/auth', authRoutes);
-  });
-
-  afterAll(async() => {
-    await mongoose.disconnect();
-    await mongoServer.stop();
   });
 
   afterEach(async() => {
