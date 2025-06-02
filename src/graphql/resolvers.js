@@ -2,7 +2,7 @@ const { AuthenticationError, ForbiddenError, UserInputError } = require('apollo-
 const { GraphQLUpload } = require('graphql-upload');
 const { GraphQLDateTime } = require('graphql-scalars');
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const fs = require('fs').promises;
 const path = require('path');
 
