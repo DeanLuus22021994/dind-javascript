@@ -287,7 +287,10 @@
     {
       "label": "DevContainer: View Status",
       "type": "shell",
-      "command": "./dev-status.sh",
+      "command": "bash",
+      "args": [
+        "./dev-status.sh"
+      ],
       "group": "build",
       "presentation": {
         "echo": true,
@@ -305,7 +308,7 @@
       "type": "shell",
       "command": "bash",
       "args": [
-        "scripts/health-check.sh"
+        ".devcontainer/validate.sh"
       ],
       "group": "test",
       "presentation": {
@@ -365,9 +368,8 @@
     {
       "label": "Database: Connect PostgreSQL",
       "type": "shell",
-      "command": "PGPASSWORD=devpass",
+      "command": "psql",
       "args": [
-        "psql",
         "-h",
         "localhost",
         "-U",
@@ -383,7 +385,10 @@
         "panel": "dedicated"
       },
       "options": {
-        "cwd": "${workspaceFolder}"
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "PGPASSWORD": "devpass"
+        }
       },
       "problemMatcher": []
     },
