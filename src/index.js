@@ -6,14 +6,22 @@ const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
+const cookieParser = require('cookie-parser');
+const session = require('express-session');
+const connectRedis = require('connect-redis');
+const http = require('http');
 
 const config = require('./config');
 const logger = require('./utils/logger');
+const database = require('./utils/database');
+const redisClient = require('./utils/redis');
+const websocketServer = require('./utils/websocket');
 const { register, metricsMiddleware } = require('./utils/metrics');
 
 // Import routes
 const apiRoutes = require('./routes/api');
 const healthRoutes = require('./routes/health');
+const authRoutes = require('./routes/auth');
 
 const app = express();
 
