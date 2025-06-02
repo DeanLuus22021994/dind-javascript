@@ -181,11 +181,11 @@ userSchema.methods.toSafeObject = function() {
 };
 
 // Override toObject to exclude password by default
-userSchema.methods.toObject = function(options) {
+userSchema.method('toObject', function(options) {
   const obj = mongoose.Document.prototype.toObject.call(this, options);
   delete obj.password;
   return obj;
-};
+}, { suppressWarning: true });
 
 // Transform JSON output to exclude password
 userSchema.methods.toJSON = function() {

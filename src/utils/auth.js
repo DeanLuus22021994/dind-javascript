@@ -97,9 +97,22 @@ class AuthService {
         }
 
         const decoded = this.verifyToken(token);
-        req.user = decoded;
 
-        logger.debug(`User authenticated: ${decoded.userId || decoded.email}`);
+        // Look up the user to get full user object with roles
+        const User = require('../models/User');
+        const user = await User.findById(decoded.userId || decoded._id);
+
+        if (!user) {
+          return res.status(401).json({
+            error: 'Authentication failed',
+            message: 'User not found',
+            timestamp: new Date().toISOString()
+          });
+        }
+
+        req.user = user;
+
+        logger.debug(`User authenticated: ${user._id}`);
         next();
       } catch (error) {
         logger.warn('Authentication failed:', error.message);
@@ -116,7 +129,7 @@ class AuthService {
    * Authorization middleware (role-based)
    */
   authorize(roles = []) {
-    return (req, res, next) => {
+    return(req, res, next) => {
       if (!req.user) {
         return res.status(401).json({
           error: 'Authentication required',
@@ -125,15 +138,18 @@ class AuthService {
         });
       }
 
-      if (roles.length === 0) {
+      // Ensure roles is an array
+      const requiredRoles = Array.isArray(roles) ? roles : [roles];
+
+      if (requiredRoles.length === 0) {
         return next(); // No specific roles required
       }
 
       const userRoles = req.user.roles || [];
-      const hasRole = roles.some(role => userRoles.includes(role));
+      const hasRole = requiredRoles.some(role => userRoles.includes(role));
 
       if (!hasRole) {
-        logger.warn(`Authorization failed for user ${req.user.userId}: required roles ${roles}, user roles ${userRoles}`);
+        logger.warn(`Authorization failed for user ${req.user.userId}: required roles ${requiredRoles}, user roles ${userRoles}`);
         return res.status(403).json({
           error: 'Authorization failed',
           message: 'Insufficient permissions',
