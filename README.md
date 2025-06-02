@@ -13,16 +13,19 @@ This project demonstrates an advanced Docker DevContainer setup with optimized c
 ## Quick Start
 
 ### Windows
+
 ```cmd
 start-devcontainer.cmd
 ```
 
 ### Linux/Mac
+
 ```bash
 ./start-devcontainer.sh
 ```
 
 ### Manual Start
+
 ```bash
 cd .devcontainer
 docker compose up -d
@@ -31,6 +34,7 @@ docker compose up -d
 ## Architecture
 
 The setup includes:
+
 - **DevContainer**: Main development environment with Node.js
 - **BuildKit**: Dedicated container for advanced Docker builds
 - **Volume Caches**: Persistent storage for build artifacts and dependencies
