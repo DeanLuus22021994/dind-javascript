@@ -16,6 +16,11 @@ RUN apt-get update && apt-get install -y \
     docker-compose-plugin \
     && rm -rf /var/lib/apt/lists/*
 
+# Install Node.js LTS
+RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - \
+    && apt-get install -y nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
 # Create cache directories
 RUN mkdir -p /cache/buildkit /cache/docker /cache/npm /cache/yarn
 
@@ -23,3 +28,6 @@ RUN mkdir -p /cache/buildkit /cache/docker /cache/npm /cache/yarn
 ENV BUILDKIT_HOST=docker-container://buildkit
 ENV DOCKER_BUILDKIT=1
 ENV COMPOSE_DOCKER_CLI_BUILD=1
+
+# Configure npm cache
+RUN npm config set cache /cache/npm --global
