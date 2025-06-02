@@ -8,7 +8,7 @@ set -euo pipefail
 # Source utilities with proper error handling
 SCRIPT_DIR="$(dirname "$0")"
 if [ -f "${SCRIPT_DIR}/dev-utils.sh" ]; then
-    # shellcheck source=./dev-utils.sh
+    # shellcheck source=./dev-utils.sh disable=SC1091
     source "${SCRIPT_DIR}/dev-utils.sh"
 else
     # Fallback functions if dev-utils.sh is not available
