@@ -121,8 +121,9 @@ router.post('/login', async(req, res) => {
  */
 router.get('/profile', requireAuth, async(req, res) => {
   try {
+    // Since req.user is already a plain object without password, we can return it directly
     res.json({
-      user: req.user.toJSON()
+      user: req.user
     });
   } catch (error) {
     logger.error('Profile error:', error);

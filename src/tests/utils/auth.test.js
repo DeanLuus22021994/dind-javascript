@@ -76,6 +76,9 @@ describe('Authentication Utilities', () => {
         json: jest.fn()
       };
       next = jest.fn();
+
+      // Reset mocks
+      User.findById.mockReset();
     });
 
     test('should authenticate user with valid token', async() => {
@@ -90,7 +93,8 @@ describe('Authentication Utilities', () => {
           _id: userId,
           email: 'test@example.com',
           username: 'testuser',
-          isActive: true
+          isActive: true,
+          password: 'hashedpassword'
         })
       };
 

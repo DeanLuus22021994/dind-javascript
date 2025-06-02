@@ -54,13 +54,17 @@ async function requireAuth(req, res, next) {
     }
 
     const decoded = verifyToken(token);
-    const user = await User.findById(decoded.userId).select('-password');
+    const user = await User.findById(decoded.userId);
 
     if (!user || !user.isActive) {
       return res.status(401).json({ error: 'User not found.' });
     }
 
-    req.user = user;
+    // Exclude password from user object
+    const userObject = user.toObject();
+    delete userObject.password;
+
+    req.user = userObject;
     next();
   } catch (error) {
     logger.error('Authentication error:', error);
