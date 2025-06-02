@@ -34,7 +34,14 @@ class AuthService {
       });
     } catch (error) {
       logger.error('Error verifying JWT token:', error);
-      throw new Error('Invalid token');
+      // Re-throw the original error for better test expectations
+      if (error.name === 'TokenExpiredError') {
+        throw new Error('Token expired');
+      } else if (error.name === 'JsonWebTokenError') {
+        throw new Error('Invalid token');
+      } else {
+        throw error;
+      }
     }
   }
 
@@ -86,7 +93,9 @@ class AuthService {
   authenticate() {
     return async(req, res, next) => {
       try {
-        const token = this.extractToken(req); if (!token) {
+        const token = this.extractToken(req);
+
+        if (!token) {
           return res.status(401).json({ error: 'Access denied. No token provided.' });
         }
 
@@ -94,7 +103,9 @@ class AuthService {
 
         // Look up the user to get full user object with roles
         const User = require('../models/User');
-        const user = await User.findById(decoded.userId || decoded._id); if (!user) {
+        const user = await User.findById(decoded.userId || decoded._id);
+
+        if (!user) {
           return res.status(401).json({ error: 'User not found.' });
         }
 
@@ -104,7 +115,17 @@ class AuthService {
         next();
       } catch (error) {
         logger.warn('Authentication failed:', error.message);
-        return res.status(401).json({ error: 'Invalid token.' });
+
+        // Check for specific error types
+        if (error.message === 'Token expired') {
+          return res.status(401).json({ error: 'Token expired' });
+        } else if (error.message === 'Invalid token') {
+          return res.status(401).json({ error: 'Invalid token' });
+        } else if (error.message.includes('User not found')) {
+          return res.status(401).json({ error: 'User not found.' });
+        } else {
+          return res.status(401).json({ error: 'Invalid token.' });
+        }
       }
     };
   }
@@ -115,7 +136,7 @@ class AuthService {
   authorize(roles = []) {
     return (req, res, next) => {
       if (!req.user) {
-        return res.status(401).json({ error: 'Access denied. No token provided.' });
+        return res.status(403).json({ error: 'Access denied. Insufficient permissions.' });
       }
 
       // Ensure roles is an array
@@ -126,8 +147,10 @@ class AuthService {
       }
 
       const userRoles = req.user.roles || [];
-      const hasRole = requiredRoles.some(role => userRoles.includes(role)); if (!hasRole) {
-        logger.warn(`Authorization failed for user ${req.user.userId}: required roles ${requiredRoles}, user roles ${userRoles}`);
+      const hasRole = requiredRoles.some(role => userRoles.includes(role));
+
+      if (!hasRole) {
+        logger.warn(`Authorization failed for user ${req.user._id}: required roles ${requiredRoles}, user roles ${userRoles}`);
         return res.status(403).json({ error: 'Access denied. Insufficient permissions.' });
       }
 
