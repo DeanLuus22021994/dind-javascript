@@ -9,7 +9,7 @@ const logger = require('../utils/logger');
 
 // Configure storage
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
+  destination: function(req, file, cb) {
     // Use test directory for tests, regular uploads otherwise
     const uploadDir = process.env.NODE_ENV === 'test'
       ? path.join(__dirname, '../../uploads/test')
@@ -17,7 +17,7 @@ const storage = multer.diskStorage({
 
     cb(null, uploadDir);
   },
-  filename: function (req, file, cb) {
+  filename: function(req, file, cb) {
     // Generate unique filename with original extension
     const ext = path.extname(file.originalname);
     cb(null, `${uuidv4()}${ext}`);
@@ -129,7 +129,7 @@ router.post('/multiple', conditionalAuth, (req, res, next) => {
  * @route GET /api/upload/files
  * @description List uploaded files
  */
-router.get('/files', conditionalAuth, async (req, res) => {
+router.get('/files', conditionalAuth, async(req, res) => {
   try {
     // Determine which directory to use
     const uploadDir = process.env.NODE_ENV === 'test'
@@ -141,7 +141,7 @@ router.get('/files', conditionalAuth, async (req, res) => {
 
     // Get file details
     const fileDetails = await Promise.all(
-      files.map(async (filename) => {
+      files.map(async(filename) => {
         const filePath = path.join(uploadDir, filename);
         const stats = await fs.stat(filePath);
 
@@ -164,7 +164,7 @@ router.get('/files', conditionalAuth, async (req, res) => {
  * @route DELETE /api/upload/files/:filename
  * @description Delete a file
  */
-router.delete('/files/:filename', conditionalAuth, async (req, res) => {
+router.delete('/files/:filename', conditionalAuth, async(req, res) => {
   try {
     const { filename } = req.params;
 
