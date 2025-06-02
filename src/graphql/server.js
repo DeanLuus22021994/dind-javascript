@@ -18,7 +18,7 @@ const schema = makeExecutableSchema({
 function createApolloServer() {
   const server = new ApolloServer({
     schema,
-    context: async ({ req, res, connection }) => {
+    context: async({ req, res, connection }) => {
       // For subscriptions
       if (connection) {
         return connection.context;
@@ -44,7 +44,7 @@ function createApolloServer() {
       };
     },
     subscriptions: {
-      onConnect: async (connectionParams) => {
+      onConnect: async(connectionParams) => {
         // Handle authentication for subscriptions
         const token = connectionParams.authorization?.replace('Bearer ', '');
         if (!token) {
@@ -116,11 +116,13 @@ function createApolloServer() {
       }
     ],
     introspection: !config.isProduction,
-    playground: !config.isProduction ? {
-      settings: {
-        'request.credentials': 'include'
+    playground: !config.isProduction
+      ? {
+        settings: {
+          'request.credentials': 'include'
+        }
       }
-    } : false,
+      : false,
     debug: !config.isProduction
   });
 

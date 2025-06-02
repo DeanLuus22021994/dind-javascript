@@ -13,7 +13,7 @@ describe('API Endpoints', () => {
   });
 
   describe('GET /', () => {
-    it('should return application information', async () => {
+    it('should return application information', async() => {
       const response = await request(app)
         .get('/')
         .expect(200);
@@ -28,7 +28,7 @@ describe('API Endpoints', () => {
   });
 
   describe('Health Endpoints', () => {
-    it('should return health status', async () => {
+    it('should return health status', async() => {
       const response = await request(app)
         .get('/health')
         .expect(200);
@@ -38,7 +38,7 @@ describe('API Endpoints', () => {
       expect(response.body).toHaveProperty('memory');
     });
 
-    it('should return detailed health information', async () => {
+    it('should return detailed health information', async() => {
       const response = await request(app)
         .get('/health/detailed')
         .expect(200);
@@ -49,7 +49,7 @@ describe('API Endpoints', () => {
       expect(response.body).toHaveProperty('resources');
     });
 
-    it('should return readiness status', async () => {
+    it('should return readiness status', async() => {
       const response = await request(app)
         .get('/health/ready')
         .expect(200);
@@ -58,7 +58,7 @@ describe('API Endpoints', () => {
       expect(response.body).toHaveProperty('checks');
     });
 
-    it('should return liveness status', async () => {
+    it('should return liveness status', async() => {
       const response = await request(app)
         .get('/health/live')
         .expect(200);
@@ -69,7 +69,7 @@ describe('API Endpoints', () => {
   });
 
   describe('API Endpoints', () => {
-    it('should return API information', async () => {
+    it('should return API information', async() => {
       const response = await request(app)
         .get('/api/info')
         .expect(200);
@@ -79,7 +79,7 @@ describe('API Endpoints', () => {
       expect(response.body).toHaveProperty('environment');
     });
 
-    it('should echo posted data', async () => {
+    it('should echo posted data', async() => {
       const testData = { message: 'Hello, World!', metadata: { test: true } };
 
       const response = await request(app)
@@ -93,7 +93,7 @@ describe('API Endpoints', () => {
       expect(response.body).toHaveProperty('requestId');
     });
 
-    it('should validate echo endpoint input', async () => {
+    it('should validate echo endpoint input', async() => {
       const response = await request(app)
         .post('/api/echo')
         .send({}) // Empty body
@@ -103,7 +103,7 @@ describe('API Endpoints', () => {
       expect(response.body).toHaveProperty('details');
     });
 
-    it('should return paginated data', async () => {
+    it('should return paginated data', async() => {
       const response = await request(app)
         .get('/api/data?page=1&limit=5')
         .expect(200);
@@ -116,7 +116,7 @@ describe('API Endpoints', () => {
       expect(response.body.pagination.limit).toBe(5);
     });
 
-    it('should filter data by search term', async () => {
+    it('should filter data by search term', async() => {
       const response = await request(app)
         .get('/api/data?search=Item 1')
         .expect(200);
@@ -129,7 +129,7 @@ describe('API Endpoints', () => {
       });
     });
 
-    it('should return API status', async () => {
+    it('should return API status', async() => {
       const response = await request(app)
         .get('/api/status')
         .expect(200);
@@ -142,7 +142,7 @@ describe('API Endpoints', () => {
   });
 
   describe('Error Handling', () => {
-    it('should return 404 for non-existent routes', async () => {
+    it('should return 404 for non-existent routes', async() => {
       const response = await request(app)
         .get('/non-existent-route')
         .expect(404);
@@ -153,7 +153,7 @@ describe('API Endpoints', () => {
   });
 
   describe('Security Headers', () => {
-    it('should include security headers', async () => {
+    it('should include security headers', async() => {
       const response = await request(app)
         .get('/')
         .expect(200);
@@ -168,7 +168,7 @@ describe('API Endpoints', () => {
   });
 
   describe('Rate Limiting', () => {
-    it('should include rate limit headers on API routes', async () => {
+    it('should include rate limit headers on API routes', async() => {
       const response = await request(app)
         .get('/api/info')
         .expect(200);

@@ -92,7 +92,7 @@ router.post('/register',
     body('lastName').trim().isLength({ min: 1, max: 50 }).withMessage('Last name is required')
   ],
   handleValidationErrors,
-  async (req, res) => {
+  async(req, res) => {
     try {
       const { email, username, password, firstName, lastName } = req.body;
 
@@ -187,7 +187,7 @@ router.post('/login',
     body('password').notEmpty().withMessage('Password is required')
   ],
   handleValidationErrors,
-  async (req, res) => {
+  async(req, res) => {
     try {
       const { identifier, password } = req.body;
 
@@ -275,7 +275,7 @@ router.post('/login',
  */
 router.post('/logout',
   authService.authenticate(),
-  async (req, res) => {
+  async(req, res) => {
     try {
       // Remove session from Redis
       await redisClient.del(`session:${req.user.userId}`);
@@ -313,7 +313,7 @@ router.post('/logout',
  */
 router.get('/profile',
   authService.authenticate(),
-  async (req, res) => {
+  async(req, res) => {
     try {
       const user = await User.findById(req.user.userId);
       if (!user) {
@@ -355,7 +355,7 @@ router.get('/profile',
  */
 router.post('/refresh',
   authService.authenticate(),
-  async (req, res) => {
+  async(req, res) => {
     try {
       // Generate new token
       const token = authService.generateToken({

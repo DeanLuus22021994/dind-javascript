@@ -15,7 +15,7 @@ const redisClient = require('../utils/redis');
 const { register } = require('../utils/metrics');
 
 // Authentication helper
-const getUser = async (context) => {
+const getUser = async(context) => {
   const token = context.req.headers.authorization?.replace('Bearer ', '');
   if (!token) {
     throw new AuthenticationError('No token provided');
@@ -45,22 +45,24 @@ const resolvers = {
   Date: GraphQLDateTime,
 
   Query: {
-    me: async (_, __, context) => {
+    me: async(_, __, context) => {
       return await getUser(context);
     },
 
-    users: async (_, { limit = 20, offset = 0, search }, context) => {
+    users: async(_, { limit = 20, offset = 0, search }, context) => {
       const user = await getUser(context);
       requireAdmin(user);
 
-      const query = search ? {
-        $or: [
-          { username: { $regex: search, $options: 'i' } },
-          { email: { $regex: search, $options: 'i' } },
-          { firstName: { $regex: search, $options: 'i' } },
-          { lastName: { $regex: search, $options: 'i' } }
-        ]
-      } : {};
+      const query = search
+        ? {
+          $or: [
+            { username: { $regex: search, $options: 'i' } },
+            { email: { $regex: search, $options: 'i' } },
+            { firstName: { $regex: search, $options: 'i' } },
+            { lastName: { $regex: search, $options: 'i' } }
+          ]
+        }
+        : {};
 
       return await User.find(query)
         .skip(offset)
@@ -68,7 +70,7 @@ const resolvers = {
         .sort({ createdAt: -1 });
     },
 
-    user: async (_, { id }, context) => {
+    user: async(_, { id }, context) => {
       const user = await getUser(context);
 
       // Users can only view their own profile unless they're admin
@@ -78,27 +80,24 @@ const resolvers = {
 
       return await User.findById(id);
     },
-
-    files: async (_, { limit = 20, offset = 0 }, context) => {
-      const user = await getUser(context);
+    files: async(_, { limit = 20, offset = 0 }, context) => {
+      await getUser(context); // Verify user authentication
       // Implementation would depend on your file storage system
       // This is a placeholder
       return [];
     },
-
-    file: async (_, { id }, context) => {
-      const user = await getUser(context);
+    file: async(_, { id }, context) => {
+      await getUser(context); // Verify user authentication
       // Implementation would depend on your file storage system
       return null;
     },
-
-    messages: async (_, { room, limit = 50, offset = 0 }, context) => {
-      const user = await getUser(context);
+    messages: async(_, { room, limit = 50, offset = 0 }, context) => {
+      await getUser(context); // Verify user authentication
       // Implementation would depend on your message storage system
       return [];
     },
 
-    health: async () => {
+    health: async() => {
       const memUsage = process.memoryUsage();
 
       return {
@@ -136,11 +135,11 @@ const resolvers = {
       };
     },
 
-    metrics: async () => {
+    metrics: async() => {
       return register.metrics();
     },
 
-    systemStats: async (_, __, context) => {
+    systemStats: async(_, __, context) => {
       const user = await getUser(context);
       requireAdmin(user);
 
@@ -170,7 +169,7 @@ const resolvers = {
   },
 
   Mutation: {
-    register: async (_, { input }) => {
+    register: async(_, { input }) => {
       const { username, email, password, firstName, lastName } = input;
 
       // Check if user already exists
@@ -219,7 +218,7 @@ const resolvers = {
       };
     },
 
-    login: async (_, { input }) => {
+    login: async(_, { input }) => {
       const { email, password } = input;
 
       // Find user
@@ -259,12 +258,12 @@ const resolvers = {
       };
     },
 
-    logout: async (_, __, context) => {
+    logout: async(_, __, context) => {
       // In a real implementation, you might want to blacklist the token
       return true;
     },
 
-    refreshToken: async (_, __, context) => {
+    refreshToken: async(_, __, context) => {
       const refreshToken = context.req.headers['x-refresh-token'];
       if (!refreshToken) {
         throw new AuthenticationError('No refresh token provided');
@@ -301,7 +300,7 @@ const resolvers = {
       }
     },
 
-    updateProfile: async (_, { input }, context) => {
+    updateProfile: async(_, { input }, context) => {
       const user = await getUser(context);
 
       Object.keys(input).forEach(key => {
@@ -318,7 +317,7 @@ const resolvers = {
       return user;
     },
 
-    updatePreferences: async (_, { input }, context) => {
+    updatePreferences: async(_, { input }, context) => {
       const user = await getUser(context);
 
       if (!user.preferences) {
@@ -333,7 +332,7 @@ const resolvers = {
       return user;
     },
 
-    uploadAvatar: async (_, { file }, context) => {
+    uploadAvatar: async(_, { file }, context) => {
       const user = await getUser(context);
 
       try {
@@ -371,7 +370,7 @@ const resolvers = {
       }
     },
 
-    uploadFile: async (_, { file }, context) => {
+    uploadFile: async(_, { file }, context) => {
       const user = await getUser(context);
 
       try {
@@ -408,9 +407,8 @@ const resolvers = {
         throw new UserInputError('Failed to upload file');
       }
     },
-
-    uploadFiles: async (_, { files }, context) => {
-      const user = await getUser(context);
+    uploadFiles: async(_, { files }, context) => {
+      await getUser(context); // Verify user authentication
       const uploadedFiles = [];
 
       for (const file of files) {
@@ -425,7 +423,7 @@ const resolvers = {
       return uploadedFiles;
     },
 
-    sendMessage: async (_, { room, content }, context) => {
+    sendMessage: async(_, { room, content }, context) => {
       const user = await getUser(context);
 
       const message = {
@@ -443,7 +441,7 @@ const resolvers = {
       return message;
     },
 
-    updateUserRole: async (_, { userId, role }, context) => {
+    updateUserRole: async(_, { userId, role }, context) => {
       const currentUser = await getUser(context);
       requireAdmin(currentUser);
 
@@ -458,7 +456,7 @@ const resolvers = {
       return user;
     },
 
-    deactivateUser: async (_, { userId }, context) => {
+    deactivateUser: async(_, { userId }, context) => {
       const currentUser = await getUser(context);
       requireAdmin(currentUser);
 
@@ -473,7 +471,7 @@ const resolvers = {
       return user;
     },
 
-    activateUser: async (_, { userId }, context) => {
+    activateUser: async(_, { userId }, context) => {
       const currentUser = await getUser(context);
       requireAdmin(currentUser);
 
@@ -488,7 +486,7 @@ const resolvers = {
       return user;
     },
 
-    deleteUser: async (_, { userId }, context) => {
+    deleteUser: async(_, { userId }, context) => {
       const currentUser = await getUser(context);
       requireAdmin(currentUser);
 
@@ -506,7 +504,7 @@ const resolvers = {
       subscribe: () => {
         // Placeholder for message subscription
         return {
-          [Symbol.asyncIterator]: async function* () {
+          [Symbol.asyncIterator]: async function * () {
             // Implementation would go here
           }
         };
@@ -516,7 +514,7 @@ const resolvers = {
     userJoined: {
       subscribe: () => {
         return {
-          [Symbol.asyncIterator]: async function* () {
+          [Symbol.asyncIterator]: async function * () {
             // Implementation would go here
           }
         };
@@ -526,7 +524,7 @@ const resolvers = {
     userLeft: {
       subscribe: () => {
         return {
-          [Symbol.asyncIterator]: async function* () {
+          [Symbol.asyncIterator]: async function * () {
             // Implementation would go here
           }
         };
@@ -536,7 +534,7 @@ const resolvers = {
     userTyping: {
       subscribe: () => {
         return {
-          [Symbol.asyncIterator]: async function* () {
+          [Symbol.asyncIterator]: async function * () {
             // Implementation would go here
           }
         };
@@ -546,7 +544,7 @@ const resolvers = {
     systemAlert: {
       subscribe: () => {
         return {
-          [Symbol.asyncIterator]: async function* () {
+          [Symbol.asyncIterator]: async function * () {
             // Implementation would go here
           }
         };

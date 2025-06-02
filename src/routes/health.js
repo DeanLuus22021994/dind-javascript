@@ -75,7 +75,7 @@ router.get('/', (req, res) => {
  *                 system:
  *                   type: object
  */
-router.get('/detailed', async (req, res) => {
+router.get('/detailed', async(req, res) => {
   const startTime = Date.now();
 
   try {
@@ -216,7 +216,7 @@ router.get('/live', (req, res) => {
  *                 timestamp:
  *                   type: string
  */
-router.get('/services', async (req, res) => {
+router.get('/services', async(req, res) => {
   const startTime = Date.now();
 
   try {

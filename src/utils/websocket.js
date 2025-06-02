@@ -28,7 +28,7 @@ class WebSocketServer {
     });
 
     // Authentication middleware
-    this.io.use(async (socket, next) => {
+    this.io.use(async(socket, next) => {
       try {
         const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.replace('Bearer ', '');
 
@@ -139,7 +139,7 @@ class WebSocketServer {
   }
 
   handleJoinRoom(socket, data) {
-    const { room, password } = data;
+    const { room } = data;
 
     if (!room || typeof room !== 'string') {
       return socket.emit('error', { message: 'Invalid room name' });

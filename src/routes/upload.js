@@ -47,7 +47,7 @@ router.post('/single',
   authService.authenticate(),
   uploadMiddleware.single('file'),
   handleUploadError,
-  async (req, res) => {
+  async(req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({
@@ -123,7 +123,7 @@ router.post('/multiple',
   authService.authenticate(),
   uploadMiddleware.array('files', 5),
   handleUploadError,
-  async (req, res) => {
+  async(req, res) => {
     try {
       if (!req.files || req.files.length === 0) {
         return res.status(400).json({
@@ -201,7 +201,7 @@ router.post('/avatar',
   authService.authenticate(),
   uploadMiddleware.single('avatar'),
   handleUploadError,
-  async (req, res) => {
+  async(req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({
