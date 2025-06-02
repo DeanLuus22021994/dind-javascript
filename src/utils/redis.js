@@ -10,6 +10,12 @@ class RedisClient {
 
   async connect() {
     try {
+      // Skip connection if Redis is disabled
+      if (!config.redis.enabled) {
+        logger.info('Redis is disabled, skipping connection');
+        return null;
+      }
+
       if (this.isConnected) {
         logger.info('Redis already connected');
         return this.client;

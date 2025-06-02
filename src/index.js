@@ -34,11 +34,11 @@ async function initializeConnections() {
     // Connect to database
     if (config.database.url) {
       await database.connect();
-    }
-
-    // Connect to Redis
-    if (config.redis.url) {
+    } // Connect to Redis
+    if (config.redis.enabled && config.redis.url) {
       await redisClient.connect();
+    } else {
+      logger.info('Redis disabled or not configured');
     }
 
     // Initialize WebSocket server

@@ -15,11 +15,11 @@ const config = {
     testUrl: process.env.DATABASE_TEST_URL || 'mongodb://localhost:27017/dind-javascript-test',
     useInMemory: process.env.USE_MEMORY_DB === 'true' || (process.env.NODE_ENV === 'development' && !process.env.DATABASE_URL)
   },
-
   // Redis Configuration
   redis: {
     url: process.env.REDIS_URL || 'redis://localhost:6379',
-    password: process.env.REDIS_PASSWORD || ''
+    password: process.env.REDIS_PASSWORD || '',
+    enabled: process.env.ENABLE_REDIS === 'true'
   },
 
   // Security
