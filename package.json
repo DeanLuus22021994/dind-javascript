@@ -1,28 +1,83 @@
 {
   "name": "dind-javascript",
   "version": "1.0.0",
-  "description": "Enhanced Docker-in-Docker JavaScript development environment",
+  "description": "Enhanced Docker-in-Docker JavaScript development environment with full-stack capabilities",
   "main": "src/index.js",
   "scripts": {
     "dev": "nodemon src/index.js",
+    "dev:debug": "nodemon --inspect=0.0.0.0:9229 src/index.js",
     "start": "node src/index.js",
     "build": "docker buildx bake",
     "build:prod": "docker buildx bake app-prod",
     "build:multi": "docker buildx bake app-multi",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "format": "prettier --write src/",
+    "security:audit": "npm audit",
+    "security:check": "npm run security:audit && snyk test",
+    "docs": "apidoc -i src/ -o docs/",
+    "benchmark": "autocannon http://localhost:3000",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f"
   },
   "keywords": [
     "docker",
     "devcontainer",
     "javascript",
+    "nodejs",
+    "express",
+    "api",
+    "microservice",
     "development"
   ],
-  "author": "",
+  "author": "Development Team",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "helmet": "^7.1.0",
+    "cors": "^2.8.5",
+    "morgan": "^1.10.0",
+    "dotenv": "^16.3.1",
+    "express-rate-limit": "^7.1.5",
+    "compression": "^1.7.4",
+    "express-validator": "^7.0.1",
+    "winston": "^3.11.0",
+    "prom-client": "^15.1.0",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.0"
   },
   "devDependencies": {
-    "nodemon": "^3.0.0"
+    "nodemon": "^3.0.0",
+    "jest": "^29.7.0",
+    "supertest": "^6.3.3",
+    "eslint": "^8.55.0",
+    "eslint-config-standard": "^17.1.0",
+    "eslint-plugin-import": "^2.29.0",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^6.1.1",
+    "prettier": "^3.1.0",
+    "autocannon": "^7.12.0",
+    "snyk": "^1.1265.0",
+    "apidoc": "^1.2.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "coverageDirectory": "coverage",
+    "collectCoverageFrom": [
+      "src/**/*.js",
+      "!src/config/*.js"
+    ],
+    "testMatch": [
+      "**/__tests__/**/*.js",
+      "**/?(*.)+(spec|test).js"
+    ]
   }
 }
