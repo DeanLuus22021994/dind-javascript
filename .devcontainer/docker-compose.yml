@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   devcontainer:
     build:
@@ -45,12 +47,12 @@ services:
     networks:
       - devcontainer-network
     ports:
-      - "3000:3000"
-      - "3001:3001"
-      - "4000:4000"
-      - "5000:5000"
-      - "6379:6379"
-      - "9229:9229"
+      - "3000:3000"   # Main app
+      - "3001:3001"   # Secondary app
+      - "4000:4000"   # GraphQL/API
+      - "5000:5000"   # Registry
+      - "8080:8080"   # Alt HTTP
+      - "9229:9229"   # Node.js debugger
     healthcheck:
       test: ["CMD", "docker", "version"]
       interval: 30s
@@ -58,6 +60,9 @@ services:
       retries: 3
       start_period: 40s
     command: sleep infinity
+    depends_on:
+      - buildkit
+      - redis
 
   buildkit:
     image: moby/buildkit:latest
@@ -104,15 +109,46 @@ services:
       - devcontainer-network
     environment:
       - REGISTRY_STORAGE_DELETE_ENABLED=true
+      - REGISTRY_HTTP_HEADERS_Access-Control-Allow-Origin=['*']
+      - REGISTRY_HTTP_HEADERS_Access-Control-Allow-Methods=['HEAD','GET','OPTIONS','DELETE']
+      - REGISTRY_HTTP_HEADERS_Access-Control-Allow-Headers=['Authorization','Accept','Cache-Control']
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5000/v2/"]
       interval: 30s
       timeout: 10s
-      retries: 3volumes:
+      retries: 3
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: dind-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    volumes:
+      - dind-postgres-data:/var/lib/postgresql/data
+      - dind-postgres-init:/docker-entrypoint-initdb.d
+    networks:
+      - devcontainer-network
+    environment:
+      - POSTGRES_DB=devdb
+      - POSTGRES_USER=devuser
+      - POSTGRES_PASSWORD=devpass
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U devuser -d devdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+volumes:
   dind-var-lib-docker:
     driver: local
   dind-buildkit-cache:
     driver: local
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
+      o: size=1G,uid=1000,gid=1000
   dind-docker-cache:
     driver: local
   dind-npm-cache:
@@ -135,21 +171,19 @@ services:
     driver: local
   dind-registry-data:
     driver: local
+  dind-postgres-data:
+    driver: local
+  dind-postgres-init:
+    driver: local
 
 networks:
   devcontainer-network:
     driver: bridge
     ipam:
+      driver: default
       config:
         - subnet: 192.168.100.0/24
-    driver: local
-  dind-yarn-cache:
-    driver: local
-  dind-node-modules:
-    driver: local
-  dind-tmp:
-    driver: local
-
-networks:
-  devcontainer-network:
-    driver: bridge
+          gateway: 192.168.100.1
+    driver_opts:
+      com.docker.network.bridge.name: dind-br0
+      com.docker.network.driver.mtu: 1500
