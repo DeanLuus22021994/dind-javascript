@@ -23,11 +23,11 @@ function requireAdmin(user) {
 
 const resolvers = {
   Query: {
-    me: async(_, __, context) => {
+    me: async (_, __, context) => {
       return await getUser(context);
     },
 
-    users: async(_, { limit = 10, offset = 0 }, context) => {
+    users: async (_, { limit = 10, offset = 0 }, context) => {
       const user = await getUser(context);
 
       // Only admins can view all users
@@ -41,7 +41,7 @@ const resolvers = {
         .sort({ createdAt: -1 });
     },
 
-    user: async(_, { id }, context) => {
+    user: async (_, { id }, context) => {
       const user = await getUser(context);
 
       // Users can only view their own profile unless they're admin
@@ -52,26 +52,26 @@ const resolvers = {
       return await User.findById(id);
     },
 
-    files: async(_, { limit = 20, offset = 0 }, context) => {
+    files: async (_, { limit = 20, offset = 0 }, context) => {
       await getUser(context); // Verify user authentication
       // Implementation would depend on your file storage system
       // This is a placeholder
       return [];
     },
 
-    file: async(_, { id }, context) => {
+    file: async (_, { id }, context) => {
       await getUser(context); // Verify user authentication
       // Implementation would depend on your file storage system
       return null;
     },
 
-    messages: async(_, { room, limit = 50, offset = 0 }, context) => {
+    messages: async (_, { room, limit = 50, offset = 0 }, context) => {
       await getUser(context); // Verify user authentication
       // Implementation would depend on your message storage system
       return [];
     },
 
-    health: async() => {
+    health: async () => {
       const memUsage = process.memoryUsage();
 
       return {
@@ -109,11 +109,11 @@ const resolvers = {
       };
     },
 
-    metrics: async() => {
+    metrics: async () => {
       return register.metrics();
     },
 
-    systemStats: async(_, __, context) => {
+    systemStats: async (_, __, context) => {
       const user = await getUser(context);
       requireAdmin(user);
 
@@ -137,7 +137,7 @@ const resolvers = {
   },
 
   Mutation: {
-    register: async(_, { input }) => {
+    register: async (_, { input }) => {
       const { username, email, password, firstName, lastName } = input;
 
       // Check if user already exists
@@ -166,7 +166,7 @@ const resolvers = {
       };
     },
 
-    login: async(_, { email, password }) => {
+    login: async (_, { email, password }) => {
       // Find user by email
       const user = await User.findOne({ email });
       if (!user) {
@@ -191,7 +191,7 @@ const resolvers = {
       };
     },
 
-    updateProfile: async(_, { input }, context) => {
+    updateProfile: async (_, { input }, context) => {
       const user = await getUser(context);
 
       // Check required fields
@@ -216,7 +216,7 @@ const resolvers = {
       return user;
     },
 
-    changePassword: async(_, { currentPassword, newPassword }, context) => {
+    changePassword: async (_, { currentPassword, newPassword }, context) => {
       const user = await getUser(context);
 
       // Validate current password
@@ -237,7 +237,7 @@ const resolvers = {
       return true;
     },
 
-    deleteAccount: async(_, { password }, context) => {
+    deleteAccount: async (_, { password }, context) => {
       const user = await getUser(context);
 
       // Validate password
@@ -251,8 +251,9 @@ const resolvers = {
       return true;
     },
 
-    uploadFile: async(_, { file }, context) => {
-      const user = await getUser(context);
+    uploadFile: async (_, { file }, context) => {
+      // Get user but mark as unused with comment to avoid linting errors
+      const _user = await getUser(context); // Authentication check only
 
       // This would be implemented with file storage
       return {
@@ -263,7 +264,7 @@ const resolvers = {
       };
     },
 
-    deleteFile: async(_, { id }, context) => {
+    deleteFile: async (_, { id }, context) => {
       await getUser(context);
 
       // This would be implemented with file storage
@@ -282,7 +283,7 @@ const resolvers = {
     messageAdded: {
       subscribe: () => {
         return {
-          [Symbol.asyncIterator]: async function * () {
+          [Symbol.asyncIterator]: async function* () {
             // Implementation would go here
           }
         };
@@ -292,7 +293,7 @@ const resolvers = {
     userTyping: {
       subscribe: () => {
         return {
-          [Symbol.asyncIterator]: async function * () {
+          [Symbol.asyncIterator]: async function* () {
             // Implementation would go here
           }
         };
@@ -302,7 +303,7 @@ const resolvers = {
     systemAlert: {
       subscribe: () => {
         return {
-          [Symbol.asyncIterator]: async function * () {
+          [Symbol.asyncIterator]: async function* () {
             // Implementation would go here
           }
         };

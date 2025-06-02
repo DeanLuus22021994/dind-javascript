@@ -89,7 +89,7 @@ async function requireAuth(req, res, next) {
  * @param {string|string[]} roles - Required role(s) to access the route
  */
 function requireRole(roles) {
-  return async (req, res, next) => {
+  return async(req, res, next) => {
     try {
       // Check if user exists in request (requireAuth should run first)
       if (!req.user) {
