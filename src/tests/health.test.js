@@ -5,6 +5,9 @@ describe('Health Check Routes', () => {
   let app;
 
   beforeAll(() => {
+    // Ensure we're in test environment
+    process.env.NODE_ENV = 'test';
+
     app = express();
     const healthRoutes = require('../routes/health');
     app.use('/api/health', healthRoutes);
@@ -68,9 +71,9 @@ describe('Health Check Routes', () => {
     test('should return service status', async() => {
       const response = await request(app)
         .get('/api/health/services')
-        .expect(200);
+        .expect(200); // Should be 200 in test environment
 
-      expect(response.body).toHaveProperty('status');
+      expect(response.body).toHaveProperty('status', 'healthy'); // Should be healthy in test environment
       expect(response.body).toHaveProperty('timestamp');
       expect(response.body).toHaveProperty('responseTime');
       expect(response.body).toHaveProperty('services');
@@ -80,6 +83,12 @@ describe('Health Check Routes', () => {
       expect(response.body.services).toHaveProperty('redis');
       expect(response.body.services).toHaveProperty('email');
       expect(response.body.services).toHaveProperty('websocket');
+
+      // In test environment, all services should be healthy
+      expect(response.body.services.database.status).toBe('healthy');
+      expect(response.body.services.redis.status).toBe('healthy');
+      expect(response.body.services.email.status).toBe('healthy');
+      expect(response.body.services.websocket.status).toBe('healthy');
     });
   });
 
