@@ -8,26 +8,26 @@ describe('User Model', () => {
 
   describe('User Creation', () => {
     test('should create a new user with valid data', async() => {
-        const userData = {
-          username: 'testuser',
-          email: 'test@example.com',
-          password: 'password123',
-          firstName: 'Test',
-          lastName: 'User'
-        };
-  
-        const user = new User(userData);
-        await user.save();
-  
-        expect(user._id).toBeDefined();
-        expect(user.username).toBe(userData.username);
-        expect(user.email).toBe(userData.email);
-        expect(user.firstName).toBe(userData.firstName);
-        expect(user.lastName).toBe(userData.lastName);
-        expect(user.password).not.toBe(userData.password); // Should be hashed
-        expect(user.isActive).toBe(true);
-        expect(user.roles).toContain('user');
-      });
+      const userData = {
+        username: 'testuser',
+        email: 'test@example.com',
+        password: 'password123',
+        firstName: 'Test',
+        lastName: 'User'
+      };
+
+      const user = new User(userData);
+      await user.save();
+
+      expect(user._id).toBeDefined();
+      expect(user.username).toBe(userData.username);
+      expect(user.email).toBe(userData.email);
+      expect(user.firstName).toBe(userData.firstName);
+      expect(user.lastName).toBe(userData.lastName);
+      expect(user.password).not.toBe(userData.password); // Should be hashed
+      expect(user.isActive).toBe(true);
+      expect(user.roles).toContain('user');
+    });
 
     test('should hash password before saving', async() => {
       const password = 'password123';
@@ -208,6 +208,7 @@ describe('User Model', () => {
 
       expect(error).toBeDefined();
       expect(error.errors.password).toBeDefined();
+    });
   });
 
   describe('User Methods', () => {
@@ -298,4 +299,5 @@ describe('User Model', () => {
       const isMatch = await user.comparePassword('newpassword123');
       expect(isMatch).toBe(true);
     });
+  });
 });
