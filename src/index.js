@@ -343,10 +343,10 @@ async function startServer() {
   return serverInstance;
 }
 
-const server = app.listen(config.port, '0.0.0.0', () => {// Start the server
-  startServer().catch(error => {
-    logger.error('Failed to start server:', error);
-    process.exit(1);
-  });
+// Start the server
+startServer().catch(error => {
+  logger.error('Failed to start server:', error);
+  process.exit(1);
+});
 
-  module.exports = app;
+module.exports = app;
