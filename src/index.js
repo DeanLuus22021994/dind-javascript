@@ -22,11 +22,70 @@ const { register, metricsMiddleware } = require('./utils/metrics');
 const apiRoutes = require('./routes/api');
 const healthRoutes = require('./routes/health');
 const authRoutes = require('./routes/auth');
+const uploadRoutes = require('./routes/upload');
 
 const app = express();
+const server = http.createServer(app);
+
+// Initialize connections
+async function initializeConnections() {
+  try {
+    // Connect to database
+    if (config.database.url) {
+      await database.connect();
+    }
+
+    // Connect to Redis
+    if (config.redis.url) {
+      await redisClient.connect();
+    }
+
+    // Initialize WebSocket server
+    websocketServer.initialize(server);
+
+    logger.info('✅ All connections initialized successfully');
+  } catch (error) {
+    logger.error('Failed to initialize connections:', error);
+    if (config.isProduction) {
+      process.exit(1);
+    }
+  }
+}
 
 // Trust proxy (important for rate limiting behind reverse proxy)
 app.set('trust proxy', 1);
+
+// Cookie parser middleware
+app.use(cookieParser());
+
+// Session configuration
+if (config.redis.url) {
+  const RedisStore = connectRedis(session);
+  app.use(session({
+    store: new RedisStore({ client: redisClient.client }),
+    secret: config.sessionSecret,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: config.isProduction,
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    },
+    name: 'dind.sid'
+  }));
+} else {
+  app.use(session({
+    secret: config.sessionSecret,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: config.isProduction,
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    },
+    name: 'dind.sid'
+  }));
+}
 
 // Security middleware
 app.use(helmet({
@@ -67,8 +126,8 @@ app.use('/api/', limiter);
 app.use(compression());
 
 // Body parsing middleware
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: config.maxRequestSize }));
+app.use(express.urlencoded({ extended: true, limit: config.maxRequestSize }));
 
 // Logging middleware
 app.use(morgan('combined', {
@@ -173,6 +232,8 @@ app.get('/', (req, res) => {
 // Routes
 app.use('/health', healthRoutes);
 app.use('/api', apiRoutes);
+app.use('/auth', authRoutes);
+app.use('/upload', uploadRoutes);
 
 // Metrics endpoint
 if (config.enableMetrics) {
@@ -246,16 +307,46 @@ process.on('unhandledRejection', (reason, promise) => {
   process.exit(1);
 });
 
-const server = app.listen(config.port, '0.0.0.0', () => {
-  logger.info(`🚀 Server running on http://localhost:${config.port}`);
-  logger.info(`📦 Node.js version: ${process.version}`);
-  logger.info(`🌍 Environment: ${config.nodeEnv}`);
-  logger.info(`📚 API Documentation: http://localhost:${config.port}/docs`);
-  logger.info(`💊 Health Check: http://localhost:${config.port}/health`);
+// Start server
+async function startServer() {
+  // Initialize connections first
+  await initializeConnections();
 
-  if (config.enableMetrics) {
-    logger.info(`📊 Metrics: http://localhost:${config.port}/metrics`);
-  }
-});
+  const serverInstance = server.listen(config.port, '0.0.0.0', () => {
+    logger.info(`🚀 Server running on http://localhost:${config.port}`);
+    logger.info(`📦 Node.js version: ${process.version}`);
+    logger.info(`🌍 Environment: ${config.nodeEnv}`);
 
-module.exports = app;
+    if (config.enableSwagger) {
+      logger.info(`📚 API Documentation: http://localhost:${config.port}/docs`);
+    }
+
+    logger.info(`💊 Health Check: http://localhost:${config.port}/health`);
+
+    if (config.enableMetrics) {
+      logger.info(`📊 Metrics: http://localhost:${config.port}/metrics`);
+    }
+
+    if (config.enableWebSocket) {
+      logger.info(`🔌 WebSocket: ws://localhost:${config.port}`);
+    }
+
+    if (config.database.url) {
+      logger.info(`🗄️  Database: Connected`);
+    }
+
+    if (config.redis.url) {
+      logger.info(`🔴 Redis: Connected`);
+    }
+  });
+
+  return serverInstance;
+}
+
+const server = app.listen(config.port, '0.0.0.0', () => {// Start the server
+  startServer().catch(error => {
+    logger.error('Failed to start server:', error);
+    process.exit(1);
+  });
+
+  module.exports = app;

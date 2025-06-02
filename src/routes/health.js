@@ -1,6 +1,10 @@
 const express = require('express');
 const logger = require('../utils/logger');
 const config = require('../config');
+const database = require('../utils/database');
+const redisClient = require('../utils/redis');
+const emailService = require('../utils/email');
+const websocketServer = require('../utils/websocket');
 
 const router = express.Router();
 
@@ -191,6 +195,64 @@ router.get('/live', (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /health/services:
+ *   get:
+ *     summary: Check status of all integrated services
+ *     tags: [Health]
+ *     responses:
+ *       200:
+ *         description: Service status information
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                 services:
+ *                   type: object
+ *                 timestamp:
+ *                   type: string
+ */
+router.get('/services', async (req, res) => {
+  const startTime = Date.now();
+
+  try {
+    const serviceChecks = await Promise.allSettled([
+      checkDatabaseStatus(),
+      checkRedisStatus(),
+      checkEmailServiceStatus(),
+      checkWebSocketStatus()
+    ]);
+
+    const services = {
+      database: serviceChecks[0].status === 'fulfilled' ? serviceChecks[0].value : { status: 'error', error: serviceChecks[0].reason?.message },
+      redis: serviceChecks[1].status === 'fulfilled' ? serviceChecks[1].value : { status: 'error', error: serviceChecks[1].reason?.message },
+      email: serviceChecks[2].status === 'fulfilled' ? serviceChecks[2].value : { status: 'error', error: serviceChecks[2].reason?.message },
+      websocket: serviceChecks[3].status === 'fulfilled' ? serviceChecks[3].value : { status: 'error', error: serviceChecks[3].reason?.message }
+    };
+
+    const allHealthy = Object.values(services).every(service => service.status === 'healthy');
+    const responseTime = Date.now() - startTime;
+
+    res.json({
+      status: allHealthy ? 'healthy' : 'degraded',
+      services,
+      responseTime: `${responseTime}ms`,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error('Service status check failed:', error);
+    res.status(500).json({
+      status: 'error',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // Health check functions
 function checkMemoryUsage() {
   const memoryUsage = process.memoryUsage();
@@ -287,6 +349,85 @@ function checkLiveness() {
   const alive = Object.values(checks).every(check => check);
 
   return { alive, checks };
+}
+
+// Service check functions
+async function checkDatabaseStatus() {
+  try {
+    const dbStatus = database.getStatus();
+    return {
+      status: dbStatus.isConnected ? 'healthy' : 'unhealthy',
+      connected: dbStatus.isConnected,
+      readyState: dbStatus.readyState,
+      host: dbStatus.host,
+      port: dbStatus.port,
+      name: dbStatus.name
+    };
+  } catch (error) {
+    return {
+      status: 'error',
+      error: error.message
+    };
+  }
+}
+
+async function checkRedisStatus() {
+  try {
+    const redisStatus = redisClient.getStatus();
+    return {
+      status: redisStatus.isConnected ? 'healthy' : 'unhealthy',
+      connected: redisStatus.isConnected,
+      client: redisStatus.client
+    };
+  } catch (error) {
+    return {
+      status: 'error',
+      error: error.message
+    };
+  }
+}
+
+async function checkEmailServiceStatus() {
+  try {
+    const emailStatus = emailService.getStatus();
+    return {
+      status: emailStatus.isConfigured ? 'healthy' : 'not-configured',
+      configured: emailStatus.isConfigured,
+      host: emailStatus.host,
+      port: emailStatus.port,
+      user: emailStatus.user
+    };
+  } catch (error) {
+    return {
+      status: 'error',
+      error: error.message
+    };
+  }
+}
+
+async function checkWebSocketStatus() {
+  try {
+    if (!config.enableWebSocket) {
+      return {
+        status: 'disabled',
+        enabled: false
+      };
+    }
+
+    const wsStats = websocketServer.getStats();
+    return {
+      status: 'healthy',
+      enabled: true,
+      connectedUsers: wsStats.connectedUsers,
+      authenticatedUsers: wsStats.authenticatedUsers,
+      activeRooms: wsStats.activeRooms
+    };
+  } catch (error) {
+    return {
+      status: 'error',
+      error: error.message
+    };
+  }
 }
 
 module.exports = router;
