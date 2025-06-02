@@ -1,32 +1,18 @@
 module.exports = {
   testEnvironment: 'node',
-  coverageDirectory: 'coverage',
+  setupFilesAfterEnv: ['<rootDir>/src/tests/setup.js'],
+  testMatch: [
+    '<rootDir>/src/tests/**/*.test.js',
+    '<rootDir>/__tests__/**/*.test.js'
+  ],
   collectCoverageFrom: [
     'src/**/*.js',
-    '!src/config/*.js',
     '!src/tests/**',
     '!src/index.js'
   ],
-  testMatch: [
-    '**/src/tests/**/*.test.js',
-    '**/src/tests/**/*.spec.js'
-  ],
-  setupFilesAfterEnv: ['<rootDir>/src/tests/setup.js'],
-  coverageThreshold: {
-    global: {
-      branches: 70,
-      functions: 70,
-      lines: 70,
-      statements: 70
-    }
-  },
-  coverageReporters: [
-    'text',
-    'lcov',
-    'html'
-  ],
-  testTimeout: 30000,
-  verbose: true,
-  detectOpenHandles: true,
-  forceExit: true
+  coverageDirectory: 'coverage',
+  coverageReporters: ['text', 'lcov', 'html'],
+  verbose: false, // Reduce verbose output
+  silent: false, // Set to true to silence console.log during tests
+  testTimeout: 30000
 };

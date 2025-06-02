@@ -1,78 +1,78 @@
-const dotenv = require('dotenv');
-
-// Load environment variables
-dotenv.config();
-
 const config = {
-  // Server Configuration
-  port: process.env.PORT || 3000,
+  port: parseInt(process.env.PORT, 10) || 3000,
   nodeEnv: process.env.NODE_ENV || 'development',
+  isProduction: process.env.NODE_ENV === 'production',
+  isDevelopment: process.env.NODE_ENV === 'development',
+  isTest: process.env.NODE_ENV === 'test',
 
-  // Database Configuration
-  database: {
-    url: process.env.DATABASE_URL || 'mongodb://localhost:27017/dind-javascript',
-    options: {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-      maxPoolSize: 10,
-      serverSelectionTimeoutMS: 5000
-    }
-  },
+  // Database
+  databaseUrl: process.env.DATABASE_URL || 'mongodb://localhost:27017/dind-javascript',
 
-  // JWT Configuration
+  // Redis
+  redisUrl: process.env.REDIS_URL || 'redis://localhost:6379',
+
+  // JWT
   jwtSecret: process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production',
-  jwtExpiresIn: process.env.JWT_EXPIRES_IN || '24h', // Fixed: should be string format
-
-  // Redis Configuration
-  redis: {
-    host: process.env.REDIS_HOST || 'localhost',
-    port: process.env.REDIS_PORT || 6379,
-    password: process.env.REDIS_PASSWORD || null,
-    db: process.env.REDIS_DB || 0
-  },
+  jwtExpiresIn: process.env.JWT_EXPIRES_IN || '24h',
 
   // Rate Limiting
-  rateLimit: {
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100 // requests per windowMs
-  },
+  rateLimitWindowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 15 * 60 * 1000, // 15 minutes
+  rateLimitMaxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS, 10) || 100,
 
-  // File Upload Configuration
-  upload: {
-    maxFileSize: 5 * 1024 * 1024, // 5MB
-    allowedTypes: ['image/jpeg', 'image/png', 'image/gif', 'application/pdf', 'text/plain'],
-    uploadDir: process.env.UPLOAD_DIR || 'uploads'
-  },
+  // Logging
+  logLevel: process.env.LOG_LEVEL || (process.env.NODE_ENV === 'test' ? 'error' : 'info'),
 
-  // CORS Configuration
-  cors: {
-    origin: process.env.CORS_ORIGIN || '*',
-    credentials: true
-  },
+  // CORS
+  corsOrigin: process.env.CORS_ORIGIN || '*',
 
-  // Session Configuration
-  session: {
-    secret: process.env.SESSION_SECRET || 'your-session-secret-change-in-production',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: process.env.NODE_ENV === 'production',
-      httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
-    }
-  },
+  // Session
+  sessionSecret: process.env.SESSION_SECRET || 'your-session-secret-change-in-production',
 
-  // Security Headers
-  security: {
+  // Email
+  emailProvider: process.env.EMAIL_PROVIDER || 'console', // console, smtp, ses
+  emailFrom: process.env.EMAIL_FROM || 'noreply@example.com',
+  smtpHost: process.env.SMTP_HOST,
+  smtpPort: parseInt(process.env.SMTP_PORT, 10) || 587,
+  smtpUser: process.env.SMTP_USER,
+  smtpPass: process.env.SMTP_PASS,
+
+  // File Upload
+  uploadMaxSize: parseInt(process.env.UPLOAD_MAX_SIZE, 10) || 5 * 1024 * 1024, // 5MB
+  uploadAllowedTypes: (process.env.UPLOAD_ALLOWED_TYPES || '.jpg,.jpeg,.png,.gif,.pdf,.txt,.doc,.docx,.xls,.xlsx').split(','),
+
+  // Monitoring
+  enableMetrics: process.env.ENABLE_METRICS === 'true',
+  metricsPort: parseInt(process.env.METRICS_PORT, 10) || 9090,
+
+  // Security
+  helmetOptions: {
     contentSecurityPolicy: {
-      useDefaults: true,
       directives: {
-        'default-src': ['\'self\''],
-        'script-src': ['\'self\'', '\'unsafe-inline\''],
-        'style-src': ['\'self\'', '\'unsafe-inline\''],
-        'img-src': ['\'self\'', 'data:', 'https:']
+        defaultSrc: ['\'self\''],
+        scriptSrc: ['\'self\'', '\'unsafe-inline\''],
+        styleSrc: ['\'self\'', '\'unsafe-inline\''],
+        imgSrc: ['\'self\'', 'data:', 'https:']
       }
     }
+  },
+
+  // API Documentation
+  swaggerOptions: {
+    definition: {
+      openapi: '3.0.0',
+      info: {
+        title: 'DIND JavaScript API',
+        version: '1.0.0',
+        description: 'Docker-in-Docker JavaScript Environment API'
+      },
+      servers: [
+        {
+          url: process.env.API_BASE_URL || `http://localhost:${parseInt(process.env.PORT, 10) || 3000}`,
+          description: 'Development server'
+        }
+      ]
+    },
+    apis: ['./src/routes/*.js'] // paths to files containing OpenAPI definitions
   }
 };
 

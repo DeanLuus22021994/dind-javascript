@@ -146,7 +146,10 @@ userSchema.pre('save', async function(next) {
     const salt = await bcrypt.genSalt(12);
     this.password = await bcrypt.hash(this.password, salt);
 
-    logger.info(`Password hashed for user: ${this.email}`);
+    // Only log in non-test environments to reduce test noise
+    if (process.env.NODE_ENV !== 'test') {
+      logger.info(`Password hashed for user: ${this.email}`);
+    }
     next();
   } catch (error) {
     logger.error('Error hashing password:', error);
