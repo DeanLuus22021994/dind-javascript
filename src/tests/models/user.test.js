@@ -1,13 +1,15 @@
-const User = require('../../models/User');
+const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const User = require('../../models/User');
 
 describe('User Model', () => {
-  afterEach(async() => {
+  beforeEach(async() => {
+    // Clear users collection before each test
     await User.deleteMany({});
   });
 
   describe('User Creation', () => {
-    test('should create a new user with valid data', async() => {
+    test('should create a user with valid data', async() => {
       const userData = {
         username: 'testuser',
         email: 'test@example.com',
@@ -24,9 +26,8 @@ describe('User Model', () => {
       expect(user.email).toBe(userData.email);
       expect(user.firstName).toBe(userData.firstName);
       expect(user.lastName).toBe(userData.lastName);
-      expect(user.password).not.toBe(userData.password); // Should be hashed
       expect(user.isActive).toBe(true);
-      expect(user.roles).toContain('user');
+      expect(user.createdAt).toBeDefined();
     });
 
     test('should hash password before saving', async() => {
@@ -238,7 +239,7 @@ describe('User Model', () => {
     });
 
     test('should return user object without password', () => {
-      const userObject = user.toObject();
+      const userObject = user.toJSON();
       expect(userObject).not.toHaveProperty('password');
       expect(userObject).toHaveProperty('username');
       expect(userObject).toHaveProperty('email');

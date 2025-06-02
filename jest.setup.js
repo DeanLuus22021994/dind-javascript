@@ -21,3 +21,6 @@ afterAll(() => {
 
 // Increase timeout for database operations
 jest.setTimeout(30000);
+
+// Setup test database and cleanup
+require('./src/tests/test-setup.js');

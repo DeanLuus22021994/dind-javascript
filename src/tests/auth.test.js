@@ -14,7 +14,7 @@ describe('Authentication Routes', () => {
     app.use('/api/auth', authRoutes);
   });
 
-  afterEach(async() => {
+  beforeEach(async() => {
     await User.deleteMany({});
   });
 
