@@ -20,6 +20,7 @@ module.exports = {
     indent: ['error', 2],
     'comma-dangle': ['error', 'never'],
     'space-before-function-paren': ['error', 'never'],
+    'generator-star-spacing': ['error', { before: false, after: true }],
     'no-trailing-spaces': 'error',
     'eol-last': 'error',
     'no-multiple-empty-lines': ['error', { max: 2, maxEOF: 1 }],
