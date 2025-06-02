@@ -284,7 +284,7 @@ const resolvers = {
     messageAdded: {
       subscribe: () => {
         return {
-          [Symbol.asyncIterator]: async function * () {
+          [Symbol.asyncIterator]: async function* () {
             // Implementation would go here
           }
         };
@@ -294,7 +294,7 @@ const resolvers = {
     userTyping: {
       subscribe: () => {
         return {
-          [Symbol.asyncIterator]: async function * () {
+          [Symbol.asyncIterator]: async function* () {
             // Implementation would go here
           }
         };
@@ -304,7 +304,7 @@ const resolvers = {
     systemAlert: {
       subscribe: () => {
         return {
-          [Symbol.asyncIterator]: async function * () {
+          [Symbol.asyncIterator]: async function* () {
             // Implementation would go here
           }
         };
