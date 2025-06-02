@@ -5,6 +5,7 @@ This is a comprehensive Docker-in-Docker development environment optimized for J
 ## 🚀 Features
 
 ### Core Services
+
 - **Docker in Docker** - Full Docker daemon with BuildKit support
 - **BuildKit** - Advanced build caching and multi-platform builds
 - **Redis** - In-memory data store for caching and sessions
@@ -12,6 +13,7 @@ This is a comprehensive Docker-in-Docker development environment optimized for J
 - **Docker Registry** - Local container registry for testing
 
 ### Development Tools
+
 - **Node.js 20** with npm and yarn
 - **TypeScript** support with ts-node
 - **Testing frameworks** (Jest, Mocha, Cypress, Playwright)
@@ -20,6 +22,7 @@ This is a comprehensive Docker-in-Docker development environment optimized for J
 - **Monitoring tools** (ctop, lazydocker)
 
 ### VS Code Extensions (30+)
+
 - Language support (JavaScript, TypeScript, JSON, YAML, Markdown)
 - Docker and Kubernetes tools
 - Database tools (PostgreSQL, Redis)
@@ -29,7 +32,7 @@ This is a comprehensive Docker-in-Docker development environment optimized for J
 
 ## 🏗️ Architecture
 
-```
+```structure
 ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
 │   DevContainer  │  │    BuildKit     │  │      Redis      │
 │                 │  │                 │  │                 │
@@ -52,22 +55,26 @@ This is a comprehensive Docker-in-Docker development environment optimized for J
 ## 🚀 Quick Start
 
 ### 1. Open in VS Code
+
 ```bash
 code .
 # VS Code will prompt to reopen in container
 ```
 
 ### 2. Check Environment Status
+
 ```bash
 ./dev-status.sh
 ```
 
 ### 3. Run Health Checks
+
 ```bash
 health
 ```
 
 ### 4. Start Development
+
 ```bash
 npm install
 npm run dev
@@ -77,11 +84,11 @@ npm run dev
 
 | Service     | Port | Purpose             | Connection             |
 | ----------- | ---- | ------------------- | ---------------------- |
-| Main App    | 3000 | Application server  | http://localhost:3000  |
-| Secondary   | 3001 | Additional services | http://localhost:3001  |
-| API/GraphQL | 4000 | API endpoint        | http://localhost:4000  |
-| Registry    | 5000 | Docker registry     | http://localhost:5000  |
-| Alt HTTP    | 8080 | Alternative HTTP    | http://localhost:8080  |
+| Main App    | 3000 | Application server  | <http://localhost:3000>  |
+| Secondary   | 3001 | Additional services | <http://localhost:3001>  |
+| API/GraphQL | 4000 | API endpoint        | <http://localhost:4000>  |
+| Registry    | 5000 | Docker registry     | <http://localhost:5000>  |
+| Alt HTTP    | 8080 | Alternative HTTP    | <http://localhost:8080>  |
 | Node Debug  | 9229 | Node.js debugger    | localhost:9229         |
 | Redis       | 6379 | Cache/Sessions      | redis-cli -h localhost |
 | PostgreSQL  | 5432 | Database            | psql-dev               |
@@ -89,6 +96,7 @@ npm run dev
 ## 🛠️ Development Commands
 
 ### Package Management
+
 ```bash
 npm install              # Install dependencies
 npm start               # Start application
@@ -98,6 +106,7 @@ npm run test:coverage   # Run tests with coverage
 ```
 
 ### Docker Commands
+
 ```bash
 dc up                   # Start all services
 dc down                 # Stop all services
@@ -107,12 +116,14 @@ dps                     # Formatted docker ps
 ```
 
 ### Database Commands
+
 ```bash
 psql-dev                # Connect to PostgreSQL
 redis-cli               # Connect to Redis
 ```
 
 ### Build Commands
+
 ```bash
 docker buildx bake      # Build with cache
 build-local            # Build and load locally
@@ -122,16 +133,19 @@ push-local             # Push to local registry
 ## 📊 Monitoring
 
 ### View Environment Status
+
 ```bash
 ./dev-status.sh
 ```
 
 ### Health Checks
+
 ```bash
 health                  # Run all health checks
 ```
 
 ### Service Logs
+
 ```bash
 dc logs -f             # Follow all logs
 dc logs redis          # View Redis logs
@@ -140,6 +154,7 @@ logs-error             # View error logs
 ```
 
 ### Resource Monitoring
+
 ```bash
 ctop                   # Container top
 lazydocker            # Docker TUI
@@ -149,6 +164,7 @@ htop                  # System monitor
 ## 🗄️ Data Persistence
 
 ### Volumes
+
 - `dind-var-lib-docker` - Docker daemon data
 - `dind-buildkit-cache` - Build cache (tmpfs for performance)
 - `dind-npm-cache` - npm package cache
@@ -160,6 +176,7 @@ htop                  # System monitor
 - `dind-registry-data` - Docker registry data
 
 ### Cache Locations
+
 - npm: `/cache/npm`
 - Yarn: `/cache/yarn`
 - BuildKit: `/cache/buildkit`
@@ -176,6 +193,7 @@ htop                  # System monitor
 ## 🧪 Testing
 
 ### Unit Tests
+
 ```bash
 npm test                # Run all tests
 npm run test:watch      # Watch mode
@@ -183,6 +201,7 @@ npm run test:coverage   # With coverage
 ```
 
 ### Integration Tests
+
 ```bash
 # Database tests
 npm run test:db
@@ -195,6 +214,7 @@ npm run test:api
 ```
 
 ### End-to-End Tests
+
 ```bash
 # Cypress
 npx cypress open
@@ -206,16 +226,19 @@ npx playwright test
 ## 🚀 Performance Optimizations
 
 ### Build Cache
+
 - BuildKit cache mounted as tmpfs
 - Multi-layer caching strategy
 - Persistent npm/yarn caches
 
 ### Network Optimization
+
 - Custom bridge network
 - Optimized MTU settings
 - Service discovery via container names
 
 ### Resource Limits
+
 - Redis memory limit (256MB)
 - Optimized PostgreSQL settings
 - Efficient log rotation
@@ -223,12 +246,14 @@ npx playwright test
 ## 📚 Documentation
 
 ### Configuration Files
+
 - `.devcontainer/devcontainer.json` - Main configuration
 - `.devcontainer/docker-compose.yml` - Service definitions
 - `.devcontainer/Dockerfile` - Container image
 - `docker-bake.hcl` - Build configuration
 
 ### Scripts
+
 - `.devcontainer/setup.sh` - Initial setup
 - `.devcontainer/post-start.sh` - Post-start configuration
 - `scripts/health-check.sh` - Health monitoring
@@ -237,7 +262,9 @@ npx playwright test
 ## 🔧 Customization
 
 ### Override Services
+
 Create `docker-compose.override.yml`:
+
 ```yaml
 version: '3.8'
 services:
@@ -248,14 +275,18 @@ services:
 ```
 
 ### Add Custom Tools
+
 Edit `.devcontainer/Dockerfile`:
+
 ```dockerfile
 # Add your custom tools
 RUN apt-get update && apt-get install -y your-tool
 ```
 
 ### Environment Variables
+
 Add to `.devcontainer/devcontainer.json`:
+
 ```json
 {
   "remoteEnv": {
@@ -269,23 +300,27 @@ Add to `.devcontainer/devcontainer.json`:
 ### Common Issues
 
 #### Services not starting
+
 ```bash
 dc down && dc up -d
 health
 ```
 
 #### Build cache issues
+
 ```bash
 docker buildx prune
 docker system prune -f
 ```
 
 #### Permission issues
+
 ```bash
 sudo chown -R vscode:vscode /workspace
 ```
 
 #### Network connectivity
+
 ```bash
 docker network ls
 docker network inspect dind-javascript_devcontainer-network
@@ -294,16 +329,19 @@ docker network inspect dind-javascript_devcontainer-network
 ### Logs and Debugging
 
 #### Service logs
+
 ```bash
 dc logs service-name
 ```
 
 #### Container inspection
+
 ```bash
 docker inspect container-name
 ```
 
 #### Network debugging
+
 ```bash
 docker exec devcontainer ping redis
 docker exec devcontainer nslookup postgres
@@ -312,6 +350,7 @@ docker exec devcontainer nslookup postgres
 ## 🆘 Support
 
 For issues or improvements:
+
 1. Check logs: `dc logs`
 2. Run health checks: `health`
 3. View environment: `./dev-status.sh`
