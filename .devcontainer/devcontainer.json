@@ -134,7 +134,7 @@
           "typescriptreact"
         ],
         "npm.packageManager": "npm",
-        "jest.autoRun": "watch",
+        "jest.runMode": "watch",
         "rest-client.environmentVariables": {
           "$shared": {
             "baseUrl": "http://localhost:3000"

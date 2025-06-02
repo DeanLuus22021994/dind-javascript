@@ -55,7 +55,7 @@ wait_for_service() {
 
     print_status "$YELLOW" "$GEAR" "Waiting for $service on $host:$port..."
 
-    for i in $(seq 1 $timeout); do
+    for _ in $(seq 1 "$timeout"); do
         if nc -z "$host" "$port" 2>/dev/null; then
             print_status "$GREEN" "$SUCCESS" "$service is ready!"
             return 0
@@ -72,7 +72,8 @@ check_docker() {
     print_status "$BLUE" "$DOCKER" "Checking Docker status..."
 
     if docker info >/dev/null 2>&1; then
-        local version=$(docker version --format '{{.Server.Version}}')
+        local version
+        version=$(docker version --format '{{.Server.Version}}')
         print_status "$GREEN" "$SUCCESS" "Docker daemon is running (version: $version)"
 
         # Check BuildKit
@@ -187,9 +188,7 @@ SELECT 'Posts' as table_name, count(*) as records FROM posts
 UNION ALL
 SELECT 'Sessions' as table_name, count(*) as records FROM sessions;
 EOF
-
-    if [ $? -eq 0 ]; then
-        print_status "$GREEN" "$SUCCESS" "Development database setup complete"
+    if print_status "$GREEN" "$SUCCESS" "Development database setup complete"; then
         return 0
     else
         print_status "$RED" "$ERROR" "Failed to setup development database"
@@ -217,8 +216,7 @@ SET cache:health "ok"
 EXPIRE cache:health 300
 EOF
 
-    if [ $? -eq 0 ]; then
-        print_status "$GREEN" "$SUCCESS" "Redis cache setup complete"
+    if print_status "$GREEN" "$SUCCESS" "Redis cache setup complete"; then
         return 0
     else
         print_status "$RED" "$ERROR" "Failed to setup Redis cache"
@@ -235,21 +233,25 @@ install_dependencies() {
 
     print_status "$BLUE" "$PACKAGE" "Installing project dependencies..."
 
-    cd /workspace
+    cd /workspace || return
 
     # Choose package manager
     if [ -f "yarn.lock" ]; then
         print_status "$BLUE" "$INFO" "Using Yarn..."
         yarn install --cache-folder /cache/yarn
+        result=$?
     elif [ -f "package-lock.json" ]; then
         print_status "$BLUE" "$INFO" "Using npm..."
         npm install --cache /cache/npm
+        result=$?
     else
         print_status "$BLUE" "$INFO" "Using npm (no lock file found)..."
         npm install --cache /cache/npm
+        result=$?
     fi
 
-    if [ $? -eq 0 ]; then
+    if [ $result -eq 0 ]; then
+    if [ $result -eq 0 ]; then
         print_status "$GREEN" "$SUCCESS" "Dependencies installed successfully"
         return 0
     else
@@ -291,9 +293,10 @@ dev_cleanup() {
     print_status "$GREEN" "$SUCCESS" "Cleanup complete!"
 }
 
-# Function to backup development data
+# Function to backup development environment
 dev_backup() {
-    local backup_dir="/workspace/backups/$(date +%Y%m%d_%H%M%S)"
+    local backup_dir
+    backup_dir="/workspace/backups/$(date +%Y%m%d_%H%M%S)"
     mkdir -p "$backup_dir"
 
     print_status "$BLUE" "$GEAR" "Creating backup in $backup_dir..."
@@ -309,7 +312,6 @@ dev_backup() {
 
     print_status "$GREEN" "$SUCCESS" "Backup created in $backup_dir"
 }
-
 # Export functions for use in other scripts
 export -f print_status
 export -f check_service
