@@ -10,7 +10,7 @@ const logger = require('../utils/logger');
  */
 router.get('/', (req, res) => {
   const healthData = {
-    status: 'ok',  // Changed from 'healthy' to 'ok' to match test expectations
+    status: 'ok', // Changed from 'healthy' to 'ok' to match test expectations
     timestamp: new Date().toISOString(),
     uptime: `${Math.floor(process.uptime())}s`,
     version: process.env.npm_package_version || '1.0.0'
@@ -249,26 +249,9 @@ function checkReadiness() {
     environment: !!config.nodeEnv
   };
 
-  const ready = Object.values(checks).every(check => check);
+  const ready = Object.values(checks).every(Boolean);
 
   return { ready, checks };
-}
-
-function checkLiveness() {
-  // Application is alive if:
-  // 1. It can respond to requests
-  // 2. Event loop is not blocked
-  // 3. Memory pressure is not critical
-
-  const checks = {
-    responding: true,
-    eventLoop: true, // We'd need more sophisticated checks for production
-    memoryPressure: process.memoryUsage().heapUsed / process.memoryUsage().heapTotal < 0.95
-  };
-
-  const alive = Object.values(checks).every(check);
-
-  return { status: alive ? 'alive' : 'dead', checks };
 }
 
 // Service check functions
