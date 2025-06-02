@@ -1,3 +1,4 @@
+/* Resuming problem checks */
 const mongoose = require('mongoose');
 const logger = require('./logger');
 const config = require('../config');
@@ -16,8 +17,8 @@ class Database {
       }
 
       const dbUrl = config.isTesting ? config.database.testUrl : config.database.url;
-
-      logger.info(`Connecting to database: ${dbUrl.replace(/\/\/.*@/, '//***:***@')}`);      // Connection options
+      logger.info(`Connecting to database: ${dbUrl.replace(/\/\/.*@/, '//***:***@')}`); // Connection options
+      logger.info(`Connecting to database: ${dbUrl.replace(/\/\/.*@/, '//***:***@')}`); // Connection options
       const options = {
         maxPoolSize: 10,
         serverSelectionTimeoutMS: 5000,
