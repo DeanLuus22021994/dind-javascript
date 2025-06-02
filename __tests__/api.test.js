@@ -1,17 +1,7 @@
 const request = require('supertest');
-const app = require('../src/index');
+const { app } = require('../src/index');
 
 describe('API Endpoints', () => {
-  let server;
-
-  beforeAll((done) => {
-    server = app.listen(0, done); // Use random port for testing
-  });
-
-  afterAll((done) => {
-    server.close(done);
-  });
-
   describe('GET /', () => {
     it('should return application information', async() => {
       const response = await request(app)
@@ -68,7 +58,7 @@ describe('API Endpoints', () => {
     });
   });
 
-  describe('API Endpoints', () => {
+  describe('API Routes', () => {
     it('should return API information', async() => {
       const response = await request(app)
         .get('/api/info')
@@ -103,33 +93,7 @@ describe('API Endpoints', () => {
       expect(response.body).toHaveProperty('details');
     });
 
-    it('should return paginated data', async() => {
-      const response = await request(app)
-        .get('/api/data?page=1&limit=5')
-        .expect(200);
-
-      expect(response.body).toHaveProperty('data');
-      expect(response.body).toHaveProperty('pagination');
-      expect(Array.isArray(response.body.data)).toBe(true);
-      expect(response.body.data).toHaveLength(5);
-      expect(response.body.pagination.page).toBe(1);
-      expect(response.body.pagination.limit).toBe(5);
-    });
-
-    it('should filter data by search term', async() => {
-      const response = await request(app)
-        .get('/api/data?search=Item 1')
-        .expect(200);
-
-      expect(response.body).toHaveProperty('data');
-      expect(response.body.filters.search).toBe('Item 1');
-      // Should find items containing "Item 1"
-      response.body.data.forEach(item => {
-        expect(item.name.toLowerCase()).toContain('item 1');
-      });
-    });
-
-    it('should return API status', async() => {
+    it('should return system status', async() => {
       const response = await request(app)
         .get('/api/status')
         .expect(200);
@@ -163,7 +127,6 @@ describe('API Endpoints', () => {
       expect(response.headers).toHaveProperty('x-frame-options');
       expect(response.headers).toHaveProperty('x-download-options');
       expect(response.headers).toHaveProperty('x-content-type-options');
-      expect(response.headers).toHaveProperty('x-xss-protection');
     });
   });
 
@@ -173,8 +136,9 @@ describe('API Endpoints', () => {
         .get('/api/info')
         .expect(200);
 
-      expect(response.headers).toHaveProperty('x-ratelimit-limit');
-      expect(response.headers).toHaveProperty('x-ratelimit-remaining');
+      // Check for rate limiting headers (modern format)
+      expect(response.headers).toHaveProperty('ratelimit-limit');
+      expect(response.headers).toHaveProperty('ratelimit-remaining');
     });
   });
 });

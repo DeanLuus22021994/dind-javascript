@@ -8,7 +8,6 @@ const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 const cookieParser = require('cookie-parser');
 const session = require('express-session');
-// (removed unused connect-redis import)
 const http = require('http');
 
 const config = require('./config');
@@ -32,11 +31,17 @@ const server = http.createServer(app);
 async function initializeConnections() {
   try {
     // Connect to database
-    if (config.database.url) {
+    if (config.database && config.database.url) {
       await database.connect();
-    } // Connect to Redis
-    if (config.redis.enabled && config.redis.url) {
+    } else if (config.databaseUrl) {
+      await database.connect();
+    }
+
+    // Connect to Redis
+    if (config.redis && config.redis.enabled && config.redis.url) {
       await redisClient.connect();
+    } else if (config.redisUrl) {
+      logger.info('Redis configuration found but not enabled');
     } else {
       logger.info('Redis disabled or not configured');
     }
@@ -53,62 +58,26 @@ async function initializeConnections() {
   }
 }
 
-// Trust proxy (important for rate limiting behind reverse proxy)
-app.set('trust proxy', 1);
-
-// Cookie parser middleware
-app.use(cookieParser());
-
-// Session configuration
-// Note: Redis sessions temporarily disabled due to connect-redis version compatibility
-// if (config.redis.url) {
-//   const RedisStore = connectRedis.default || connectRedis;
-//   app.use(session({
-//     store: new RedisStore({ client: redisClient.client }),
-//     secret: config.sessionSecret,
-//     resave: false,
-//     saveUninitialized: false,
-//     cookie: {
-//       secure: config.isProduction,
-//       httpOnly: true,
-//       maxAge: 24 * 60 * 60 * 1000 // 24 hours
-//     },
-//     name: 'dind.sid'
-//   }));
-// } else {
-app.use(session({
-  secret: config.sessionSecret,
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: config.isProduction,
-    httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
-  },
-  name: 'dind.sid'
-}));
-// }
-
 // Security middleware
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ['\'self\''],
-      styleSrc: ['\'self\'', '\'unsafe-inline\'', 'fonts.googleapis.com'],
-      fontSrc: ['\'self\'', 'fonts.gstatic.com'],
-      scriptSrc: ['\'self\''],
-      imgSrc: ['\'self\'', 'data:', 'https:']
-    }
-  }
+app.use(helmet(config.helmetOptions));
+
+// CORS
+app.use(cors({
+  origin: config.corsOrigin,
+  credentials: true
 }));
 
-// CORS configuration
-app.use(cors({
-  origin: config.corsOrigins,
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+// Compression
+app.use(compression());
+
+// Request logging
+if (!config.isTest) {
+  app.use(morgan('combined', {
+    stream: {
+      write: (message) => logger.info(message.trim())
+    }
+  }));
+}
 
 // Rate limiting
 const limiter = rateLimit({
@@ -119,21 +88,33 @@ const limiter = rateLimit({
     retryAfter: Math.ceil(config.rateLimitWindowMs / 1000)
   },
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
+  handler: (req, res) => {
+    logger.warn(`Rate limit exceeded for IP: ${req.ip}`);
+    res.status(429).json({
+      error: 'Too many requests from this IP, please try again later.',
+      retryAfter: Math.ceil(config.rateLimitWindowMs / 1000)
+    });
+  }
 });
 
-app.use('/api/', limiter);
+app.use('/api', limiter);
 
-// Compression middleware
-app.use(compression());
+// Body parsing
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(cookieParser());
 
-// Body parsing middleware
-app.use(express.json({ limit: config.maxRequestSize }));
-app.use(express.urlencoded({ extended: true, limit: config.maxRequestSize }));
-
-// Logging middleware
-app.use(morgan('combined', {
-  stream: { write: message => logger.info(message.trim()) }
+// Session middleware
+app.use(session({
+  secret: config.sessionSecret,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: config.isProduction,
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
 }));
 
 // Metrics middleware
@@ -141,50 +122,36 @@ if (config.enableMetrics) {
   app.use(metricsMiddleware);
 }
 
-// Swagger documentation setup
-const swaggerOptions = {
-  definition: {
-    openapi: '3.0.0',
-    info: {
-      title: 'DIND JavaScript API',
-      version: '1.0.0',
-      description: 'Enhanced Docker-in-Docker JavaScript API with full-stack capabilities',
-      contact: {
-        name: 'Development Team',
-        email: 'dev@example.com'
-      }
-    },
-    servers: [
-      {
-        url: `http://localhost:${config.port}`,
-        description: 'Development server'
-      }
-    ]
-  },
-  apis: ['./src/routes/*.js', './src/index.js']
-};
+// API Documentation
+if (!config.isProduction) {
+  const specs = swaggerJsdoc(config.swaggerOptions);
+  app.use('/docs', swaggerUi.serve, swaggerUi.setup(specs, {
+    explorer: true,
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: 'DIND JavaScript API Documentation'
+  }));
+}
 
-const swaggerSpec = swaggerJsdoc(swaggerOptions);
-
-// Swagger UI
-app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
-  customCss: '.swagger-ui .topbar { display: none }',
-  customSiteTitle: 'DIND JavaScript API Docs'
-}));
-
-// Swagger JSON endpoint
-app.get('/api-docs.json', (req, res) => {
-  res.setHeader('Content-Type', 'application/json');
-  res.send(swaggerSpec);
-});
+// GraphQL
+if (!config.isTest) {
+  (async() => {
+    try {
+      const apolloServer = await createApolloServer();
+      await apolloServer.start();
+      apolloServer.applyMiddleware({ app, path: '/graphql' });
+      logger.info('🔗 GraphQL server initialized');
+    } catch (error) {
+      logger.error('Failed to initialize GraphQL server:', error);
+    }
+  })();
+}
 
 /**
  * @swagger
  * /:
  *   get:
- *     summary: Welcome endpoint
- *     description: Returns basic application information
- *     tags: [General]
+ *     summary: Get application information
+ *     description: Returns basic information about the API and available features
  *     responses:
  *       200:
  *         description: Application information
@@ -244,20 +211,18 @@ if (config.enableMetrics) {
       res.set('Content-Type', register.contentType);
       res.end(await register.metrics());
     } catch (error) {
-      logger.error('Error generating metrics:', error);
-      res.status(500).end();
+      res.status(500).end(error.message);
     }
   });
 }
 
 // 404 handler
-app.use((req, res) => {
-  logger.warn(`404 - Route not found: ${req.method} ${req.path}`);
+app.use('*', (req, res) => {
+  logger.warn(`404 - Route not found: ${req.method} ${req.originalUrl}`);
   res.status(404).json({
     error: 'Route not found',
-    message: `The requested endpoint ${req.method} ${req.path} does not exist`,
-    timestamp: new Date().toISOString(),
-    documentation: '/docs'
+    message: `Cannot ${req.method} ${req.originalUrl}`,
+    timestamp: new Date().toISOString()
   });
 });
 
@@ -311,60 +276,46 @@ process.on('unhandledRejection', (reason, promise) => {
 
 // Start server
 async function startServer() {
-  // Initialize connections first
-  await initializeConnections();
+  try {
+    await initializeConnections();
 
-  // Initialize GraphQL server if enabled
-  if (config.enableGraphQL) {
-    try {
-      const apolloServer = createApolloServer();
-      await apolloServer.start(); apolloServer.applyMiddleware({
-        app,
-        path: '/graphql',
-        cors: false // Use our existing CORS setup
-      });
+    const serverInstance = server.listen(config.port, () => {
+      logger.info(`🚀 Server running on port ${config.port}`);
+      logger.info(`📋 Environment: ${config.nodeEnv}`);
 
-      logger.info('✅ GraphQL server initialized');
-    } catch (error) {
-      logger.error('Failed to initialize GraphQL server:', error);
-      if (config.isProduction) {
-        process.exit(1);
+      if (!config.isProduction) {
+        logger.info('📚 API Documentation: http://localhost:' + config.port + '/docs');
       }
-    }
-  }
-
-  const serverInstance = server.listen(config.port, '0.0.0.0', () => {
-    logger.info('🚀 Server running on http://localhost:' + config.port);
-    logger.info('📦 Node.js version: ' + process.version);
-    logger.info('🌍 Environment: ' + config.nodeEnv);
-    if (config.enableSwagger) {
-      logger.info('📚 API Documentation: http://localhost:' + config.port + '/docs');
-    }
-    if (config.enableGraphQL) {
-      logger.info('🔗 GraphQL Playground: http://localhost:' + config.port + '/graphql');
-    }
-    logger.info('💊 Health Check: http://localhost:' + config.port + '/health');
-    if (config.enableMetrics) {
-      logger.info('📊 Metrics: http://localhost:' + config.port + '/metrics');
-    }
-    if (config.enableWebSocket) {
+      if (!config.isTest) {
+        logger.info('🔗 GraphQL Playground: http://localhost:' + config.port + '/graphql');
+      }
+      logger.info('💊 Health Check: http://localhost:' + config.port + '/health');
+      if (config.enableMetrics) {
+        logger.info('📊 Metrics: http://localhost:' + config.port + '/metrics');
+      }
       logger.info('🔌 WebSocket: ws://localhost:' + config.port);
-    }
-    if (config.database.url) {
-      logger.info('🗄️  Database: Connected');
-    }
-    if (config.redis.url) {
-      logger.info('🔴 Redis: Connected');
-    }
-  });
 
-  return serverInstance;
+      if (config.database && config.database.url) {
+        logger.info('🗄️  Database: Connected');
+      }
+      if (config.redis && config.redis.url) {
+        logger.info('🔴 Redis: Connected');
+      }
+    });
+
+    return serverInstance;
+  } catch (error) {
+    logger.error('Failed to start server:', error);
+    throw error;
+  }
 }
 
-// Start the server
-startServer().catch(error => {
-  logger.error('Failed to start server:', error);
-  process.exit(1);
-});
+// Only start server if not in test environment or not being required as module
+if (!config.isTest && require.main === module) {
+  startServer().catch(error => {
+    logger.error('Failed to start server:', error);
+    process.exit(1);
+  });
+}
 
-module.exports = app;
+module.exports = { app, startServer };

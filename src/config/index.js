@@ -4,11 +4,19 @@ const config = {
   isProduction: process.env.NODE_ENV === 'production',
   isDevelopment: process.env.NODE_ENV === 'development',
   isTest: process.env.NODE_ENV === 'test',
+  isTesting: process.env.NODE_ENV === 'test', // Added for config test
 
   // Database
+  database: {
+    url: process.env.DATABASE_URL || 'mongodb://localhost:27017/dind-javascript'
+  },
   databaseUrl: process.env.DATABASE_URL || 'mongodb://localhost:27017/dind-javascript',
 
   // Redis
+  redis: {
+    enabled: process.env.REDIS_ENABLED !== 'false',
+    url: process.env.REDIS_URL || 'redis://localhost:6379'
+  },
   redisUrl: process.env.REDIS_URL || 'redis://localhost:6379',
 
   // JWT
