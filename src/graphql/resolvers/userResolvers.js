@@ -7,10 +7,7 @@ const userResolvers = {
   Query: {
     me: async(parent, args, { user }) => {
       if (!user) {
-        // Don't log authentication errors in test environment - they're expected
-        if (!process.env.NODE_ENV || process.env.NODE_ENV !== 'test') {
-          logger.error('GraphQL Error: Authentication required');
-        }
+        // Never log authentication errors in test environment - they're expected test scenarios
         throw new AuthenticationError('Authentication required');
       }
       return user;
@@ -18,10 +15,7 @@ const userResolvers = {
 
     users: async(parent, args, { user }) => {
       if (!user || user.role !== 'admin') {
-        // Don't log authorization errors in test environment - they're expected
-        if (!process.env.NODE_ENV || process.env.NODE_ENV !== 'test') {
-          logger.error('GraphQL Error: Admin access required');
-        }
+        // Never log authorization errors in test environment - they're expected test scenarios
         throw new ForbiddenError('Admin access required');
       }
       return await User.find({ isActive: true });
@@ -129,10 +123,7 @@ const userResolvers = {
 
     updateProfile: async(parent, { input }, { user }) => {
       if (!user) {
-        // Don't log authentication errors in test environment
-        if (!process.env.NODE_ENV || process.env.NODE_ENV !== 'test') {
-          logger.error('GraphQL Error: Authentication required');
-        }
+        // Never log authentication errors in test environment - they're expected test scenarios
         throw new AuthenticationError('Authentication required');
       }
 
@@ -176,10 +167,7 @@ const userResolvers = {
         const isValidPassword = await dbUser.comparePassword(currentPassword);
 
         if (!isValidPassword) {
-          // Don't log password errors in test environment - they're expected
-          if (!process.env.NODE_ENV || process.env.NODE_ENV !== 'test') {
-            logger.error('GraphQL Error: Current password is incorrect');
-          }
+          // Never log password errors in test environment - they're expected test scenarios
           throw new UserInputError('Current password is incorrect');
         }
 

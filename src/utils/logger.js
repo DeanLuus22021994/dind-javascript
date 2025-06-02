@@ -23,16 +23,16 @@ const customFormat = winston.format.combine(
   })
 );
 
-// Console transport for all environments
-const transports = [
-  new winston.transports.Console({
-    level: config.isTest ? 'error' : 'info', // Only log errors in test environment
-    format: customFormat,
-    silent: config.isTest && process.env.JEST_SILENT === 'true' // Allow complete silencing in tests
-  })
-];
+// Console transport configuration
+const consoleTransport = new winston.transports.Console({
+  level: config.isTest ? 'silent' : 'info', // Completely silent in test environment
+  format: customFormat,
+  silent: config.isTest // Always silent in test environment
+});
 
-// File transport for non-test environments
+// File transport for non-test environments only
+const transports = [consoleTransport];
+
 if (!config.isTest) {
   transports.push(
     new winston.transports.File({
@@ -48,11 +48,13 @@ if (!config.isTest) {
 }
 
 const logger = winston.createLogger({
-  level: config.isTest ? 'error' : config.logLevel, // Only log errors in test
+  level: config.isTest ? 'silent' : config.logLevel, // Silent level in test
   format: customFormat,
   transports,
   // Don't exit on handled exceptions in test environment
-  exitOnError: !config.isTest
+  exitOnError: !config.isTest,
+  // Completely silent in test environment
+  silent: config.isTest
 });
 
 module.exports = logger;

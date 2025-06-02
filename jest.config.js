@@ -1,20 +1,20 @@
 module.exports = {
   testEnvironment: 'node',
-  setupFilesAfterEnv: ['<rootDir>/src/tests/setup.js'],
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   testMatch: [
-    '<rootDir>/src/tests/**/*.test.js',
-    '<rootDir>/__tests__/**/*.test.js'
+    '**/__tests__/**/*.js',
+    '**/src/tests/**/*.js',
+    '**/?(*.)+(spec|test).js'
   ],
   collectCoverageFrom: [
     'src/**/*.js',
     '!src/tests/**',
-    '!src/index.js'
+    '!src/**/*.test.js'
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
-  verbose: false,
-  silent: false,
-  testTimeout: 30000,
-  forceExit: true,
-  detectOpenHandles: true
+  verbose: false, // Reduce Jest verbosity
+  silent: false, // Control Jest output
+  // Suppress console logs during tests
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.js']
 };
