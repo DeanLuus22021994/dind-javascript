@@ -1,12 +1,23 @@
 const { ApolloServer } = require('apollo-server-express');
 const { makeExecutableSchema } = require('@graphql-tools/schema');
 const jwt = require('jsonwebtoken');
-
-const typeDefs = require('./schema');
-const resolvers = require('./resolvers');
+const User = require('../models/User');
 const config = require('../config');
 const logger = require('../utils/logger');
-const User = require('../models/User');
+
+// Import type definitions and resolvers
+const typeDefs = require('./schema');
+const userResolvers = require('./resolvers/userResolvers');
+
+// Combine resolvers
+const resolvers = {
+  Query: {
+    ...userResolvers.Query
+  },
+  Mutation: {
+    ...userResolvers.Mutation
+  }
+};
 
 // Create executable schema
 const schema = makeExecutableSchema({
@@ -14,95 +25,58 @@ const schema = makeExecutableSchema({
   resolvers
 });
 
-// Apollo Server configuration
-function createApolloServer() {
+// Context function to handle authentication
+const context = async({ req }) => {
+  let user = null;
+
+  try {
+    const authHeader = req.headers.authorization;
+    if (authHeader) {
+      const token = authHeader.replace('Bearer ', '');
+      const decoded = jwt.verify(token, config.jwtSecret);
+      user = await User.findById(decoded.userId);
+    }
+  } catch (error) {
+    // Authentication failed, user remains null
+    if (process.env.NODE_ENV !== 'test') {
+      logger.warn('GraphQL authentication failed:', error.message);
+    }
+  }
+
+  return { user };
+};
+
+// Create Apollo Server
+async function createApolloServer() {
   const server = new ApolloServer({
     schema,
-    context: async({ req, res, connection }) => {
-      // For subscriptions
-      if (connection) {
-        return connection.context;
-      }
-
-      // For queries and mutations
-      let user = null;
-      const token = req.headers.authorization?.replace('Bearer ', '');
-
-      if (token) {
-        try {
-          const decoded = jwt.verify(token, config.jwtSecret);
-          user = await User.findById(decoded.userId);
-        } catch (error) {
-          // Invalid token, user remains null
-        }
-      }
-
-      return {
-        req,
-        res,
-        user
-      };
-    },
-    subscriptions: {
-      onConnect: async(connectionParams) => {
-        // Handle authentication for subscriptions
-        const token = connectionParams.authorization?.replace('Bearer ', '');
-        if (!token) {
-          throw new Error('Missing auth token!');
-        }
-
-        try {
-          const decoded = jwt.verify(token, config.jwtSecret);
-          const user = await User.findById(decoded.userId);
-
-          if (!user || !user.isActive) {
-            throw new Error('Invalid user!');
-          }
-
-          return { user };
-        } catch (error) {
-          throw new Error('Invalid token!');
-        }
-      },
-      onDisconnect: () => {
-        logger.info('GraphQL subscription disconnected');
-      }
-    },
+    context,
+    // Disable introspection and playground in production
+    introspection: !config.isProduction,
+    playground: !config.isProduction,
+    // Error formatting
     formatError: (error) => {
-      // Log the error
-      logger.error('GraphQL Error:', {
-        message: error.message,
-        locations: error.locations,
-        path: error.path,
-        stack: error.stack
-      });
-
-      // Don't expose internal errors in production
-      if (config.isProduction && error.message.startsWith('Database')) {
-        return new Error('Internal server error');
+      if (process.env.NODE_ENV !== 'test') {
+        logger.error('GraphQL Error:', error);
       }
 
-      return error;
+      // Return sanitized error in production
+      return config.isProduction
+        ? new Error('Internal server error')
+        : error;
     },
-    formatResponse: (response, { request, context }) => {
-      // Log slow queries
-      if (request.operationName && context.startTime) {
-        const duration = Date.now() - context.startTime;
-        if (duration > 1000) { // Log queries taking more than 1 second
-          logger.warn('Slow GraphQL query', {
-            operationName: request.operationName,
-            duration
-          });
-        }
-      }
-
-      return response;
-    },
-    introspection: process.env.NODE_ENV !== 'production',
-    playground: process.env.NODE_ENV !== 'production'
+    // Handle CORS
+    cors: {
+      origin: config.corsOrigin,
+      credentials: true
+    }
   });
 
   return server;
 }
 
-module.exports = { createApolloServer };
+module.exports = {
+  createApolloServer,
+  schema,
+  resolvers
+};

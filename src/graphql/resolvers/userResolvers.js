@@ -7,7 +7,6 @@ const userResolvers = {
   Query: {
     me: async(parent, args, { user }) => {
       if (!user) {
-        // Never log authentication errors in test environment - they're expected test scenarios
         throw new AuthenticationError('Authentication required');
       }
       return user;
@@ -15,7 +14,6 @@ const userResolvers = {
 
     users: async(parent, args, { user }) => {
       if (!user || user.role !== 'admin') {
-        // Never log authorization errors in test environment - they're expected test scenarios
         throw new ForbiddenError('Admin access required');
       }
       return await User.find({ isActive: true });
@@ -123,7 +121,6 @@ const userResolvers = {
 
     updateProfile: async(parent, { input }, { user }) => {
       if (!user) {
-        // Never log authentication errors in test environment - they're expected test scenarios
         throw new AuthenticationError('Authentication required');
       }
 
@@ -158,19 +155,26 @@ const userResolvers = {
       }
 
       try {
-        const dbUser = await User.findById(user._id);
+        // Get fresh user data from database with password
+        const dbUser = await User.findById(user._id).select('+password');
 
         if (!dbUser) {
           throw new AuthenticationError('User not found');
         }
 
+        // Verify current password
         const isValidPassword = await dbUser.comparePassword(currentPassword);
 
         if (!isValidPassword) {
-          // Never log password errors in test environment - they're expected test scenarios
           throw new UserInputError('Current password is incorrect');
         }
 
+        // Validate new password
+        if (!newPassword || newPassword.length < 6) {
+          throw new UserInputError('New password must be at least 6 characters long');
+        }
+
+        // Update password (will be hashed by pre-save hook)
         dbUser.password = newPassword;
         await dbUser.save();
 
@@ -186,7 +190,12 @@ const userResolvers = {
         if (process.env.NODE_ENV !== 'test') {
           logger.error('GraphQL change password error:', error);
         }
-        throw error;
+
+        if (error instanceof UserInputError || error instanceof AuthenticationError) {
+          throw error;
+        }
+
+        throw new Error('Failed to change password');
       }
     },
 

@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
-const logger = require('../utils/logger');
 
 const userSchema = new mongoose.Schema({
   username: {
@@ -9,7 +8,7 @@ const userSchema = new mongoose.Schema({
     unique: true,
     trim: true,
     minlength: [3, 'Username must be at least 3 characters long'],
-    maxlength: [30, 'Username cannot be more than 30 characters']
+    maxlength: [30, 'Username must be less than 30 characters']
   },
   email: {
     type: String,
@@ -22,26 +21,23 @@ const userSchema = new mongoose.Schema({
   password: {
     type: String,
     required: [true, 'Password is required'],
-    minlength: [6, 'Password must be at least 6 characters long']
+    minlength: [6, 'Password must be at least 6 characters long'],
+    select: false // Don't include password in queries by default
   },
   firstName: {
     type: String,
     trim: true,
-    maxlength: [50, 'First name cannot be more than 50 characters']
+    maxlength: [50, 'First name must be less than 50 characters']
   },
   lastName: {
     type: String,
     trim: true,
-    maxlength: [50, 'Last name cannot be more than 50 characters']
+    maxlength: [50, 'Last name must be less than 50 characters']
   },
   role: {
     type: String,
     enum: ['user', 'admin', 'moderator'],
     default: 'user'
-  },
-  roles: {
-    type: [String],
-    default: ['user']
   },
   isActive: {
     type: Boolean,
@@ -50,71 +46,22 @@ const userSchema = new mongoose.Schema({
   lastLogin: {
     type: Date
   },
-  refreshToken: {
-    type: String
+  createdAt: {
+    type: Date,
+    default: Date.now
   },
-  resetPasswordToken: {
-    type: String
-  },
-  resetPasswordExpires: {
-    type: Date
-  },
-  emailVerified: {
-    type: Boolean,
-    default: false
-  },
-  emailVerificationToken: {
-    type: String
-  },
-  metadata: {
-    loginCount: {
-      type: Number,
-      default: 0
-    }
-  },
-  preferences: {
-    language: {
-      type: String,
-      default: 'en'
-    },
-    timezone: {
-      type: String,
-      default: 'UTC'
-    },
-    notifications: {
-      email: {
-        type: Boolean,
-        default: true
-      },
-      push: {
-        type: Boolean,
-        default: true
-      }
-    }
+  updatedAt: {
+    type: Date,
+    default: Date.now
   }
 }, {
-  timestamps: true,
-  toJSON: {
-    virtuals: true,
-    transform: function(doc, ret) {
-      delete ret.password;
-      delete ret.refreshToken;
-      delete ret.resetPasswordToken;
-      delete ret.emailVerificationToken;
-      return ret;
-    }
-  },
-  toObject: {
-    virtuals: true,
-    transform: function(doc, ret) {
-      delete ret.password;
-      delete ret.refreshToken;
-      delete ret.resetPasswordToken;
-      delete ret.emailVerificationToken;
-      return ret;
-    }
-  }
+  timestamps: true
 });
+
+// Create indexes
+userSchema.index({ email: 1 });
+userSchema.index({ username: 1 });
+userSchema.index({ isActive: 1 });
 
 // Virtual for full name
 userSchema.virtual('fullName').get(function() {
@@ -124,58 +71,55 @@ userSchema.virtual('fullName').get(function() {
   return this.firstName || this.lastName || this.username;
 });
 
-// Virtual for public profile
-userSchema.virtual('publicProfile').get(function() {
-  return {
-    id: this._id,
-    username: this.username,
-    firstName: this.firstName,
-    lastName: this.lastName,
-    fullName: this.fullName,
-    createdAt: this.createdAt
-  };
-});
-
 // Hash password before saving
 userSchema.pre('save', async function(next) {
-  try {
-    // Only hash the password if it has been modified (or is new)
-    if (!this.isModified('password')) return next();
+  // Only hash the password if it has been modified (or is new)
+  if (!this.isModified('password')) return next();
 
+  try {
     // Hash password with cost of 12
     const salt = await bcrypt.genSalt(12);
     this.password = await bcrypt.hash(this.password, salt);
-
-    // Only log in non-test environments to reduce test noise
-    if (process.env.NODE_ENV !== 'test') {
-      logger.info(`Password hashed for user: ${this.email}`);
-    }
     next();
   } catch (error) {
-    logger.error('Error hashing password:', error);
     next(error);
   }
 });
 
+// Update the updatedAt field before saving
+userSchema.pre('save', function(next) {
+  this.updatedAt = new Date();
+  next();
+});
+
 // Compare password method
 userSchema.methods.comparePassword = async function(candidatePassword) {
-  try {
-    if (!candidatePassword || !this.password) {
-      return false;
-    }
-    return await bcrypt.compare(candidatePassword, this.password);
-  } catch (error) {
-    logger.error('Error comparing passwords:', error);
+  if (!this.password) {
     return false;
   }
+  return await bcrypt.compare(candidatePassword, this.password);
 };
 
-// Update last login
-userSchema.methods.updateLastLogin = function() {
-  this.lastLogin = new Date();
-  return this.save();
+// Transform toJSON to exclude password and add virtuals
+userSchema.methods.toJSON = function() {
+  const userObject = this.toObject();
+  delete userObject.password;
+  delete userObject.__v;
+
+  // Include virtual fields
+  userObject.fullName = this.fullName;
+
+  return userObject;
 };
 
-const User = mongoose.model('User', userSchema);
+// Static method to find by email
+userSchema.statics.findByEmail = function(email) {
+  return this.findOne({ email: email.toLowerCase(), isActive: true });
+};
 
-module.exports = User;
+// Static method to find by username
+userSchema.statics.findByUsername = function(username) {
+  return this.findOne({ username, isActive: true });
+};
+
+module.exports = mongoose.model('User', userSchema);
