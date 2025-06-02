@@ -1,193 +1,124 @@
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
+const User = require('../models/User');
 const config = require('../config');
 const logger = require('./logger');
 
-class AuthService {
-  /**
-   * Generate JWT token
-   */
-  generateToken(payload) {
+/**
+ * Generate JWT token for a user
+ * @param {string} userId - User ID to include in token
+ * @returns {string} JWT token
+ */
+function generateToken(userId) {
+  return jwt.sign(
+    { userId: userId.toString() },
+    config.jwtSecret,
+    { expiresIn: config.jwtExpiresIn }
+  );
+}
+
+/**
+ * Verify JWT token
+ * @param {string} token - JWT token to verify
+ * @returns {Promise<Object>} Decoded token payload
+ */
+async function verifyToken(token) {
+  try {
+    return jwt.verify(token, config.jwtSecret);
+  } catch (error) {
+    // Re-throw the original error for better test expectations
+    if (error.name === 'TokenExpiredError') {
+      throw new Error('Token expired');
+    } else if (error.name === 'JsonWebTokenError') {
+      throw new Error('Invalid token');
+    } else {
+      throw error;
+    }
+  }
+}
+
+/**
+ * Auth middleware to protect routes
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next function
+ */
+async function requireAuth(req, res, next) {
+  try {
+    // Get token from header
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      req.user = null;
+      return res.status(401).json({ error: 'Access denied. No token provided.' });
+    }
+
+    // Check if token has correct format
+    if (!authHeader.startsWith('Bearer ')) {
+      req.user = null;
+      return res.status(401).json({ error: 'Invalid token format. Use Bearer token.' });
+    }
+
+    // Extract and verify token
+    const token = authHeader.split(' ')[1];
+    let decoded;
     try {
-      // Ensure payload is an object
-      const tokenPayload = typeof payload === 'string' ? { userId: payload } : payload;
-
-      return jwt.sign(tokenPayload, config.jwtSecret, {
-        expiresIn: config.jwtExpire,
-        issuer: 'dind-javascript-api',
-        audience: 'dind-javascript-client'
-      });
+      decoded = await verifyToken(token);
     } catch (error) {
-      logger.error('Error generating JWT token:', error);
-      throw new Error('Token generation failed');
+      req.user = null;
+      return res.status(401).json({ error: 'Invalid token.' });
     }
-  }
 
-  /**
-   * Verify JWT token
-   */
-  verifyToken(token) {
+    // Find user with decoded ID
+    const user = await User.findById(decoded.userId);
+    if (!user) {
+      req.user = null;
+      return res.status(401).json({ error: 'User not found.' });
+    }
+
+    // Set user in request
+    req.user = user;
+    next();
+  } catch (error) {
+    logger.error('Authentication error:', error);
+    req.user = null;
+    res.status(500).json({ error: 'Internal server error during authentication.' });
+  }
+}
+
+/**
+ * Role-based authorization middleware
+ * @param {string|string[]} roles - Required role(s) to access the route
+ */
+function requireRole(roles) {
+  return async (req, res, next) => {
     try {
-      return jwt.verify(token, config.jwtSecret, {
-        issuer: 'dind-javascript-api',
-        audience: 'dind-javascript-client'
-      });
-    } catch (error) {
-      logger.error('Error verifying JWT token:', error);
-      // Re-throw the original error for better test expectations
-      if (error.name === 'TokenExpiredError') {
-        throw new Error('Token expired');
-      } else if (error.name === 'JsonWebTokenError') {
-        throw new Error('Invalid token');
-      } else {
-        throw error;
-      }
-    }
-  }
-
-  /**
-   * Hash password
-   */
-  async hashPassword(password) {
-    try {
-      return await bcrypt.hash(password, config.bcryptRounds);
-    } catch (error) {
-      logger.error('Error hashing password:', error);
-      throw new Error('Password hashing failed');
-    }
-  }
-
-  /**
-   * Compare password with hash
-   */
-  async comparePassword(password, hash) {
-    try {
-      return await bcrypt.compare(password, hash);
-    } catch (error) {
-      logger.error('Error comparing password:', error);
-      throw new Error('Password comparison failed');
-    }
-  }
-
-  /**
-   * Extract token from request
-   */
-  extractToken(req) {
-    const authHeader = req.header('Authorization');
-    const cookieToken = req.cookies?.token;
-
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      return authHeader.substring(7);
-    }
-
-    if (cookieToken) {
-      return cookieToken;
-    }
-
-    return null;
-  }
-
-  /**
-   * Authentication middleware
-   */
-  authenticate() {
-    return async(req, res, next) => {
-      try {
-        const token = this.extractToken(req);
-
-        if (!token) {
-          return res.status(401).json({ error: 'Access denied. No token provided.' });
-        }
-
-        const decoded = await this.verifyToken(token);
-
-        // Look up the user to get full user object with roles
-        const User = require('../models/User');
-        const user = await User.findById(decoded.userId || decoded._id);
-
-        if (!user) {
-          return res.status(401).json({ error: 'User not found.' });
-        }
-
-        req.user = user;
-
-        logger.debug(`User authenticated: ${user._id}`);
-        next();
-      } catch (error) {
-        logger.warn('Authentication failed:', error.message);
-
-        // Check for specific error types
-        if (error.message === 'Token expired') {
-          return res.status(401).json({ error: 'Token expired' });
-        } else if (error.message === 'Invalid token') {
-          return res.status(401).json({ error: 'Invalid token' });
-        } else {
-          return res.status(401).json({ error: 'Invalid token.' });
-        }
-      }
-    };
-  }
-
-  /**
-   * Authorization middleware (role-based)
-   */
-  authorize(roles = []) {
-    return (req, res, next) => {
+      // Check if user exists in request (requireAuth should run first)
       if (!req.user) {
         return res.status(403).json({ error: 'Access denied. Insufficient permissions.' });
       }
 
-      // Ensure roles is an array
+      // Convert single role to array for consistent checking
       const requiredRoles = Array.isArray(roles) ? roles : [roles];
 
-      if (requiredRoles.length === 0) {
-        return next(); // No specific roles required
-      }
+      // Check if user has any of the required roles
+      const userRoles = Array.isArray(req.user.roles) ? req.user.roles : [req.user.role];
+      const hasPermission = requiredRoles.some(role => userRoles.includes(role));
 
-      const userRoles = req.user.roles || [];
-      const hasRole = requiredRoles.some(role => userRoles.includes(role));
-
-      if (!hasRole) {
+      if (!hasPermission) {
         logger.warn(`Authorization failed for user ${req.user._id}: required roles ${requiredRoles}, user roles ${userRoles}`);
         return res.status(403).json({ error: 'Access denied. Insufficient permissions.' });
       }
 
       next();
-    };
-  }
-
-  /**
-   * Optional authentication middleware (doesn't fail if no token)
-   */
-  optionalAuth() {
-    return async(req, res, next) => {
-      try {
-        const token = this.extractToken(req);
-
-        if (token) {
-          const decoded = await this.verifyToken(token);
-          req.user = decoded;
-          logger.debug(`Optional auth successful: ${decoded.userId || decoded.email}`);
-        }
-      } catch (error) {
-        // Silently fail for optional auth
-        logger.debug('Optional authentication failed:', error.message);
-      }
-
-      next();
-    };
-  }
+    } catch (error) {
+      logger.error('Authorization error:', error);
+      res.status(500).json({ error: 'Internal server error during authorization.' });
+    }
+  };
 }
 
-const authService = new AuthService();
-
-// Export individual functions for backward compatibility
-module.exports = authService;
-module.exports.generateToken = authService.generateToken.bind(authService);
-module.exports.verifyToken = authService.verifyToken.bind(authService);
-module.exports.hashPassword = authService.hashPassword.bind(authService);
-module.exports.comparePassword = authService.comparePassword.bind(authService);
-module.exports.requireAuth = authService.authenticate();
-module.exports.requireRole = authService.authorize.bind(authService);
-module.exports.optionalAuth = authService.optionalAuth();
-module.exports.AuthService = AuthService;
+module.exports = {
+  generateToken,
+  verifyToken,
+  requireAuth,
+  requireRole
+};

@@ -1,70 +1,41 @@
-const { AuthenticationError, ForbiddenError, UserInputError } = require('apollo-server-express');
-const { GraphQLUpload } = require('graphql-upload');
-const { GraphQLDateTime } = require('graphql-scalars');
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
-const fs = require('fs').promises;
-const path = require('path');
-
 const User = require('../models/User');
-const config = require('../config');
+const { ForbiddenError, AuthenticationError, UserInputError } = require('apollo-server-express');
 const logger = require('../utils/logger');
-const websocketServer = require('../utils/websocket');
 const database = require('../utils/database');
 const redisClient = require('../utils/redis');
 const { register } = require('../utils/metrics');
+const websocketServer = require('../utils/websocket');
 
-// Authentication helper
-const getUser = async(context) => {
-  const token = context.req.headers.authorization?.replace('Bearer ', '');
-  if (!token) {
+// Helper function to get authenticated user from context
+async function getUser(context) {
+  if (!context.user) {
     throw new AuthenticationError('No token provided');
   }
+  return context.user;
+}
 
-  try {
-    const decoded = jwt.verify(token, config.jwtSecret);
-    const user = await User.findById(decoded.userId);
-    if (!user || !user.isActive) {
-      throw new AuthenticationError('Invalid or inactive user');
-    }
-    return user;
-  } catch (error) {
-    throw new AuthenticationError('Invalid token');
-  }
-};
-
-// Check admin role
-const requireAdmin = (user) => {
+// Helper function to require admin role
+function requireAdmin(user) {
   if (user.role !== 'admin') {
     throw new ForbiddenError('Admin access required');
   }
-};
+}
 
 const resolvers = {
-  Upload: GraphQLUpload,
-  Date: GraphQLDateTime,
-
   Query: {
     me: async(_, __, context) => {
       return await getUser(context);
     },
 
-    users: async(_, { limit = 20, offset = 0, search }, context) => {
+    users: async(_, { limit = 10, offset = 0 }, context) => {
       const user = await getUser(context);
-      requireAdmin(user);
 
-      const query = search
-        ? {
-          $or: [
-            { username: { $regex: search, $options: 'i' } },
-            { email: { $regex: search, $options: 'i' } },
-            { firstName: { $regex: search, $options: 'i' } },
-            { lastName: { $regex: search, $options: 'i' } }
-          ]
-        }
-        : {};
+      // Only admins can view all users
+      if (user.role !== 'admin') {
+        throw new ForbiddenError('Admin access required');
+      }
 
-      return await User.find(query)
+      return await User.find()
         .skip(offset)
         .limit(limit)
         .sort({ createdAt: -1 });
@@ -80,17 +51,20 @@ const resolvers = {
 
       return await User.findById(id);
     },
+
     files: async(_, { limit = 20, offset = 0 }, context) => {
       await getUser(context); // Verify user authentication
       // Implementation would depend on your file storage system
       // This is a placeholder
       return [];
     },
+
     file: async(_, { id }, context) => {
       await getUser(context); // Verify user authentication
       // Implementation would depend on your file storage system
       return null;
     },
+
     messages: async(_, { room, limit = 50, offset = 0 }, context) => {
       await getUser(context); // Verify user authentication
       // Implementation would depend on your message storage system
@@ -157,12 +131,6 @@ const resolvers = {
           heapTotal: process.memoryUsage().heapTotal / 1024 / 1024,
           heapUsed: process.memoryUsage().heapUsed / 1024 / 1024,
           external: process.memoryUsage().external / 1024 / 1024
-        },
-        diskUsage: {
-          total: 0, // Implement disk usage calculation
-          used: 0,
-          free: 0,
-          percentage: 0
         }
       };
     }
@@ -173,355 +141,145 @@ const resolvers = {
       const { username, email, password, firstName, lastName } = input;
 
       // Check if user already exists
-      const existingUser = await User.findOne({
-        $or: [{ email }, { username }]
-      });
-
+      const existingUser = await User.findOne({ $or: [{ email }, { username }] });
       if (existingUser) {
-        throw new UserInputError('User already exists with this email or username');
+        throw new UserInputError('User already exists with that email or username');
       }
 
-      // Hash password
-      const hashedPassword = await bcrypt.hash(password, 12);
-
-      // Create user
+      // Create new user
       const user = new User({
         username,
         email,
-        password: hashedPassword,
+        password,
         firstName,
-        lastName,
-        role: 'user',
-        isActive: true
+        lastName
       });
 
       await user.save();
+      logger.info(`New user registered: ${email}`);
 
-      // Generate tokens
-      const token = jwt.sign(
-        { userId: user._id, email: user.email },
-        config.jwtSecret,
-        { expiresIn: config.jwtExpiresIn }
-      );
-
-      const refreshToken = jwt.sign(
-        { userId: user._id },
-        config.jwtRefreshSecret,
-        { expiresIn: config.jwtRefreshExpiresIn }
-      );
-
+      // Generate token and return user data
+      const token = generateToken(user._id);
       return {
         token,
-        refreshToken,
-        user,
-        expiresIn: 3600 // 1 hour
+        user
       };
     },
 
-    login: async(_, { input }) => {
-      const { email, password } = input;
-
-      // Find user
+    login: async(_, { email, password }) => {
+      // Find user by email
       const user = await User.findOne({ email });
-      if (!user || !user.isActive) {
-        throw new AuthenticationError('Invalid credentials');
+      if (!user) {
+        throw new UserInputError('Invalid email or password');
       }
 
       // Check password
-      const isValid = await bcrypt.compare(password, user.password);
-      if (!isValid) {
-        throw new AuthenticationError('Invalid credentials');
+      const isMatch = await user.comparePassword(password);
+      if (!isMatch) {
+        throw new UserInputError('Invalid email or password');
       }
 
       // Update last login
       user.lastLogin = new Date();
       await user.save();
 
-      // Generate tokens
-      const token = jwt.sign(
-        { userId: user._id, email: user.email },
-        config.jwtSecret,
-        { expiresIn: config.jwtExpiresIn }
-      );
-
-      const refreshToken = jwt.sign(
-        { userId: user._id },
-        config.jwtRefreshSecret,
-        { expiresIn: config.jwtRefreshExpiresIn }
-      );
-
+      // Generate token and return user data
+      const token = generateToken(user._id);
       return {
         token,
-        refreshToken,
-        user,
-        expiresIn: 3600
+        user
       };
-    },
-
-    logout: async(_, __, context) => {
-      // In a real implementation, you might want to blacklist the token
-      return true;
-    },
-
-    refreshToken: async(_, __, context) => {
-      const refreshToken = context.req.headers['x-refresh-token'];
-      if (!refreshToken) {
-        throw new AuthenticationError('No refresh token provided');
-      }
-
-      try {
-        const decoded = jwt.verify(refreshToken, config.jwtRefreshSecret);
-        const user = await User.findById(decoded.userId);
-
-        if (!user || !user.isActive) {
-          throw new AuthenticationError('Invalid user');
-        }
-
-        const newToken = jwt.sign(
-          { userId: user._id, email: user.email },
-          config.jwtSecret,
-          { expiresIn: config.jwtExpiresIn }
-        );
-
-        const newRefreshToken = jwt.sign(
-          { userId: user._id },
-          config.jwtRefreshSecret,
-          { expiresIn: config.jwtRefreshExpiresIn }
-        );
-
-        return {
-          token: newToken,
-          refreshToken: newRefreshToken,
-          user,
-          expiresIn: 3600
-        };
-      } catch (error) {
-        throw new AuthenticationError('Invalid refresh token');
-      }
     },
 
     updateProfile: async(_, { input }, context) => {
       const user = await getUser(context);
 
-      Object.keys(input).forEach(key => {
-        if (key in ['firstName', 'lastName']) {
-          user[key] = input[key];
-        } else if (user.profile) {
-          user.profile[key] = input[key];
-        } else {
-          user.profile = { [key]: input[key] };
+      // Check required fields
+      if (!input || Object.keys(input).length === 0) {
+        throw new UserInputError('No profile data provided');
+      }
+
+      // Update allowed fields
+      const allowedFields = ['firstName', 'lastName', 'bio', 'avatar'];
+      const updateData = {};
+
+      allowedFields.forEach(field => {
+        if (input[field] !== undefined) {
+          updateData[field] = input[field];
         }
       });
 
+      // Apply updates
+      Object.assign(user, updateData);
       await user.save();
+
       return user;
     },
 
-    updatePreferences: async(_, { input }, context) => {
+    changePassword: async(_, { currentPassword, newPassword }, context) => {
       const user = await getUser(context);
 
-      if (!user.preferences) {
-        user.preferences = {};
+      // Validate current password
+      const isMatch = await user.comparePassword(currentPassword);
+      if (!isMatch) {
+        throw new UserInputError('Current password is incorrect');
       }
 
-      Object.keys(input).forEach(key => {
-        user.preferences[key] = input[key];
-      });
+      // Validate new password
+      if (!newPassword || newPassword.length < 6) {
+        throw new UserInputError('New password must be at least 6 characters');
+      }
 
+      // Update password
+      user.password = newPassword;
       await user.save();
-      return user;
+
+      return true;
     },
 
-    uploadAvatar: async(_, { file }, context) => {
+    deleteAccount: async(_, { password }, context) => {
       const user = await getUser(context);
 
-      try {
-        const { createReadStream, filename, mimetype } = await file;
-
-        // Validate file
-        if (!mimetype.startsWith('image/')) {
-          throw new UserInputError('Only image files are allowed');
-        }
-
-        // Save file (implementation depends on your upload system)
-        const stream = createReadStream();
-        const filePath = path.join('uploads', 'avatars', `${user._id}-${Date.now()}-${filename}`);
-
-        // Create directory if it doesn't exist
-        await fs.mkdir(path.dirname(filePath), { recursive: true });
-
-        // Save file
-        const writeStream = require('fs').createWriteStream(filePath);
-        stream.pipe(writeStream);
-
-        await new Promise((resolve, reject) => {
-          writeStream.on('finish', resolve);
-          writeStream.on('error', reject);
-        });
-
-        // Update user avatar
-        user.avatar = `/upload/files/${path.basename(filePath)}`;
-        await user.save();
-
-        return user;
-      } catch (error) {
-        logger.error('Avatar upload failed:', error);
-        throw new UserInputError('Failed to upload avatar');
+      // Validate password
+      const isMatch = await user.comparePassword(password);
+      if (!isMatch) {
+        throw new UserInputError('Password is incorrect');
       }
+
+      // Delete user
+      await User.findByIdAndDelete(user._id);
+      return true;
     },
 
     uploadFile: async(_, { file }, context) => {
       const user = await getUser(context);
 
-      try {
-        const { createReadStream, filename, mimetype } = await file;
-
-        // Save file (implementation depends on your upload system)
-        const stream = createReadStream();
-        const filePath = path.join('uploads', 'files', `${Date.now()}-${filename}`);
-
-        await fs.mkdir(path.dirname(filePath), { recursive: true });
-
-        const writeStream = require('fs').createWriteStream(filePath);
-        stream.pipe(writeStream);
-
-        await new Promise((resolve, reject) => {
-          writeStream.on('finish', resolve);
-          writeStream.on('error', reject);
-        });
-
-        // Return file info (you might want to save this to database)
-        return {
-          id: Date.now().toString(),
-          filename: path.basename(filePath),
-          originalName: filename,
-          mimetype,
-          size: 0, // You might want to calculate actual size
-          path: filePath,
-          url: `/upload/files/${path.basename(filePath)}`,
-          uploadedBy: user,
-          uploadedAt: new Date()
-        };
-      } catch (error) {
-        logger.error('File upload failed:', error);
-        throw new UserInputError('Failed to upload file');
-      }
-    },
-    uploadFiles: async(_, { files }, context) => {
-      await getUser(context); // Verify user authentication
-      const uploadedFiles = [];
-
-      for (const file of files) {
-        try {
-          const result = await resolvers.Mutation.uploadFile(_, { file }, context);
-          uploadedFiles.push(result);
-        } catch (error) {
-          logger.error('Failed to upload file:', error);
-        }
-      }
-
-      return uploadedFiles;
-    },
-
-    sendMessage: async(_, { room, content }, context) => {
-      const user = await getUser(context);
-
-      const message = {
-        id: Date.now().toString(),
-        content,
-        user,
-        room,
-        timestamp: new Date(),
-        edited: false
+      // This would be implemented with file storage
+      return {
+        id: 'file-id',
+        filename: file.filename,
+        mimetype: file.mimetype,
+        url: `https://example.com/files/${file.filename}`
       };
-
-      // Broadcast to WebSocket clients
-      websocketServer.broadcastToRoom(room, 'new_message', message);
-
-      return message;
     },
 
-    updateUserRole: async(_, { userId, role }, context) => {
-      const currentUser = await getUser(context);
-      requireAdmin(currentUser);
+    deleteFile: async(_, { id }, context) => {
+      await getUser(context);
 
-      const user = await User.findById(userId);
-      if (!user) {
-        throw new UserInputError('User not found');
-      }
-
-      user.role = role.toLowerCase();
-      await user.save();
-
-      return user;
-    },
-
-    deactivateUser: async(_, { userId }, context) => {
-      const currentUser = await getUser(context);
-      requireAdmin(currentUser);
-
-      const user = await User.findById(userId);
-      if (!user) {
-        throw new UserInputError('User not found');
-      }
-
-      user.isActive = false;
-      await user.save();
-
-      return user;
-    },
-
-    activateUser: async(_, { userId }, context) => {
-      const currentUser = await getUser(context);
-      requireAdmin(currentUser);
-
-      const user = await User.findById(userId);
-      if (!user) {
-        throw new UserInputError('User not found');
-      }
-
-      user.isActive = true;
-      await user.save();
-
-      return user;
-    },
-
-    deleteUser: async(_, { userId }, context) => {
-      const currentUser = await getUser(context);
-      requireAdmin(currentUser);
-
-      if (currentUser._id.toString() === userId) {
-        throw new UserInputError('Cannot delete your own account');
-      }
-
-      const result = await User.findByIdAndDelete(userId);
-      return !!result;
+      // This would be implemented with file storage
+      return true;
     }
   },
+
+  User: {
+    // Resolve computed fields or handle references
+    fullName: (user) => {
+      return `${user.firstName || ''} ${user.lastName || ''}`.trim();
+    }
+  },
+
   Subscription: {
-    // Basic subscription placeholders - would need proper implementation
     messageAdded: {
-      subscribe: () => {
-        // Placeholder for message subscription
-        return {
-          [Symbol.asyncIterator]: async function * () {
-            // Implementation would go here
-          }
-        };
-      }
-    },
-
-    userJoined: {
-      subscribe: () => {
-        return {
-          [Symbol.asyncIterator]: async function * () {
-            // Implementation would go here
-          }
-        };
-      }
-    },
-
-    userLeft: {
       subscribe: () => {
         return {
           [Symbol.asyncIterator]: async function * () {
@@ -554,3 +312,14 @@ const resolvers = {
 };
 
 module.exports = resolvers;
+
+// Helper function to generate token (imported from auth utils)
+function generateToken(userId) {
+  const jwt = require('jsonwebtoken');
+  const config = require('../config');
+  return jwt.sign(
+    { userId: userId.toString() },
+    config.jwtSecret,
+    { expiresIn: config.jwtExpiresIn }
+  );
+}
