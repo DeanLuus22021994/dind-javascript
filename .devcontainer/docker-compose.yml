@@ -5,10 +5,17 @@ services:
       dockerfile: Dockerfile
       cache_from:
         - mcr.microsoft.com/devcontainers/base:bullseye
+      args:
+        - BUILDKIT_INLINE_CACHE=1
     image: dind-javascript-dev:latest
     container_name: dind-javascript-devcontainer
     privileged: true
     restart: unless-stopped
+    init: true
+    security_opt:
+      - seccomp:unconfined
+    cap_add:
+      - SYS_PTRACE
     volumes:
       - ..:/workspace:cached
       - /var/run/docker.sock:/var/run/docker-host.sock
@@ -18,7 +25,11 @@ services:
       - dind-npm-cache:/cache/npm
       - dind-yarn-cache:/cache/yarn
       - dind-node-modules:/workspace/node_modules
+      - dind-vscode-extensions:/home/vscode/.vscode-server/extensions
+      - dind-bash-history:/home/vscode/.bash_history
+      - dind-ssh-keys:/home/vscode/.ssh
       - dind-tmp:/tmp:cached
+      - dind-home:/home/vscode:cached
     environment:
       - DOCKER_HOST=unix:///var/run/docker-host.sock
       - BUILDKIT_HOST=docker-container://buildkit
@@ -27,8 +38,25 @@ services:
       - NPM_CONFIG_CACHE=/cache/npm
       - YARN_CACHE_FOLDER=/cache/yarn
       - NODE_ENV=development
+      - TERM=xterm-256color
+      - COLORTERM=truecolor
+      - SHELL=/bin/bash
+      - HUSKY=0
     networks:
       - devcontainer-network
+    ports:
+      - "3000:3000"
+      - "3001:3001"
+      - "4000:4000"
+      - "5000:5000"
+      - "6379:6379"
+      - "9229:9229"
+    healthcheck:
+      test: ["CMD", "docker", "version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     command: sleep infinity
 
   buildkit:
@@ -40,8 +68,47 @@ services:
       - dind-buildkit-cache:/var/lib/buildkit
     networks:
       - devcontainer-network
+    healthcheck:
+      test: ["CMD", "buildctl", "debug", "workers"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
-volumes:
+  redis:
+    image: redis:7-alpine
+    container_name: dind-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - dind-redis-data:/data
+    networks:
+      - devcontainer-network
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  registry:
+    image: registry:2
+    container_name: dind-registry
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    volumes:
+      - dind-registry-data:/var/lib/registry
+    networks:
+      - devcontainer-network
+    environment:
+      - REGISTRY_STORAGE_DELETE_ENABLED=true
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5000/v2/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3volumes:
   dind-var-lib-docker:
     driver: local
   dind-buildkit-cache:
@@ -49,6 +116,32 @@ volumes:
   dind-docker-cache:
     driver: local
   dind-npm-cache:
+    driver: local
+  dind-yarn-cache:
+    driver: local
+  dind-node-modules:
+    driver: local
+  dind-vscode-extensions:
+    driver: local
+  dind-bash-history:
+    driver: local
+  dind-ssh-keys:
+    driver: local
+  dind-tmp:
+    driver: local
+  dind-home:
+    driver: local
+  dind-redis-data:
+    driver: local
+  dind-registry-data:
+    driver: local
+
+networks:
+  devcontainer-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.100.0/24
     driver: local
   dind-yarn-cache:
     driver: local

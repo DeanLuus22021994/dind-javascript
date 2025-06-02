@@ -1,37 +1,207 @@
 {
-	"name": "Docker in Docker Enhanced",
-	"dockerComposeFile": "docker-compose.yml",
-	"service": "devcontainer",
-	"workspaceFolder": "/workspace",
-	"shutdownAction": "none",
-	"privileged": true,
-	"features": {
-		"ghcr.io/devcontainers/features/docker-in-docker:2": {
-			"version": "latest",
-			"enableNonRootDocker": "true",
-			"moby": "true",
-			"dockerDashComposeVersion": "v2"
-		},
-		"ghcr.io/devcontainers/features/nvidia-cuda:1": {},
-		"ghcr.io/devcontainers/features/node:1": {
-			"nodeGypDependencies": true,
-			"version": "lts"
-		}
-	},
-	"customizations": {
-		"vscode": {
-			"extensions": [
-				"ms-vscode-remote.remote-containers",
-				"ms-azuretools.vscode-docker"
-			]
-		}
-	},
-	"mounts": [
-		"source=dind-buildkit-cache,target=/cache/buildkit,type=volume",
-		"source=dind-docker-cache,target=/cache/docker,type=volume",
-		"source=dind-npm-cache,target=/cache/npm,type=volume",
-		"source=dind-node-modules,target=/workspace/node_modules,type=volume"
-	],
-	"postCreateCommand": "bash .devcontainer/setup.sh",
-	"postStartCommand": "bash .devcontainer/post-start.sh"
+  "name": "Docker in Docker Enhanced - Premium",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "devcontainer",
+  "workspaceFolder": "/workspace",
+  "shutdownAction": "none",
+  "privileged": true,
+  "init": true,
+  "capAdd": [
+    "SYS_PTRACE"
+  ],
+  "securityOpt": [
+    "seccomp:unconfined"
+  ],
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "version": "latest",
+      "enableNonRootDocker": "true",
+      "moby": "true",
+      "dockerDashComposeVersion": "v2",
+      "azureDnsAutoDetection": true,
+      "dockerDefaultAddressPool": "base=192.168.0.0/16,size=24"
+    },
+    "ghcr.io/devcontainers/features/nvidia-cuda:1": {
+      "installToolkit": true
+    },
+    "ghcr.io/devcontainers/features/node:1": {
+      "nodeGypDependencies": true,
+      "version": "lts",
+      "nvmVersion": "latest"
+    },
+    "ghcr.io/devcontainers/features/git:1": {
+      "ppa": true,
+      "version": "latest"
+    },
+    "ghcr.io/devcontainers/features/github-cli:1": {
+      "installDirectlyFromGitHubRelease": true,
+      "version": "latest"
+    },
+    "ghcr.io/devcontainers/features/azure-cli:1": {
+      "installBicep": true,
+      "version": "latest"
+    },
+    "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {
+      "version": "latest",
+      "helm": "latest",
+      "minikube": "latest"
+    },
+    "ghcr.io/devcontainers/features/terraform:1": {
+      "version": "latest",
+      "tflint": "latest",
+      "terragrunt": "latest"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode-remote.remote-containers",
+        "ms-azuretools.vscode-docker",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint",
+        "ms-vscode.vscode-json",
+        "orta.vscode-jest",
+        "bradlc.vscode-tailwindcss",
+        "christian-kohler.path-intellisense",
+        "formulahendry.auto-rename-tag",
+        "ms-vscode.vscode-typescript-next",
+        "streetsidesoftware.code-spell-checker",
+        "humao.rest-client",
+        "christian-kohler.npm-intellisense",
+        "eg2.vscode-npm-script",
+        "foxundermoon.shell-format",
+        "ms-vscode.node-debug2",
+        "ritwickdey.liveserver",
+        "ms-vscode.vscode-node-azure-pack",
+        "github.copilot",
+        "github.copilot-chat",
+        "ms-kubernetes-tools.vscode-kubernetes-tools",
+        "hashicorp.terraform",
+        "ms-vscode.azure-account",
+        "redhat.vscode-yaml",
+        "ms-python.python",
+        "ms-toolsai.jupyter",
+        "github.vscode-github-actions",
+        "ms-vscode.powershell",
+        "ms-dotnettools.vscode-dotnet-runtime",
+        "ms-vscode.hexeditor",
+        "gruntfuggly.todo-tree",
+        "eamodio.gitlens",
+        "ms-vscode.remote-explorer",
+        "ms-vscode-remote.remote-ssh",
+        "ms-vscode-remote.remote-wsl"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "terminal.integrated.profiles.linux": {
+          "bash": {
+            "path": "/bin/bash",
+            "args": [
+              "-l"
+            ]
+          },
+          "zsh": {
+            "path": "/bin/zsh",
+            "args": [
+              "-l"
+            ]
+          }
+        },
+        "docker.showStartPage": false,
+        "git.autofetch": true,
+        "git.enableSmartCommit": true,
+        "files.watcherExclude": {
+          "**/node_modules/**": true,
+          "**/coverage/**": true,
+          "**/dist/**": true,
+          "**/build/**": true,
+          "**/.git/**": true
+        },
+        "search.exclude": {
+          "**/node_modules": true,
+          "**/coverage": true,
+          "**/dist": true,
+          "**/build": true
+        },
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+          "source.fixAll.eslint": "explicit"
+        },
+        "eslint.validate": [
+          "javascript",
+          "javascriptreact",
+          "typescript",
+          "typescriptreact"
+        ],
+        "npm.packageManager": "npm",
+        "jest.autoRun": "watch",
+        "rest-client.environmentVariables": {
+          "$shared": {
+            "baseUrl": "http://localhost:3000"
+          }
+        }
+      }
+    }
+  },
+  "mounts": [
+    "source=dind-buildkit-cache,target=/cache/buildkit,type=volume",
+    "source=dind-docker-cache,target=/cache/docker,type=volume",
+    "source=dind-npm-cache,target=/cache/npm,type=volume",
+    "source=dind-yarn-cache,target=/cache/yarn,type=volume",
+    "source=dind-node-modules,target=/workspace/node_modules,type=volume",
+    "source=dind-vscode-extensions,target=/home/vscode/.vscode-server/extensions,type=volume",
+    "source=dind-bash-history,target=/home/vscode/.bash_history,type=volume",
+    "source=dind-ssh-keys,target=/home/vscode/.ssh,type=volume"
+  ],
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+  "postStartCommand": "bash .devcontainer/post-start.sh",
+  "remoteUser": "vscode",
+  "containerUser": "vscode",
+  "updateRemoteUserUID": true,
+  "remoteEnv": {
+    "PATH": "${containerEnv:PATH}:/home/vscode/.local/bin",
+    "DOCKER_BUILDKIT": "1",
+    "COMPOSE_DOCKER_CLI_BUILD": "1",
+    "NODE_ENV": "development",
+    "NPM_CONFIG_CACHE": "/cache/npm",
+    "YARN_CACHE_FOLDER": "/cache/yarn",
+    "HUSKY": "0"
+  },
+  "forwardPorts": [
+    3000,
+    3001,
+    4000,
+    5000,
+    6379,
+    9229
+  ],
+  "portsAttributes": {
+    "3000": {
+      "label": "Main App",
+      "onAutoForward": "notify"
+    },
+    "3001": {
+      "label": "Dev Server",
+      "onAutoForward": "silent"
+    },
+    "4000": {
+      "label": "GraphQL Playground",
+      "onAutoForward": "notify"
+    },
+    "5000": {
+      "label": "Registry",
+      "onAutoForward": "silent"
+    },
+    "6379": {
+      "label": "Redis",
+      "onAutoForward": "silent"
+    },
+    "9229": {
+      "label": "Node Debug",
+      "onAutoForward": "silent"
+    }
+  },
+  "otherPortsAttributes": {
+    "onAutoForward": "silent"
+  }
 }
