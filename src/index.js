@@ -8,7 +8,7 @@ const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 const cookieParser = require('cookie-parser');
 const session = require('express-session');
-const connectRedis = require('connect-redis');
+// (removed unused connect-redis import)
 const http = require('http');
 
 const config = require('./config');
@@ -93,11 +93,11 @@ app.use(session({
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "fonts.googleapis.com"],
-      fontSrc: ["'self'", "fonts.gstatic.com"],
-      scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https:"]
+      defaultSrc: ['\'self\''],
+      styleSrc: ['\'self\'', '\'unsafe-inline\'', 'fonts.googleapis.com'],
+      fontSrc: ['\'self\'', 'fonts.gstatic.com'],
+      scriptSrc: ['\'self\''],
+      imgSrc: ['\'self\'', 'data:', 'https:']
     }
   }
 }));
@@ -239,7 +239,7 @@ app.use('/upload', uploadRoutes);
 
 // Metrics endpoint
 if (config.enableMetrics) {
-  app.get('/metrics', async (req, res) => {
+  app.get('/metrics', async(req, res) => {
     try {
       res.set('Content-Type', register.contentType);
       res.end(await register.metrics());
@@ -318,58 +318,53 @@ async function startServer() {
   if (config.enableGraphQL) {
     try {
       const apolloServer = createApolloServer();
-      await apolloServer.start();
-      apolloServer.applyMiddleware({
+      await apolloServer.start(); apolloServer.applyMiddleware({
         app,
         path: '/graphql',
-        cors: false // Use our existing CORS setup      });
+        cors: false // Use our existing CORS setup
+      });
 
       logger.info('✅ GraphQL server initialized');
-      } catch (error) {
-        logger.error('Failed to initialize GraphQL server:', error);
-        if (config.isProduction) {
-          process.exit(1);
-        }
+    } catch (error) {
+      logger.error('Failed to initialize GraphQL server:', error);
+      if (config.isProduction) {
+        process.exit(1);
       }
     }
-
-  const serverInstance = server.listen(config.port, '0.0.0.0', () => {
-      logger.info(`🚀 Server running on http://localhost:${config.port}`);
-      logger.info(`📦 Node.js version: ${process.version}`);
-      logger.info(`🌍 Environment: ${config.nodeEnv}`); if (config.enableSwagger) {
-        logger.info(`📚 API Documentation: http://localhost:${config.port}/docs`);
-      }
-
-      if (config.enableGraphQL) {
-        logger.info(`🔗 GraphQL Playground: http://localhost:${config.port}/graphql`);
-      }
-
-      logger.info(`💊 Health Check: http://localhost:${config.port}/health`);
-
-      if (config.enableMetrics) {
-        logger.info(`📊 Metrics: http://localhost:${config.port}/metrics`);
-      }
-
-      if (config.enableWebSocket) {
-        logger.info(`🔌 WebSocket: ws://localhost:${config.port}`);
-      }
-
-      if (config.database.url) {
-        logger.info(`🗄️  Database: Connected`);
-      }
-
-      if (config.redis.url) {
-        logger.info(`🔴 Redis: Connected`);
-      }
-    });
-
-    return serverInstance;
   }
 
-  // Start the server
-  startServer().catch(error => {
-    logger.error('Failed to start server:', error);
-    process.exit(1);
+  const serverInstance = server.listen(config.port, '0.0.0.0', () => {
+    logger.info('🚀 Server running on http://localhost:' + config.port);
+    logger.info('📦 Node.js version: ' + process.version);
+    logger.info('🌍 Environment: ' + config.nodeEnv);
+    if (config.enableSwagger) {
+      logger.info('📚 API Documentation: http://localhost:' + config.port + '/docs');
+    }
+    if (config.enableGraphQL) {
+      logger.info('🔗 GraphQL Playground: http://localhost:' + config.port + '/graphql');
+    }
+    logger.info('💊 Health Check: http://localhost:' + config.port + '/health');
+    if (config.enableMetrics) {
+      logger.info('📊 Metrics: http://localhost:' + config.port + '/metrics');
+    }
+    if (config.enableWebSocket) {
+      logger.info('🔌 WebSocket: ws://localhost:' + config.port);
+    }
+    if (config.database.url) {
+      logger.info('🗄️  Database: Connected');
+    }
+    if (config.redis.url) {
+      logger.info('🔴 Redis: Connected');
+    }
   });
 
-  module.exports = app;
+  return serverInstance;
+}
+
+// Start the server
+startServer().catch(error => {
+  logger.error('Failed to start server:', error);
+  process.exit(1);
+});
+
+module.exports = app;
