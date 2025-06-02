@@ -3,13 +3,15 @@ const bcrypt = require('bcryptjs');
 const config = require('../config');
 const logger = require('./logger');
 
-class AuthService {
-  /**
+class AuthService { /**
    * Generate JWT token
    */
   generateToken(payload) {
     try {
-      return jwt.sign(payload, config.jwtSecret, {
+      // Ensure payload is an object
+      const tokenPayload = typeof payload === 'string' ? { userId: payload } : payload;
+
+      return jwt.sign(tokenPayload, config.jwtSecret, {
         expiresIn: config.jwtExpire,
         issuer: 'dind-javascript-api',
         audience: 'dind-javascript-client'
@@ -81,7 +83,7 @@ class AuthService {
    * Authentication middleware
    */
   authenticate() {
-    return async (req, res, next) => {
+    return async(req, res, next) => {
       try {
         const token = this.extractToken(req);
 
@@ -146,7 +148,7 @@ class AuthService {
    * Optional authentication middleware (doesn't fail if no token)
    */
   optionalAuth() {
-    return async (req, res, next) => {
+    return async(req, res, next) => {
       try {
         const token = this.extractToken(req);
 
@@ -165,4 +167,15 @@ class AuthService {
   }
 }
 
-module.exports = new AuthService();
+const authService = new AuthService();
+
+// Export individual functions for backward compatibility
+module.exports = authService;
+module.exports.generateToken = authService.generateToken.bind(authService);
+module.exports.verifyToken = authService.verifyToken.bind(authService);
+module.exports.hashPassword = authService.hashPassword.bind(authService);
+module.exports.comparePassword = authService.comparePassword.bind(authService);
+module.exports.requireAuth = authService.authenticate.bind(authService);
+module.exports.requireRole = authService.authorize.bind(authService);
+module.exports.optionalAuth = authService.optionalAuth.bind(authService);
+module.exports.AuthService = AuthService;

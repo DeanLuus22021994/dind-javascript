@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
 
 const userSchema = new mongoose.Schema({
@@ -104,6 +105,26 @@ const userSchema = new mongoose.Schema({
 userSchema.index({ isActive: 1, isVerified: 1 });
 userSchema.index({ createdAt: -1 });
 
+// Pre-save middleware to hash password
+userSchema.pre('save', async function(next) {
+  // Only hash the password if it has been modified (or is new)
+  if (!this.isModified('password')) return next();
+
+  try {
+    // Hash password with cost of 12
+    const hashedPassword = await bcrypt.hash(this.password, 12);
+    this.password = hashedPassword;
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Method to compare password
+userSchema.methods.comparePassword = async function(candidatePassword) {
+  return await bcrypt.compare(candidatePassword, this.password);
+};
+
 // Virtual for full name
 userSchema.virtual('fullName').get(function() {
   return `${this.firstName} ${this.lastName}`;
@@ -157,6 +178,13 @@ userSchema.methods.toSafeObject = function() {
   const user = this.toObject();
   delete user.password;
   return user;
+};
+
+// Override toObject to exclude password by default
+userSchema.methods.toObject = function(options) {
+  const obj = mongoose.Document.prototype.toObject.call(this, options);
+  delete obj.password;
+  return obj;
 };
 
 // Transform JSON output to exclude password
