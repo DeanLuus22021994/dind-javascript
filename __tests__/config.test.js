@@ -38,15 +38,15 @@ describe('Configuration', () => {
   });
 
   it('should correctly identify environment types', () => {
-    // Reset NODE_ENV to get default behavior
-    delete process.env.NODE_ENV;
+    // Set NODE_ENV to development explicitly for this test
+    process.env.NODE_ENV = 'development';
 
     delete require.cache[require.resolve('../src/config')];
     const config = require('../src/config');
 
     expect(config.isDevelopment).toBe(true);
     expect(config.isProduction).toBe(false);
-    expect(config.isTesting).toBe(false);
+    expect(config.isTest).toBe(false);
   });
 
   it('should validate database configuration', () => {

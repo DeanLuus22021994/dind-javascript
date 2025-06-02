@@ -10,7 +10,7 @@ const logger = require('../utils/logger');
  */
 router.get('/', (req, res) => {
   const healthData = {
-    status: 'healthy', // Changed to match test expectations
+    status: 'healthy',
     timestamp: new Date().toISOString(),
     uptime: `${Math.floor(process.uptime())}s`,
     version: process.env.npm_package_version || '1.0.0',
@@ -86,7 +86,7 @@ router.get('/detailed', async(req, res) => {
           connections: 0
         }
       },
-      resources: { // Added resources section for test expectations
+      resources: {
         memory: {
           usage: `${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)} MB`,
           percentage: `${Math.round((process.memoryUsage().heapUsed / process.memoryUsage().heapTotal) * 100)}%`
@@ -279,7 +279,6 @@ async function checkRedisStatus() {
 }
 
 async function checkEmailServiceStatus() {
-  logger.warn('Email service not configured - missing credentials');
   return {
     status: 'degraded',
     message: 'Email service credentials not configured'
