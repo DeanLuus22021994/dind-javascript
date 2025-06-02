@@ -96,13 +96,12 @@ services:
       interval: 10s
       timeout: 3s
       retries: 3
-
   registry:
     image: registry:2
     container_name: dind-registry
     restart: unless-stopped
     ports:
-      - "5000:5000"
+      - "5001:5000"
     volumes:
       - dind-registry-data:/var/lib/registry
     networks:
