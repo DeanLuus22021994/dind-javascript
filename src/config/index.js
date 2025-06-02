@@ -37,10 +37,12 @@ const config = {
   logLevel: process.env.LOG_LEVEL || 'info',
   logFileMaxSize: parseInt(process.env.LOG_FILE_MAX_SIZE) || 5242880, // 5MB
   logMaxFiles: parseInt(process.env.LOG_MAX_FILES) || 5,
-
   // Monitoring
   enableMetrics: process.env.ENABLE_METRICS === 'true',
   metricsPort: process.env.METRICS_PORT || 9090,
+
+  // GraphQL
+  enableGraphQL: process.env.ENABLE_GRAPHQL !== 'false', // Enabled by default
 
   // CORS
   corsOrigins: process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : ['http://localhost:3000'],

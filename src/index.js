@@ -17,6 +17,7 @@ const database = require('./utils/database');
 const redisClient = require('./utils/redis');
 const websocketServer = require('./utils/websocket');
 const { register, metricsMiddleware } = require('./utils/metrics');
+const { createApolloServer } = require('./graphql/server');
 
 // Import routes
 const apiRoutes = require('./routes/api');
@@ -313,13 +314,38 @@ async function startServer() {
   // Initialize connections first
   await initializeConnections();
 
+  // Initialize GraphQL server if enabled
+  if (config.enableGraphQL) {
+    try {
+      const apolloServer = createApolloServer();
+      await apolloServer.start();
+      apolloServer.applyMiddleware({
+        app,
+        path: '/graphql',
+        cors: false // Use our existing CORS setup
+      });
+
+      // Install subscription handlers
+      apolloServer.installSubscriptionHandlers(server);
+
+      logger.info('✅ GraphQL server initialized');
+    } catch (error) {
+      logger.error('Failed to initialize GraphQL server:', error);
+      if (config.isProduction) {
+        process.exit(1);
+      }
+    }
+  }
+
   const serverInstance = server.listen(config.port, '0.0.0.0', () => {
     logger.info(`🚀 Server running on http://localhost:${config.port}`);
     logger.info(`📦 Node.js version: ${process.version}`);
-    logger.info(`🌍 Environment: ${config.nodeEnv}`);
-
-    if (config.enableSwagger) {
+    logger.info(`🌍 Environment: ${config.nodeEnv}`); if (config.enableSwagger) {
       logger.info(`📚 API Documentation: http://localhost:${config.port}/docs`);
+    }
+
+    if (config.enableGraphQL) {
+      logger.info(`🔗 GraphQL Playground: http://localhost:${config.port}/graphql`);
     }
 
     logger.info(`💊 Health Check: http://localhost:${config.port}/health`);
