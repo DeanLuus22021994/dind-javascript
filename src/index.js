@@ -59,33 +59,34 @@ app.set('trust proxy', 1);
 app.use(cookieParser());
 
 // Session configuration
-if (config.redis.url) {
-  const RedisStore = connectRedis.default ? connectRedis.default(session) : connectRedis(session);
-  app.use(session({
-    store: new RedisStore({ client: redisClient.client }),
-    secret: config.sessionSecret,
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: config.isProduction,
-      httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
-    },
-    name: 'dind.sid'
-  }));
-} else {
-  app.use(session({
-    secret: config.sessionSecret,
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: config.isProduction,
-      httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
-    },
-    name: 'dind.sid'
-  }));
-}
+// Note: Redis sessions temporarily disabled due to connect-redis version compatibility
+// if (config.redis.url) {
+//   const RedisStore = connectRedis.default || connectRedis;
+//   app.use(session({
+//     store: new RedisStore({ client: redisClient.client }),
+//     secret: config.sessionSecret,
+//     resave: false,
+//     saveUninitialized: false,
+//     cookie: {
+//       secure: config.isProduction,
+//       httpOnly: true,
+//       maxAge: 24 * 60 * 60 * 1000 // 24 hours
+//     },
+//     name: 'dind.sid'
+//   }));
+// } else {
+app.use(session({
+  secret: config.sessionSecret,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: config.isProduction,
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  },
+  name: 'dind.sid'
+}));
+// }
 
 // Security middleware
 app.use(helmet({
