@@ -9,9 +9,8 @@ services:
     container_name: dind-javascript-devcontainer
     privileged: true
     restart: unless-stopped
-    
     volumes:
-      - ../..:/workspaces:cached
+      - ..:/workspace:cached
       - /var/run/docker.sock:/var/run/docker-host.sock
       - dind-var-lib-docker:/var/lib/docker
       - dind-buildkit-cache:/cache/buildkit
@@ -20,7 +19,6 @@ services:
       - dind-yarn-cache:/cache/yarn
       - dind-node-modules:/workspace/node_modules
       - dind-tmp:/tmp:cached
-    
     environment:
       - DOCKER_HOST=unix:///var/run/docker-host.sock
       - BUILDKIT_HOST=docker-container://buildkit
@@ -29,10 +27,8 @@ services:
       - NPM_CONFIG_CACHE=/cache/npm
       - YARN_CACHE_FOLDER=/cache/yarn
       - NODE_ENV=development
-    
     networks:
       - devcontainer-network
-    
     command: sleep infinity
 
   buildkit:
