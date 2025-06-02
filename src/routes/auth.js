@@ -10,7 +10,7 @@ const router = express.Router();
  * @apiName RegisterUser
  * @apiGroup Authentication
  */
-router.post('/register', async (req, res) => {
+router.post('/register', async(req, res) => {
   try {
     const { username, email, password, firstName, lastName } = req.body;
 
@@ -54,6 +54,8 @@ router.post('/register', async (req, res) => {
       user: user.toJSON()
     });
   } catch (error) {
+    logger.error('Registration error:', error);
+
     if (error.name === 'ValidationError') {
       const errors = Object.values(error.errors).map(err => err.message);
       return res.status(400).json({ error: errors.join(', ') });
@@ -67,7 +69,7 @@ router.post('/register', async (req, res) => {
  * @apiName LoginUser
  * @apiGroup Authentication
  */
-router.post('/login', async (req, res) => {
+router.post('/login', async(req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -106,7 +108,6 @@ router.post('/login', async (req, res) => {
       token,
       user: user.toJSON()
     });
-
   } catch (error) {
     logger.error('Login error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -118,9 +119,9 @@ router.post('/login', async (req, res) => {
  * @apiName GetProfile
  * @apiGroup Authentication
  */
-router.get('/profile', requireAuth, async (req, res) => {
-  try {
 router.get('/profile', requireAuth, async(req, res) => {
+  try {
+    res.json({
       user: req.user.toJSON()
     });
   } catch (error) {
@@ -134,9 +135,9 @@ router.get('/profile', requireAuth, async(req, res) => {
  * @apiName UpdateProfile
  * @apiGroup Authentication
  */
-router.put('/profile', requireAuth, async (req, res) => {
-  try {
 router.put('/profile', requireAuth, async(req, res) => {
+  try {
+    const { firstName, lastName } = req.body;
 
     const user = await User.findByIdAndUpdate(
       req.user._id,
@@ -148,7 +149,6 @@ router.put('/profile', requireAuth, async(req, res) => {
       message: 'Profile updated successfully',
       user: user.toJSON()
     });
-
   } catch (error) {
     logger.error('Profile update error:', error);
 
@@ -166,11 +166,10 @@ router.put('/profile', requireAuth, async(req, res) => {
  * @apiName LogoutUser
  * @apiGroup Authentication
  */
-router.post('/logout', requireAuth, async (req, res) => {
-  try {
 router.post('/logout', requireAuth, async(req, res) => {
+  try {
+    // In a more sophisticated implementation, you might blacklist the token
     // For now, we'll just return success since JWT tokens are stateless
-
     logger.info(`User logged out: ${req.user.email}`);
 
     res.json({ message: 'Logout successful' });
