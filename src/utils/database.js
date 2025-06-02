@@ -17,12 +17,8 @@ class Database {
 
       const dbUrl = config.isTesting ? config.database.testUrl : config.database.url;
 
-      logger.info(`Connecting to database: ${dbUrl.replace(/\/\/.*@/, '//***:***@')}`);
-
-      // Connection options
+      logger.info(`Connecting to database: ${dbUrl.replace(/\/\/.*@/, '//***:***@')}`);      // Connection options
       const options = {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
         maxPoolSize: 10,
         serverSelectionTimeoutMS: 5000,
         socketTimeoutMS: 45000,

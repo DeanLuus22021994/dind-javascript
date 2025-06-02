@@ -100,19 +100,17 @@ const userSchema = new mongoose.Schema({
   versionKey: false
 });
 
-// Indexes
-userSchema.index({ email: 1 });
-userSchema.index({ username: 1 });
+// Indexes for performance (email and username already have unique indexes from schema)
 userSchema.index({ isActive: 1, isVerified: 1 });
 userSchema.index({ createdAt: -1 });
 
 // Virtual for full name
-userSchema.virtual('fullName').get(function () {
+userSchema.virtual('fullName').get(function() {
   return `${this.firstName} ${this.lastName}`;
 });
 
 // Virtual for public profile
-userSchema.virtual('publicProfile').get(function () {
+userSchema.virtual('publicProfile').get(function() {
   return {
     id: this._id,
     username: this.username,
@@ -130,24 +128,24 @@ userSchema.virtual('publicProfile').get(function () {
 });
 
 // Method to check if user has role
-userSchema.methods.hasRole = function (role) {
+userSchema.methods.hasRole = function(role) {
   return this.roles.includes(role);
 };
 
 // Method to add role
-userSchema.methods.addRole = function (role) {
+userSchema.methods.addRole = function(role) {
   if (!this.roles.includes(role)) {
     this.roles.push(role);
   }
 };
 
 // Method to remove role
-userSchema.methods.removeRole = function (role) {
+userSchema.methods.removeRole = function(role) {
   this.roles = this.roles.filter(r => r !== role);
 };
 
 // Method to update login info
-userSchema.methods.updateLoginInfo = function (ipAddress, userAgent) {
+userSchema.methods.updateLoginInfo = function(ipAddress, userAgent) {
   this.lastLoginAt = new Date();
   this.metadata.loginCount += 1;
   this.metadata.lastIpAddress = ipAddress;
@@ -155,21 +153,21 @@ userSchema.methods.updateLoginInfo = function (ipAddress, userAgent) {
 };
 
 // Method to get safe user object (without password)
-userSchema.methods.toSafeObject = function () {
+userSchema.methods.toSafeObject = function() {
   const user = this.toObject();
   delete user.password;
   return user;
 };
 
 // Transform JSON output to exclude password
-userSchema.methods.toJSON = function () {
+userSchema.methods.toJSON = function() {
   const user = this.toObject();
   delete user.password;
   return user;
 };
 
 // Static method to find by email or username
-userSchema.statics.findByEmailOrUsername = function (identifier) {
+userSchema.statics.findByEmailOrUsername = function(identifier) {
   return this.findOne({
     $or: [
       { email: identifier.toLowerCase() },
@@ -179,7 +177,7 @@ userSchema.statics.findByEmailOrUsername = function (identifier) {
 };
 
 // Static method to get active users
-userSchema.statics.getActiveUsers = function () {
+userSchema.statics.getActiveUsers = function() {
   return this.find({ isActive: true, isVerified: true });
 };
 
