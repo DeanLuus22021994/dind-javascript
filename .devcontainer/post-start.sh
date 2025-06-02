@@ -1,4 +1,5 @@
 #!/bin/bash
+# filepath: c:\Projects\dind-javascript\.devcontainer\post-start.sh
 set -e
 
 echo "🚀 Running post-start configuration..."
@@ -57,7 +58,7 @@ echo "🔥 Warming up Docker image cache..."
 # Install project dependencies if package.json exists
 if [ -f "/workspace/package.json" ]; then
   echo "📦 Installing project dependencies..."
-  cd /workspace
+  cd /workspace || exit 1
   npm install --cache /cache/npm
   echo "✅ Dependencies installed"
 fi
@@ -112,7 +113,7 @@ alias redis-cli='redis-cli -h localhost'
 alias psql-dev='PGPASSWORD=devpass psql -h localhost -U devuser -d devdb'
 
 # Health checks
-alias health='bash /workspace/scripts/health-check.sh'
+alias health='bash /workspace/.devcontainer/validate.sh'
 
 # Development helpers
 alias logs-app='tail -f /workspace/logs/combined.log'
@@ -122,8 +123,11 @@ alias build-local='docker buildx bake --load'
 alias push-local='docker buildx bake --set *.output=type=registry,registry.insecure=true'
 EOF
 
-# Source aliases in current session
-source /workspace/.devcontainer-aliases 2>/dev/null || true
+# Source aliases in current session (with proper error handling)
+if [ -f /workspace/.devcontainer-aliases ]; then
+    # shellcheck source=/dev/null
+    source /workspace/.devcontainer-aliases 2>/dev/null || true
+fi
 
 # Create a development status dashboard
 echo "📊 Creating development dashboard..."
@@ -142,7 +146,7 @@ echo ""
 
 # Services status
 echo "🏃 Services:"
-docker-compose ps --format "table {{.Name}}\t{{.Status}}" | tail -n +2 | while read line; do
+docker-compose ps --format "table {{.Name}}\t{{.Status}}" | tail -n +2 | while read -r line; do
   echo "  $line"
 done
 echo ""
@@ -185,9 +189,9 @@ EOF
 chmod +x /workspace/dev-status.sh
 
 # Run initial health check
-if [ -f "/workspace/scripts/health-check.sh" ]; then
+if [ -f "/workspace/.devcontainer/validate.sh" ]; then
   echo "🏥 Running initial health check..."
-  timeout 30 bash /workspace/scripts/health-check.sh || echo "⚠️  Some health checks failed (services may still be starting)"
+  timeout 30 bash /workspace/.devcontainer/validate.sh || echo "⚠️  Some health checks failed (services may still be starting)"
 fi
 
 echo ""

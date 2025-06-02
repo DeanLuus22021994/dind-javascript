@@ -1,11 +1,57 @@
 #!/bin/bash
+# filepath: c:\Projects\dind-javascript\.devcontainer\validate.sh
 # DevContainer Validation and Test Suite
 # This script validates that all components of the enhanced devcontainer are working correctly
 
 set -e
 
-# Source utilities
-source "$(dirname "$0")/dev-utils.sh"
+# Source utilities with proper error handling
+SCRIPT_DIR="$(dirname "$0")"
+if [ -f "${SCRIPT_DIR}/dev-utils.sh" ]; then
+    # shellcheck source=dev-utils.sh
+    source "${SCRIPT_DIR}/dev-utils.sh"
+else
+    # Fallback functions if dev-utils.sh is not available
+    print_status() {
+        local color="$1"
+        local icon="$2"
+        local message="$3"
+        echo -e "${color}${icon} ${message}${NC:-}"
+    }
+
+    check_service() {
+        local service_name="$1"
+        local port="$2"
+        if nc -z localhost "$port" 2>/dev/null; then
+            print_status "\033[0;32m" "✅" "$service_name is accessible on port $port"
+            return 0
+        else
+            print_status "\033[0;31m" "❌" "$service_name is not accessible on port $port"
+            return 1
+        fi
+    }
+
+    # Color codes
+    RED='\033[0;31m'
+    GREEN='\033[0;32m'
+    YELLOW='\033[1;33m'
+    BLUE='\033[0;34m'
+    CYAN='\033[0;36m'
+    NC='\033[0m'
+
+    # Icons
+    SUCCESS="✅"
+    ERROR="❌"
+    WARNING="⚠️"
+    INFO="ℹ️"
+    ROCKET="🚀"
+    GEAR="⚙️"
+    PACKAGE="📦"
+    DATABASE="🗄️"
+    NETWORK="🌐"
+    DOCKER="🐳"
+    BUILD="🏗️"
+fi
 
 print_status "$BLUE" "$ROCKET" "Starting DevContainer Validation Suite"
 echo ""
@@ -85,7 +131,7 @@ fi
 
 # Test 4: Build System
 print_status "$BLUE" "$BUILD" "Test 4: Build System"
-cd /workspace
+cd /workspace || exit 1
 
 # Test docker-bake.hcl exists and is valid
 if [ -f "docker-bake.hcl" ]; then
