@@ -1,7 +1,6 @@
 export default {
   testEnvironment: 'node',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.mjs'],
-  // extensionsToTreatAsEsm removed: .js is already treated as ESM due to "type": "module"
   testMatch: ['**/__tests__/**/*.js', '**/src/tests/**/*.test.js', '**/?(*.)+(spec|test).js'],
   testPathIgnorePatterns: ['/node_modules/', '/src/tests/test-setup.js'],
   collectCoverageFrom: [
@@ -13,5 +12,7 @@ export default {
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
   verbose: false,
-  silent: false
+  silent: false,
+  transform: {},
+  extensionsToTreatAsEsm: ['.js', '.mjs']
 };
