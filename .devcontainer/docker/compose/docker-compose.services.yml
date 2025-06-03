@@ -1,9 +1,7 @@
-# yaml-language-server: $schema=https://raw.githubusercontent.com/compose-spec/compose-spec/master/schema/compose-spec.json
-
 services:
   buildkit:
     build:
-      context: ../../
+      context: ../../../
       dockerfile: .devcontainer/docker/files/Dockerfile.buildkit
     image: dind-buildkit:latest
     container_name: dind-buildkit
@@ -11,6 +9,7 @@ services:
     restart: unless-stopped
     volumes:
       - dind-buildkit-cache:/var/lib/buildkit
+      - ../../config/buildkitd.toml:/etc/buildkit/buildkitd.toml:ro
     networks:
       - devcontainer-network
     environment:
@@ -24,7 +23,7 @@ services:
 
   redis:
     build:
-      context: ../../
+      context: ../../../
       dockerfile: .devcontainer/docker/files/Dockerfile.redis
     image: dind-redis:latest
     container_name: dind-redis
@@ -33,7 +32,7 @@ services:
       - "6379:6379"
     volumes:
       - dind-redis-data:/data
-      - ../config/redis.conf:/usr/local/etc/redis/redis.conf:ro
+      - ../../config/redis.conf:/usr/local/etc/redis/redis.conf:ro
     networks:
       - devcontainer-network
     environment:
@@ -48,7 +47,7 @@ services:
 
   registry:
     build:
-      context: ../../
+      context: ../../../
       dockerfile: .devcontainer/docker/files/Dockerfile.registry
     image: dind-registry:latest
     container_name: dind-registry
@@ -57,7 +56,7 @@ services:
       - "5001:5000"
     volumes:
       - dind-registry-data:/var/lib/registry
-      - ../config/registry-config.yml:/etc/docker/registry/config.yml:ro
+      - ../../config/registry-config.yml:/etc/docker/registry/config.yml:ro
     networks:
       - devcontainer-network
     environment:
@@ -74,7 +73,7 @@ services:
 
   postgres:
     build:
-      context: ../../
+      context: ../../../
       dockerfile: .devcontainer/docker/files/Dockerfile.postgres
     image: dind-postgres:latest
     container_name: dind-postgres
@@ -84,7 +83,7 @@ services:
     volumes:
       - dind-postgres-data:/var/lib/postgresql/data
       - dind-postgres-init:/docker-entrypoint-initdb.d
-      - ../config/postgresql.conf:/usr/local/share/postgresql/postgresql.conf.sample:ro
+      - ../../config/postgresql.conf:/usr/local/share/postgresql/postgresql.conf.sample:ro
     networks:
       - devcontainer-network
     environment:
@@ -93,7 +92,7 @@ services:
       - POSTGRES_PASSWORD=devpass
       - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
     env_file:
-      - ../config/performance.env
+      - ../../config/performance.env
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U devuser -d devdb"]
       interval: 10s
@@ -103,7 +102,7 @@ services:
 
   node:
     build:
-      context: ../../
+      context: ../../../
       dockerfile: .devcontainer/docker/files/Dockerfile.node
     image: dind-node:latest
     container_name: dind-node
@@ -117,7 +116,7 @@ services:
     volumes:
       - dind-node-modules:/app/node_modules
       - dind-node-cache:/opt/yarn-cache
-      - ../../..:/workspace:cached
+      - ../../../:/workspace:cached
     networks:
       - devcontainer-network
     environment:

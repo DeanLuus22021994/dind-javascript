@@ -1,13 +1,9 @@
-# Redis optimized Dockerfile
 FROM redis:7-alpine
 
 # Install monitoring tools
 RUN apk add --no-cache \
   procps \
   htop
-
-# Copy optimized Redis configuration
-COPY .devcontainer/config/redis.conf /usr/local/etc/redis/redis.conf
 
 # Create data directory with proper permissions
 RUN mkdir -p /data && chown redis:redis /data

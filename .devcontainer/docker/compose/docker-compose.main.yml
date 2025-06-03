@@ -1,7 +1,7 @@
 services:
   devcontainer:
     build:
-      context: ../../..
+      context: ../../../
       dockerfile: .devcontainer/docker/files/Dockerfile.main
       cache_from:
         - mcr.microsoft.com/devcontainers/base:bullseye
@@ -12,7 +12,7 @@ services:
     container_name: dind-javascript-devcontainer
     restart: unless-stopped
     volumes:
-      - ../../..:/workspace:cached
+      - ../../../:/workspace:cached
       - /var/run/docker.sock:/var/run/docker-host.sock
       - dind-var-lib-docker:/var/lib/docker
       - dind-home:/home/vscode:cached
