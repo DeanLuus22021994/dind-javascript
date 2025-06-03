@@ -1,4 +1,3 @@
-version: '3.9'
 services:
   buildkit:
     build:
@@ -111,15 +110,3 @@ services:
     working_dir: /workspace
     healthcheck:
       start_period: 5s
-
-networks:
-  devcontainer-network:
-    driver: bridge
-
-volumes:
-  dind-buildkit-cache:
-    driver: local
-  dind-redis-data:
-    driver: local
-  dind-registry-data:
-    driver: local
