@@ -640,6 +640,6 @@ try {
   }
 
   Write-Host "   Docker Status: $(if (Get-Command docker -ErrorAction SilentlyContinue) { 'Available' } else { 'Not Found' })" -ForegroundColor DarkCyan
-
+    
   exit 1
 }
