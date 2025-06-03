@@ -1,14 +1,15 @@
 #!/bin/bash
+# shellcheck disable=SC1090,SC1091
 # Development Environment Configuration and Utilities
 # Updated to use modular utilities
 
 # Source our modular utilities
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=core-utils.sh
+# shellcheck source=./core-utils.sh
 source "$SCRIPT_DIR/core-utils.sh"
-# shellcheck source=docker-utils.sh
+# shellcheck source=./docker-utils.sh
 source "$SCRIPT_DIR/docker-utils.sh"
-# shellcheck source=service-utils.sh
+# shellcheck source=./service-utils.sh
 source "$SCRIPT_DIR/service-utils.sh"
 
 # Function to wait for service
