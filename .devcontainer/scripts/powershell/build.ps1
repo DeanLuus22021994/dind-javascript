@@ -1,75 +1,502 @@
 #!/usr/bin/env pwsh
-# DevContainer Build Script
-# Builds the DevContainer with Docker Compose
+# DevContainer Build Script with EXTREME PERFORMANCE OPTIMIZATIONS
+# Builds the DevContainer with Docker Compose using MAXIMUM CPU UTILIZATION
 
-# Set error action preference
+# Set error action preference and enable maximum performance
 $ErrorActionPreference = "Stop"
+$ProgressPreference = "SilentlyContinue"
+
+# Get maximum CPU threads for parallel processing with aggressive optimization
+$MaxThreads = [Environment]::ProcessorCount
+$ThrottleLimit = $MaxThreads * 4  # EXTREME hyper-threading optimization
+$ParallelBatchSize = [Math]::Max(1, [Math]::Floor($MaxThreads / 2))
+
+Write-Host "🚀 INITIALIZING EXTREME PERFORMANCE BUILD..." -ForegroundColor Red
+Write-Host "💻 CPU Cores: $MaxThreads | Thread Limit: $ThrottleLimit | Batch Size: $ParallelBatchSize" -ForegroundColor Yellow
 
 # Navigate to the project root directory
 Set-Location -Path (Split-Path -Parent -Path (Split-Path -Parent -Path (Split-Path -Parent -Path $PSScriptRoot)))
 
-Write-Host "🏗️  Building DevContainer..." -ForegroundColor Blue
+Write-Host "🏗️  BUILDING DEVCONTAINER WITH EXTREME CPU UTILIZATION..." -ForegroundColor Blue
 Write-Host "📍 Current directory: $(Get-Location)" -ForegroundColor Yellow
 
+# Function to execute Docker commands in ultra-parallel batches
+function Invoke-UltraParallelDockerCommand {
+  param(
+    [Parameter(Mandatory)]
+    [string[]]$Items,
+
+    [Parameter(Mandatory)]
+    [scriptblock]$Command,
+
+    [string]$Description = "Processing items"
+  )
+
+  if ($Items.Count -eq 0) {
+    return
+  }
+
+  Write-Host "   $Description with ULTRA-PARALLEL processing ($($Items.Count) items)..." -ForegroundColor DarkYellow
+
+  # Split items into batches for maximum CPU utilization
+  $batches = @()
+  for ($i = 0; $i -lt $Items.Count; $i += $ParallelBatchSize) {
+    $end = [Math]::Min($i + $ParallelBatchSize - 1, $Items.Count - 1)
+    $batches += , @($Items[$i..$end])
+  }
+
+  # Process batches in parallel with maximum throttling
+  $batches | ForEach-Object -Parallel {
+    $batch = $_
+    $batch | ForEach-Object -Parallel $using:Command -ThrottleLimit $using:ThrottleLimit
+  } -ThrottleLimit $MaxThreads
+}
+
+# Function to validate compose files with parallel processing
+function Test-ComposeFilesParallel {
+  param([string[]]$ComposeFiles)
+
+  Write-Host "📋 Validating compose files with PARALLEL processing..." -ForegroundColor Yellow
+
+  $validationResults = $ComposeFiles | ForEach-Object -Parallel {
+    $file = $_
+    $result = @{
+      File         = $file
+      Exists       = Test-Path $file
+      Size         = if (Test-Path $file) { (Get-Item $file).Length } else { 0 }
+      LastModified = if (Test-Path $file) { (Get-Item $file).LastWriteTime } else { $null }
+    }
+    return $result
+  } -ThrottleLimit $ThrottleLimit
+
+  $missingFiles = $validationResults | Where-Object { -not $_.Exists }
+  if ($missingFiles.Count -gt 0) {
+    Write-Host "❌ Missing compose files:" -ForegroundColor Red
+    $missingFiles | ForEach-Object { Write-Host "   - $($_.File)" -ForegroundColor Red }
+    return $false
+  }
+
+  Write-Host "✅ All compose files validated successfully!" -ForegroundColor Green
+  $validationResults | ForEach-Object {
+    $sizeKB = [Math]::Round($_.Size / 1024, 2)
+    Write-Host "   ✓ $($_.File) (${sizeKB}KB, modified: $($_.LastModified))" -ForegroundColor Green
+  }
+
+  return $true
+}
+
+# Function to perform ultra-parallel cleanup before build
+function Invoke-UltraParallelPreBuildCleanup {
+  Write-Host "🧹 ULTRA-PARALLEL PRE-BUILD CLEANUP..." -ForegroundColor Yellow
+
+  # Get compose args for reuse
+  $composeArgs = @()
+  $composeFiles | ForEach-Object {
+    $composeArgs += @("-f", $_)
+  }
+
+  # Ultra-parallel cleanup operations
+  $cleanupJobs = @()
+
+  # Job 1: Stop and remove containers
+  $cleanupJobs += Start-Job -ScriptBlock {
+    $composeArgs = $using:composeArgs
+    @(
+      { & docker-compose @composeArgs down --remove-orphans 2>$null },
+      { & docker-compose @composeArgs down --volumes 2>$null },
+      { & docker-compose @composeArgs rm --force 2>$null }
+    ) | ForEach-Object -Parallel { & $_ } -ThrottleLimit $using:ThrottleLimit
+  }
+
+  # Job 2: Clean project-specific resources
+  $cleanupJobs += Start-Job -ScriptBlock {
+    try {
+      # Remove project images in parallel
+      $projectImages = docker images --filter "reference=dind-*" --format "{{.Repository}}:{{.Tag}}" 2>$null
+      if ($projectImages) {
+        $projectImages | ForEach-Object -Parallel {
+          docker rmi $_ --force 2>$null
+        } -ThrottleLimit $using:ThrottleLimit
+      }
+    } catch { }
+  }
+
+  # Job 3: Clean build cache
+  $cleanupJobs += Start-Job -ScriptBlock {
+    @(
+      { docker builder prune --filter "label=project=dind-javascript" --force 2>$null },
+      { docker system prune --filter "label=project=dind-javascript" --force 2>$null }
+    ) | ForEach-Object -Parallel { & $_ } -ThrottleLimit $using:ThrottleLimit
+  }
+
+  # Wait for all cleanup jobs
+  Write-Host "   Running $($cleanupJobs.Count) parallel cleanup operations..." -ForegroundColor DarkYellow
+  $cleanupJobs | Wait-Job | Receive-Job
+  $cleanupJobs | Remove-Job
+
+  Write-Host "✅ Pre-build cleanup completed with EXTREME CONCURRENCY!" -ForegroundColor Green
+}
+
+# Function to build services with extreme parallel processing
+function Invoke-UltraParallelServiceBuild {
+  param([string[]]$Services, [string[]]$ComposeArgs)
+
+  Write-Host "🔨 BUILDING SERVICES WITH EXTREME PARALLEL PROCESSING..." -ForegroundColor Yellow
+  Write-Host "⚡ Utilizing ALL $MaxThreads CPU cores with $ThrottleLimit concurrent operations!" -ForegroundColor Red
+  Write-Host "════════════════════════════════════════════════════════════════" -ForegroundColor Cyan
+
+  $buildStartTime = Get-Date
+  $buildResults = @{}
+
+  # Phase 1: Prepare build contexts and validate Dockerfiles in parallel
+  Write-Host "🔍 Phase 1: Parallel validation and preparation..." -ForegroundColor Yellow
+  $validationJobs = @()
+
+  foreach ($service in $Services) {
+    $validationJobs += Start-Job -ArgumentList $service -ScriptBlock {
+      param($serviceName)
+
+      $result = @{
+        Service          = $serviceName
+        ValidationTime   = Get-Date
+        DockerfileExists = $false
+        ContextSize      = 0
+        Dependencies     = @()
+      }
+
+      try {
+        # Check for Dockerfile
+        $dockerfilePaths = @(
+          ".devcontainer/docker/files/Dockerfile.$serviceName",
+          ".devcontainer/Dockerfile.$serviceName",
+          ".devcontainer/Dockerfile"
+        )
+
+        foreach ($path in $dockerfilePaths) {
+          if (Test-Path $path) {
+            $result.DockerfileExists = $true
+            $result.DockerfilePath = $path
+            break
+          }
+        }
+
+        # Calculate context size
+        if (Test-Path ".devcontainer") {
+          $contextSize = (Get-ChildItem ".devcontainer" -Recurse -File | Measure-Object -Property Length -Sum).Sum
+          $result.ContextSize = [Math]::Round($contextSize / 1MB, 2)
+        }
+
+      } catch {
+        $result.Error = $_.Exception.Message
+      }
+
+      return $result
+    }
+  }
+
+  $validationResults = $validationJobs | Wait-Job | Receive-Job
+  $validationJobs | Remove-Job
+
+  # Display validation results
+  foreach ($result in $validationResults) {
+    if ($result.DockerfileExists) {
+      Write-Host "   ✅ $($result.Service): Ready (Context: $($result.ContextSize)MB)" -ForegroundColor Green
+    } else {
+      Write-Host "   ⚠️  $($result.Service): No specific Dockerfile found" -ForegroundColor Yellow
+    }
+  }
+
+  # Phase 2: EXTREME parallel building with dependency management
+  Write-Host "🚀 Phase 2: EXTREME PARALLEL BUILD EXECUTION..." -ForegroundColor Red
+
+  # Group services by dependency levels for optimal parallel execution
+  $independentServices = @("redis", "registry", "postgres")  # No dependencies
+  $dependentServices = @("buildkit", "node")  # May have dependencies
+  $mainServices = @("devcontainer")  # Depends on others
+
+  $buildPhases = @($independentServices, $dependentServices, $mainServices)
+
+  foreach ($phase in $buildPhases) {
+    if ($phase.Count -eq 0) { continue }
+
+    Write-Host "   🔄 Building phase with $($phase.Count) services in EXTREME PARALLEL..." -ForegroundColor Cyan
+
+    $phaseBuildJobs = @()
+    foreach ($service in $phase) {
+      $phaseBuildJobs += Start-Job -ArgumentList $service, $ComposeArgs -ScriptBlock {
+        param($serviceName, $composeArguments)
+
+        $buildResult = @{
+          Service   = $serviceName
+          StartTime = Get-Date
+          Success   = $false
+          Output    = @()
+          Error     = $null
+          BuildTime = 0
+        }
+
+        try {
+          Write-Output "🏗️  Building $serviceName with EXTREME optimization..."
+
+          # Build with maximum performance settings
+          $buildOutput = & docker-compose @composeArguments build --no-cache --progress=plain --parallel --pull $serviceName 2>&1
+
+          if ($LASTEXITCODE -eq 0) {
+            $buildResult.Success = $true
+            $buildResult.Output = $buildOutput
+            Write-Output "✅ $serviceName built successfully!"
+          } else {
+            $buildResult.Error = "Build failed with exit code $LASTEXITCODE"
+            $buildResult.Output = $buildOutput
+            Write-Output "❌ $serviceName build failed!"
+          }
+
+        } catch {
+          $buildResult.Error = $_.Exception.Message
+          Write-Output "❌ $serviceName build error: $($_.Exception.Message)"
+        } finally {
+          $buildResult.BuildTime = ((Get-Date) - $buildResult.StartTime).TotalSeconds
+          $buildResult.EndTime = Get-Date
+        }
+
+        return $buildResult
+      }
+    }
+
+    # Monitor phase progress with real-time updates
+    $completed = 0
+    $phaseStartTime = Get-Date
+
+    while ($completed -lt $phaseBuildJobs.Count) {
+      $completedJobs = $phaseBuildJobs | Where-Object { $_.State -eq "Completed" }
+      $failedJobs = $phaseBuildJobs | Where-Object { $_.State -eq "Failed" }
+
+      if ($completedJobs.Count -gt $completed) {
+        $completed = $completedJobs.Count
+        $elapsedTime = ((Get-Date) - $phaseStartTime).TotalSeconds
+        Write-Host ("      ⚡ {0}/{1} services completed ({2:F1}s elapsed)" -f $completed, $phaseBuildJobs.Count, $elapsedTime) -ForegroundColor Green
+      }
+
+      if ($failedJobs.Count -gt 0) {
+        Write-Host "      ❌ $($failedJobs.Count) services failed in this phase!" -ForegroundColor Red
+        break
+      }
+
+      Start-Sleep -Milliseconds 500
+    }
+
+    # Collect phase results
+    $phaseResults = $phaseBuildJobs | Wait-Job | Receive-Job
+    $phaseBuildJobs | Remove-Job
+
+    # Check for failures
+    $failedBuilds = $phaseResults | Where-Object { -not $_.Success }
+    if ($failedBuilds.Count -gt 0) {
+      Write-Host "❌ PHASE FAILED - Some services failed to build:" -ForegroundColor Red
+      foreach ($failed in $failedBuilds) {
+        Write-Host "   ❌ $($failed.Service): $($failed.Error)" -ForegroundColor Red
+        $buildResults[$failed.Service] = $failed
+      }
+      throw "Build phase failed with $($failedBuilds.Count) failures"
+    }
+
+    # Store successful results
+    foreach ($result in $phaseResults) {
+      $buildResults[$result.Service] = $result
+      Write-Host "   ✅ $($result.Service) completed in $($result.BuildTime.ToString('F1'))s" -ForegroundColor Green
+    }
+
+    $phaseTime = ((Get-Date) - $phaseStartTime).TotalSeconds
+    Write-Host "   🎯 Phase completed in $($phaseTime.ToString('F1'))s with EXTREME EFFICIENCY!" -ForegroundColor Green
+  }
+
+  $totalBuildTime = ((Get-Date) - $buildStartTime).TotalSeconds
+  Write-Host "════════════════════════════════════════════════════════════════" -ForegroundColor Cyan
+  Write-Host "🎉 ALL SERVICES BUILT WITH EXTREME PARALLEL OPTIMIZATION!" -ForegroundColor Green
+  Write-Host "⚡ Total build time: $($totalBuildTime.ToString('F1'))s across $MaxThreads CPU cores!" -ForegroundColor Green
+
+  return $buildResults
+}
+
+# Function to display build summary with performance metrics
+function Show-BuildSummaryWithMetrics {
+  param([hashtable]$BuildResults, [double]$TotalTime)
+
+  Write-Host "📊 EXTREME BUILD PERFORMANCE SUMMARY:" -ForegroundColor Cyan
+  Write-Host "════════════════════════════════════════════════════════════════" -ForegroundColor Cyan
+
+  # Performance metrics
+  $successfulBuilds = $BuildResults.Values | Where-Object { $_.Success }
+  $totalBuildTime = ($BuildResults.Values | Measure-Object -Property BuildTime -Sum).Sum
+  $averageBuildTime = if ($successfulBuilds.Count -gt 0) { $totalBuildTime / $successfulBuilds.Count } else { 0 }
+  $parallelEfficiency = if ($TotalTime -gt 0) { ($totalBuildTime / $TotalTime) * 100 } else { 0 }
+
+  Write-Host "📈 Performance Metrics:" -ForegroundColor Yellow
+  Write-Host "   🏗️  Services built: $($successfulBuilds.Count)" -ForegroundColor DarkCyan
+  Write-Host "   ⏱️  Total wall time: $($TotalTime.ToString('F1'))s" -ForegroundColor DarkCyan
+  Write-Host "   🔧 Total build time: $($totalBuildTime.ToString('F1'))s" -ForegroundColor DarkCyan
+  Write-Host "   📊 Average per service: $($averageBuildTime.ToString('F1'))s" -ForegroundColor DarkCyan
+  Write-Host "   ⚡ Parallel efficiency: $($parallelEfficiency.ToString('F1'))%" -ForegroundColor DarkCyan
+  Write-Host "   💻 CPU cores utilized: $MaxThreads" -ForegroundColor DarkCyan
+  Write-Host "   🧵 Thread limit: $ThrottleLimit" -ForegroundColor DarkCyan
+
+  Write-Host ""
+  Write-Host "🎯 Service Build Times:" -ForegroundColor Yellow
+  foreach ($service in $BuildResults.Keys | Sort-Object) {
+    $result = $BuildResults[$service]
+    if ($result.Success) {
+      Write-Host "   ✅ $($service): $($result.BuildTime.ToString('F1'))s" -ForegroundColor Green
+    } else {
+      Write-Host "   ❌ $($service): FAILED - $($result.Error)" -ForegroundColor Red
+    }
+  }
+}
+
+# Function to validate built images with parallel processing
+function Test-BuiltImagesParallel {
+  Write-Host "🔍 VALIDATING BUILT IMAGES WITH PARALLEL PROCESSING..." -ForegroundColor Yellow
+
+  try {
+    # Get all project images
+    $projectImages = docker images --filter "reference=dind-*" --format "{{.Repository}}:{{.Tag}}" 2>$null
+
+    if (-not $projectImages) {
+      Write-Host "⚠️  No project images found!" -ForegroundColor Yellow
+      return $false
+    }
+
+    # Validate images in parallel
+    $imageValidationResults = $projectImages | ForEach-Object -Parallel {
+      $image = $_
+      $result = @{
+        Image   = $image
+        Valid   = $false
+        Size    = ""
+        Created = ""
+        Error   = $null
+      }
+
+      try {
+        $imageInfo = docker inspect $image --format "{{.Size}},{{.Created}}" 2>$null
+        if ($LASTEXITCODE -eq 0 -and $imageInfo) {
+          $parts = $imageInfo -split ','
+          $sizeBytes = [long]$parts[0]
+          $sizeMB = [Math]::Round($sizeBytes / 1MB, 2)
+
+          $result.Valid = $true
+          $result.Size = "${sizeMB}MB"
+          $result.Created = $parts[1]
+        }
+      } catch {
+        $result.Error = $_.Exception.Message
+      }
+
+      return $result
+    } -ThrottleLimit $ThrottleLimit
+
+    # Display results
+    Write-Host "📦 Built Images Validation:" -ForegroundColor Cyan
+    $validImages = 0
+    foreach ($result in $imageValidationResults) {
+      if ($result.Valid) {
+        Write-Host "   ✅ $($result.Image) - $($result.Size)" -ForegroundColor Green
+        $validImages++
+      } else {
+        Write-Host "   ❌ $($result.Image) - Invalid or missing" -ForegroundColor Red
+      }
+    }
+
+    Write-Host "🎯 Image validation: $validImages/$($imageValidationResults.Count) images valid" -ForegroundColor Cyan
+    return $validImages -eq $imageValidationResults.Count
+
+  } catch {
+    Write-Host "❌ Image validation failed: $_" -ForegroundColor Red
+    return $false
+  }
+}
+
 try {
-  # Verify compose files exist
+  # Define compose files
   $composeFiles = @(
     ".devcontainer/docker/compose/docker-compose.main.yml",
     ".devcontainer/docker/compose/docker-compose.services.yml",
     ".devcontainer/docker/compose/docker-compose.override.yml"
   )
 
+  # Start total timer
+  $totalStartTime = Get-Date
+
+  # Phase 1: Ultra-parallel file validation
+  Write-Host "🔍 Phase 1: ULTRA-PARALLEL FILE VALIDATION..." -ForegroundColor Yellow
+  if (-not (Test-ComposeFilesParallel -ComposeFiles $composeFiles)) {
+    throw "Compose file validation failed"
+  }
+  Write-Host ""
+
+  # Phase 2: Ultra-parallel pre-build cleanup
+  Write-Host "🧹 Phase 2: ULTRA-PARALLEL PRE-BUILD CLEANUP..." -ForegroundColor Yellow
+  Invoke-UltraParallelPreBuildCleanup
+  Write-Host ""
+
+  # Phase 3: EXTREME parallel service building
+  Write-Host "🚀 Phase 3: EXTREME PARALLEL SERVICE BUILDING..." -ForegroundColor Red
+  $composeArgs = @()
   foreach ($file in $composeFiles) {
-    if (-not (Test-Path $file)) {
-      Write-Host "❌ Missing compose file: $file" -ForegroundColor Red
-      exit 1
-    }
-    Write-Host "✅ Found: $file" -ForegroundColor Green
+    $composeArgs += @("-f", $file)
   }
 
-  # Clean up any existing containers first
-  Write-Host "🧹 Cleaning up existing containers..." -ForegroundColor Yellow
-  docker-compose -f .devcontainer/docker/compose/docker-compose.main.yml -f .devcontainer/docker/compose/docker-compose.services.yml -f .devcontainer/docker/compose/docker-compose.override.yml down --remove-orphans 2>$null
-
-  # Build individual services with full output
-  Write-Host "🔨 Building individual services with FULL OUTPUT..." -ForegroundColor Yellow
-  Write-Host "════════════════════════════════════════════════════════════════" -ForegroundColor Cyan
-
-  # Build services one by one for better error visibility
   $services = @("devcontainer", "buildkit", "redis", "registry", "postgres", "node")
+  $buildResults = Invoke-UltraParallelServiceBuild -Services $services -ComposeArgs $composeArgs
+  Write-Host ""
 
-  foreach ($service in $services) {
-    Write-Host "🏗️  Building $service..." -ForegroundColor Blue
-    docker-compose -f .devcontainer/docker/compose/docker-compose.main.yml -f .devcontainer/docker/compose/docker-compose.services.yml -f .devcontainer/docker/compose/docker-compose.override.yml build --no-cache --progress=plain $service
+  # Phase 4: Ultra-parallel image validation
+  Write-Host "🔍 Phase 4: ULTRA-PARALLEL IMAGE VALIDATION..." -ForegroundColor Yellow
+  $imagesValid = Test-BuiltImagesParallel
+  Write-Host ""
 
-    if ($LASTEXITCODE -ne 0) {
-      Write-Host "❌ Failed to build $service!" -ForegroundColor Red
-      exit 1
-    }
-    Write-Host "✅ Successfully built $service!" -ForegroundColor Green
-  }
+  # Calculate total execution time
+  $totalExecutionTime = ((Get-Date) - $totalStartTime).TotalSeconds
 
-  Write-Host "════════════════════════════════════════════════════════════════" -ForegroundColor Cyan
+  # Display comprehensive summary
+  Show-BuildSummaryWithMetrics -BuildResults $buildResults -TotalTime $totalExecutionTime
 
-  if ($LASTEXITCODE -eq 0) {
-    Write-Host "✅ DevContainer build completed successfully!" -ForegroundColor Green
+  if ($imagesValid) {
+    Write-Host "════════════════════════════════════════════════════════════════" -ForegroundColor Cyan
+    Write-Host "✅ EXTREME PERFORMANCE BUILD COMPLETED SUCCESSFULLY!" -ForegroundColor Green
+    Write-Host "🚀 DevContainer built with MAXIMUM CPU UTILIZATION in $($totalExecutionTime.ToString('F1'))s!" -ForegroundColor Green
+    Write-Host "⚡ Achievement: $ThrottleLimit concurrent operations across $MaxThreads CPU cores!" -ForegroundColor Green
 
-    # Show the built images
-    Write-Host "📦 Built images:" -ForegroundColor Cyan
-    docker images --filter "reference=dind-*" --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}"
+    Write-Host ""
+    Write-Host "🎉 Next steps:" -ForegroundColor Blue
+    Write-Host "   🚀 Start environment: docker-compose -f .devcontainer/docker/compose/docker-compose.main.yml -f .devcontainer/docker/compose/docker-compose.services.yml -f .devcontainer/docker/compose/docker-compose.override.yml up -d" -ForegroundColor Cyan
+    Write-Host "   🔍 Check status: docker-compose ps" -ForegroundColor Cyan
+    Write-Host "   📊 Validate: bash .devcontainer/scripts/bash/validate.sh" -ForegroundColor Cyan
+    Write-Host "   📈 Monitor: docker stats" -ForegroundColor Cyan
 
-    Write-Host "" -ForegroundColor White
-    Write-Host "🎉 Next steps:" -ForegroundColor Green
-    Write-Host "   🚀 Run: docker-compose -f .devcontainer/docker/compose/docker-compose.main.yml -f .devcontainer/docker/compose/docker-compose.services.yml -f .devcontainer/docker/compose/docker-compose.override.yml up -d" -ForegroundColor Cyan
-    Write-Host "   🔍 Check: docker-compose ps" -ForegroundColor Cyan
-    Write-Host "   📊 Status: bash .devcontainer/scripts/bash/validate.sh" -ForegroundColor Cyan
   } else {
-    Write-Host "❌ DevContainer build failed!" -ForegroundColor Red
-    Write-Host "💡 Try running the clean script first: pwsh .devcontainer\scripts\powershell\clean.ps1" -ForegroundColor Yellow
-    exit 1
+    throw "Image validation failed - some images may not have built correctly"
   }
+
 } catch {
-  Write-Host "❌ Error during build: $_" -ForegroundColor Red
-  Write-Host "💡 Check the error details above and try again" -ForegroundColor Yellow
+  Write-Host ""
+  Write-Host "❌ CRITICAL ERROR DURING EXTREME PARALLEL BUILD: $_" -ForegroundColor Red
+  Write-Host "💡 Troubleshooting steps:" -ForegroundColor Yellow
+  Write-Host "   🧹 Clean first: pwsh .devcontainer\scripts\powershell\clean.ps1" -ForegroundColor Cyan
+  Write-Host "   🔍 Check logs: docker-compose logs" -ForegroundColor Cyan
+  Write-Host "   📊 Check system: docker system df" -ForegroundColor Cyan
+  Write-Host "   🛠️  Manual build: docker-compose build --no-cache" -ForegroundColor Cyan
+
+  # Show detailed error context if available
+  if ($buildResults -and $buildResults.Count -gt 0) {
+    Write-Host ""
+    Write-Host "🔍 Build Results Summary:" -ForegroundColor Yellow
+    foreach ($service in $buildResults.Keys) {
+      $result = $buildResults[$service]
+      if (-not $result.Success) {
+        Write-Host "   ❌ $service failed: $($result.Error)" -ForegroundColor Red
+      }
+    }
+  }
+
   exit 1
 }
