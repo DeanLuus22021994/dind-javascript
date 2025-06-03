@@ -56,7 +56,7 @@ function Test-DockerComposeFiles {
     try {
       # Test if file can be parsed as YAML/JSON
       $content = Get-Content $file -Raw
-      if ($content -match 'version\s*:\s*["\']?[\d.]+["\']?' -or $content -match 'services\s*:') {
+      if ($content -match "version\s*:\s*['" + '"' + "]?[\d.]+['" + '"' + "]?" -or $content -match "services\s*:") {
         $validationResults += @{
           File = $file
           Valid = $true
@@ -581,12 +581,12 @@ function Invoke-DockerNetworkManagement {
         return $false
       }
 
-      $args = @('network', 'create', $NetworkName)
+      $dockerArgs = @('network', 'create', $NetworkName)
       foreach ($option in $Options.GetEnumerator()) {
-        $args += "--$($option.Key)", $option.Value
+        $dockerArgs += "--$($option.Key)", $option.Value
       }
 
-      $result = & docker @args 2>&1
+      $result = & docker @dockerArgs 2>&1
       return $LASTEXITCODE -eq 0
     }
     'remove' {
@@ -647,12 +647,12 @@ function Invoke-DockerVolumeManagement {
         return $false
       }
 
-      $args = @('volume', 'create', $VolumeName)
+      $dockerArgs = @('volume', 'create', $VolumeName)
       foreach ($option in $Options.GetEnumerator()) {
-        $args += "--$($option.Key)", $option.Value
+        $dockerArgs += "--$($option.Key)", $option.Value
       }
 
-      $result = & docker @args 2>&1
+      $result = & docker @dockerArgs 2>&1
       return $LASTEXITCODE -eq 0
     }
     'remove' {

@@ -281,16 +281,16 @@ class ServiceManager {
       $attempts++
 
       if ($this.IsServiceHealthy($ServiceName)) {
-        $elapsed = ((Get-Date) - $startTime).TotalSeconds
-        Write-LogMessage -Message "✅ '$ServiceName' is healthy (${attempts} attempts, ${elapsed:F1}s)" -Level Success
+        $elapsedTime = ((Get-Date) - $startTime).TotalSeconds
+        Write-LogMessage -Message "✅ '$ServiceName' is healthy (${attempts} attempts, ${elapsedTime:F1}s)" -Level Success
         return $true
       }
 
       Start-Sleep -Seconds 2
     }
 
-    $elapsed = ((Get-Date) - $startTime).TotalSeconds
-    Write-LogMessage -Message "❌ '$ServiceName' health check timed out after ${elapsed:F1}s (${attempts} attempts)" -Level Error
+    $elapsedTime = ((Get-Date) - $startTime).TotalSeconds
+    Write-LogMessage -Message "❌ '$ServiceName' health check timed out after ${elapsedTime:F1}s (${attempts} attempts)" -Level Error
     return $false
   }
 
