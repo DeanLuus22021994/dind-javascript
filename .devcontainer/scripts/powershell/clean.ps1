@@ -15,6 +15,6 @@ if ($stopped) {
 $dangling = & docker images -q -f dangling=true
 if ($dangling) {
     foreach ($img in $dangling) {
-        & docker rmi $img | Out-Null
+        Start-Process -FilePath docker -ArgumentList @('rmi', $img) -NoNewWindow -Wait | Out-Null
     }
 }
