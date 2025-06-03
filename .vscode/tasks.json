@@ -289,7 +289,7 @@
       "type": "shell",
       "command": "bash",
       "args": [
-        "./dev-status.sh"
+        ".devcontainer/scripts/bash/dev-status.sh"
       ],
       "group": "build",
       "presentation": {
@@ -308,7 +308,7 @@
       "type": "shell",
       "command": "bash",
       "args": [
-        ".devcontainer/validate.sh"
+        ".devcontainer/scripts/bash/validate.sh"
       ],
       "group": "test",
       "presentation": {
