@@ -1,33 +1,17 @@
 #!/bin/bash
-# filepath: c:\Projects\dind-javascript\.devcontainer\validate.sh
 # DevContainer Validation and Test Suite
+# Updated to use modular utilities
 # This script validates that all components of the enhanced devcontainer are working correctly
 
 set -euo pipefail
 
-# Source utilities with proper error handling
-SCRIPT_DIR="$(dirname "$0")"
-if [ -f "${SCRIPT_DIR}/dev-utils.sh" ]; then
-    # shellcheck source=./dev-utils.sh disable=SC1091
-    source "${SCRIPT_DIR}/dev-utils.sh"
-else
-    # Fallback functions if dev-utils.sh is not available
-    print_status() {
-        local color="$1"
-        local icon="$2"
-        local message="$3"
-        echo -e "${color}${icon} ${message}${NC:-}"
-    }
+# Source our modular utilities
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/core-utils.sh"
+source "$SCRIPT_DIR/docker-utils.sh"
+source "$SCRIPT_DIR/service-utils.sh"
 
-    check_service() {
-        local service_name="$1"
-        local port="$2"
-        if command -v nc >/dev/null 2>&1 && nc -z localhost "$port" 2>/dev/null; then
-            print_status "\033[0;32m" "✅" "$service_name is accessible on port $port"
-            return 0
-        elif command -v telnet >/dev/null 2>&1; then
-            if timeout 5 bash -c "</dev/tcp/localhost/$port" 2>/dev/null; then
-                print_status "\033[0;32m" "✅" "$service_name is accessible on port $port"
+log_info "Starting DevContainer validation suite..."
                 return 0
             fi
         fi

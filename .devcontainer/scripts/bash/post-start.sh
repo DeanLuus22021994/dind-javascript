@@ -1,33 +1,23 @@
 #!/bin/bash
-# filepath: c:\Projects\dind-javascript\.devcontainer\post-start.sh
-set -e
+# Post-start configuration for devcontainer
+# Updated to use modular utilities
 
-echo "🚀 Running post-start configuration..."
+set -euo pipefail
+
+# Source our modular utilities
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/core-utils.sh"
+source "$SCRIPT_DIR/docker-utils.sh"
+source "$SCRIPT_DIR/service-utils.sh"
+
+log_info "Running post-start configuration..."
 
 # Wait for all services to be healthy
-echo "⏳ Waiting for services to be healthy..."
-timeout 120 sh -c '
-  while true; do
-    if docker-compose ps | grep -q "Up (healthy)"; then
-      echo "✅ Services are healthy"
-      break
-    fi
-    echo "⏱️  Still waiting for services..."
-    sleep 5
-  done
-'
-
-# Ensure buildkit is running and configured
-echo "🏗️  Configuring BuildKit..."
-docker buildx inspect --bootstrap || docker buildx create --name container --driver docker-container --use --bootstrap
-
-# Test registry connectivity
-echo "🗄️  Testing registry connectivity..."
-timeout 30 sh -c 'until curl -sf http://localhost:5000/v2/ > /dev/null; do sleep 2; done'
-echo "✅ Registry is accessible"
-
-# Test Redis connectivity
-echo "📦 Testing Redis connectivity..."
+log_info "Waiting for services to be healthy..."
+if ! check_all_services; then
+    log_error "Some services failed to start properly"
+    exit 1
+fi
 timeout 30 sh -c 'until redis-cli -h localhost ping > /dev/null 2>&1; do sleep 2; done'
 echo "✅ Redis is accessible"
 

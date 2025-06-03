@@ -1,19 +1,25 @@
 #!/bin/bash
-set -e
+# Enhanced Docker in Docker environment setup
+# Updated to use modular utilities
 
-echo "🚀 Setting up enhanced Docker in Docker environment..."
+set -euo pipefail
 
-# Wait for Docker daemon to be ready
-timeout 30 sh -c 'until docker info > /dev/null 2>&1; do sleep 1; done'
+# Source our modular utilities
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/core-utils.sh"
+source "$SCRIPT_DIR/docker-utils.sh"
+source "$SCRIPT_DIR/service-utils.sh"
 
-# Wait for services to be ready
-echo "⏳ Waiting for services to be ready..."
-timeout 60 sh -c 'until docker-compose ps | grep -q "Up"; do sleep 2; done'
+# Load environment configuration
+load_env_file "$(dirname "$SCRIPT_DIR")/config/performance.env"
 
-# Configure buildkit
-echo "🔧 Configuring BuildKit..."
-docker buildx create --name container --driver docker-container --use --bootstrap || true
-docker buildx inspect --bootstrap
+log_info "Setting up enhanced Docker in Docker environment..."
+
+# Check Docker system first
+if ! check_docker_system; then
+    log_error "Docker system check failed"
+    exit 1
+fi
 
 # Set up NPM/Yarn cache with proper permissions
 echo "📦 Configuring package managers..."
