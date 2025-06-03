@@ -6,9 +6,9 @@ function Stop {
     [Parameter(Mandatory = $true)]
     [string]$Container
   )
-  $dockerStopArgs = @('stop', $Container)
-  Write-Host "🐳 docker $($dockerStopArgs -join ' ')"
-  & docker @dockerStopArgs
+  $dockerStopParams = @('stop', $Container)
+  Write-Host "🐳 docker $($dockerStopParams -join ' ')"
+  & docker @dockerStopParams
   return $LASTEXITCODE -eq 0
 }
 Export-ModuleMember -Function Stop

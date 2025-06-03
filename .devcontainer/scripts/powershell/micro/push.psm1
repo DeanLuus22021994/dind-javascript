@@ -6,9 +6,9 @@ function Push {
     [Parameter(Mandatory = $true)]
     [string]$Image
   )
-  $dockerPushArgs = @('push', $Image)
-  Write-Host "🐳 docker $($dockerPushArgs -join ' ')"
-  & docker @dockerPushArgs
+  $dockerPushParams = @('push', $Image)
+  Write-Host "🐳 docker $($dockerPushParams -join ' ')"
+  & docker @dockerPushParams
   return $LASTEXITCODE -eq 0
 }
 Export-ModuleMember -Function Push

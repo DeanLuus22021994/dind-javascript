@@ -6,9 +6,9 @@ function Pull {
     [Parameter(Mandatory = $true)]
     [string]$Image
   )
-  $dockerPullArgsList = @('pull', $Image)
-  Write-Host "🐳 docker $($dockerPullArgsList -join ' ')"
-  & docker @dockerPullArgsList
+  $dockerPullParams = @('pull', $Image)
+  Write-Host "🐳 docker $($dockerPullParams -join ' ')"
+  & docker @dockerPullParams
   return $LASTEXITCODE -eq 0
 }
 Export-ModuleMember -Function Pull
