@@ -1,4 +1,5 @@
 # syntax=docker/dockerfile:1
+
 FROM node:lts-alpine AS base
 
 # Install dependencies with cache mount
