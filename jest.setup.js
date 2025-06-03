@@ -1,4 +1,6 @@
-// Suppress console logs during tests
+// Modern Jest setup using ESM, top-level await, and async hooks
+import { jest } from '@jest/globals';
+
 const originalConsoleError = console.error;
 const originalConsoleWarn = console.warn;
 const originalConsoleLog = console.log;
@@ -20,5 +22,8 @@ afterAll(() => {
 // Increase timeout for database operations
 jest.setTimeout(30000);
 
-// Setup test database and cleanup
-require('./src/tests/test-setup.js');
+// Modern async/await test setup
+const setupModule = await import('./src/tests/test-setup.js');
+if (setupModule && typeof setupModule.default === 'function') {
+  await setupModule.default();
+}

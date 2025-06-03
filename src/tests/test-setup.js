@@ -1,12 +1,15 @@
-const { MongoMemoryServer } = require('mongodb-memory-server');
-const mongoose = require('mongoose');
-const path = require('path');
-const fs = require('fs');
+import { MongoMemoryServer } from 'mongodb-memory-server';
+import mongoose from 'mongoose';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 let mongoServer;
 
-// Global setup before all tests
-beforeAll(async () => {
+export default async function globalTestSetup() {
   // Start in-memory MongoDB instance
   mongoServer = await MongoMemoryServer.create();
   const mongoUri = mongoServer.getUri();
@@ -22,32 +25,21 @@ beforeAll(async () => {
   if (!fs.existsSync(testUploadDir)) {
     fs.mkdirSync(testUploadDir, { recursive: true });
   }
-});
 
-// Global cleanup after all tests
-afterAll(async () => {
-  // Close database connection
-  await mongoose.disconnect();
-
-  // Stop in-memory MongoDB instance
-  if (mongoServer) {
-    await mongoServer.stop();
+  // Register teardown
+  if (typeof afterAll === 'function') {
+    afterAll(async () => {
+      await mongoose.disconnect();
+      if (mongoServer) {
+        await mongoServer.stop();
+      }
+      try {
+        if (fs.existsSync(testUploadDir)) {
+          fs.rmSync(testUploadDir, { recursive: true, force: true });
+        }
+      } catch (error) {
+        // Ignore cleanup errors
+      }
+    });
   }
-
-  // Clean up test upload directory
-  const testUploadDir = path.join(__dirname, '../uploads/test');
-  try {
-    if (fs.existsSync(testUploadDir)) {
-      fs.rmSync(testUploadDir, { recursive: true, force: true });
-    }
-  } catch (error) {
-    // Ignore cleanup errors
-  }
-});
-
-// Set longer timeout for database operations
-jest.setTimeout(30000);
-
-module.exports = {
-  mongoServer
-};
+}
