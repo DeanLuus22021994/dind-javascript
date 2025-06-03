@@ -60,16 +60,43 @@ $script:ServiceConfig = @{
   }
 }
 
+# Performance monitoring class for service metrics
+class ServicePerformanceMonitor {
+  [hashtable]$Timers
+  [hashtable]$Metrics
+
+  ServicePerformanceMonitor() {
+    $this.Timers = @{}
+    $this.Metrics = @{}
+  }
+
+  [void]StartTimer([string]$Name) {
+    $this.Timers[$Name] = Get-Date
+  }
+
+  [void]StopTimer([string]$Name) {
+    if ($this.Timers.ContainsKey($Name)) {
+      $elapsed = (Get-Date) - $this.Timers[$Name]
+      $this.Metrics[$Name] = $elapsed.TotalSeconds
+      $this.Timers.Remove($Name)
+    }
+  }
+
+  [hashtable]GetSummary() {
+    return $this.Metrics.Clone()
+  }
+}
+
 # Service management class for advanced operations
 class ServiceManager {
   [hashtable]$Services
   [string[]]$ComposeFiles
-  [PerformanceMonitor]$Monitor
+  [ServicePerformanceMonitor]$Monitor
 
   ServiceManager([string[]]$ComposeFiles) {
     $this.Services = $script:ServiceConfig
     $this.ComposeFiles = $ComposeFiles
-    $this.Monitor = [PerformanceMonitor]::new()
+    $this.Monitor = [ServicePerformanceMonitor]::new()
   }
 
   [array]GetServiceStartOrder() {
@@ -195,11 +222,11 @@ class ServiceManager {
       $composeArgs += 'up', '-d', '--no-recreate'
       $composeArgs += $Services
 
-      $result = & docker-compose @composeArgs 2>&1
+      $null = & docker-compose @composeArgs 2>&1
       if ($LASTEXITCODE -eq 0) {
         Write-LogMessage -Message "✅ Batch started successfully: $($Services -join ', ')" -Level Success
       } else {
-        Write-LogMessage -Message "❌ Failed to start batch: $result" -Level Error
+        Write-LogMessage -Message "❌ Failed to start batch" -Level Error
         throw "Failed to start service batch"
       }
     } catch {
@@ -254,16 +281,16 @@ class ServiceManager {
       $attempts++
 
       if ($this.IsServiceHealthy($ServiceName)) {
-        $duration = ((Get-Date) - $startTime).TotalSeconds
-        Write-LogMessage -Message "✅ '$ServiceName' is healthy (${attempts} attempts, ${duration:F1}s)" -Level Success
+        $elapsed = ((Get-Date) - $startTime).TotalSeconds
+        Write-LogMessage -Message "✅ '$ServiceName' is healthy (${attempts} attempts, ${elapsed:F1}s)" -Level Success
         return $true
       }
 
       Start-Sleep -Seconds 2
     }
 
-    $duration = ((Get-Date) - $startTime).TotalSeconds
-    Write-LogMessage -Message "❌ '$ServiceName' health check timed out after ${duration:F1}s (${attempts} attempts)" -Level Error
+    $elapsed = ((Get-Date) - $startTime).TotalSeconds
+    Write-LogMessage -Message "❌ '$ServiceName' health check timed out after ${elapsed:F1}s (${attempts} attempts)" -Level Error
     return $false
   }
 
@@ -343,7 +370,7 @@ class ServiceManager {
 
       $composeArgs += $stopOrder
 
-      $result = & docker-compose @composeArgs 2>&1
+      $null = & docker-compose @composeArgs 2>&1
 
       $this.Monitor.StopTimer("service-shutdown")
 
@@ -351,7 +378,7 @@ class ServiceManager {
         Write-LogMessage -Message "✅ Services stopped successfully" -Level Success
         return $true
       } else {
-        Write-LogMessage -Message "❌ Failed to stop services: $result" -Level Error
+        Write-LogMessage -Message "❌ Failed to stop services" -Level Error
         return $false
       }
 

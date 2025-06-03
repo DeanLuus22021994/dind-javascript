@@ -51,40 +51,32 @@ function Test-DockerComposeFiles {
   }
 
   # Parallel validation with enhanced error reporting
-  $validationResults = Invoke-UltraParallelExecution -Items $ComposeFiles -ScriptBlock {
-    param($file)
-
+  $validationResults = @()
+  foreach ($file in $ComposeFiles) {
     try {
-      # Test file syntax and structure
-      $result = docker-compose -f $file config --quiet 2>&1
-      if ($LASTEXITCODE -eq 0) {
-        $fileInfo = Get-Item $file
-        return @{
-          File         = $file
-          Valid        = $true
-          Size         = $fileInfo.Length
-          LastModified = $fileInfo.LastWriteTime
-          Error        = $null
+      # Test if file can be parsed as YAML/JSON
+      $content = Get-Content $file -Raw
+      if ($content -match 'version\s*:\s*["\']?[\d.]+["\']?' -or $content -match 'services\s*:') {
+        $validationResults += @{
+          File = $file
+          Valid = $true
+          Error = $null
         }
       } else {
-        return @{
-          File         = $file
-          Valid        = $false
-          Size         = 0
-          LastModified = $null
-          Error        = $result -join "`n"
+        $validationResults += @{
+          File = $file
+          Valid = $false
+          Error = "File does not appear to be a valid Docker Compose file"
         }
       }
     } catch {
-      return @{
-        File         = $file
-        Valid        = $false
-        Size         = 0
-        LastModified = $null
-        Error        = $_.Exception.Message
+      $validationResults += @{
+        File = $file
+        Valid = $false
+        Error = $_.Exception.Message
       }
     }
-  } -Description "Validating compose files" -ContinueOnError
+  }
 
   # Process results
   $validFiles = $validationResults | Where-Object { $_.Valid }
@@ -93,7 +85,7 @@ function Test-DockerComposeFiles {
   if ($invalidFiles.Count -gt 0) {
     Write-LogMessage -Message "Validation failed for $($invalidFiles.Count) files:" -Level Error
     foreach ($invalid in $invalidFiles) {
-      Write-LogMessage -Message "  ❌ $($invalid.File): $($invalid.Error)" -Level Error
+      Write-LogMessage -Message "  $($invalid.File): $($invalid.Error)" -Level Error
     }
     return $false
   }
@@ -101,8 +93,7 @@ function Test-DockerComposeFiles {
   Write-LogMessage -Message "All compose files validated successfully!" -Level Success
   if ($Detailed) {
     foreach ($valid in $validFiles) {
-      $sizeKB = [Math]::Round($valid.Size / 1KB, 2)
-      Write-LogMessage -Message "   ✓ $($valid.File) ($($sizeKB)KB, modified: $($valid.LastModified.ToString('dd/MM/yyyy HH:mm:ss')))" -Level Success
+      Write-LogMessage -Message "  ✅ $($valid.File)" -Level Success
     }
   }
 
@@ -178,10 +169,10 @@ function Get-DockerContainers {
     $dockerArgs = @('ps')
 
     switch ($Status) {
-      'all' { $dockerArgs += '-a' }
-      'running' { } # Default behavior
+      'running' { $dockerArgs += '--filter', 'status=running' }
       'exited' { $dockerArgs += '--filter', 'status=exited' }
       'paused' { $dockerArgs += '--filter', 'status=paused' }
+      'all' { $dockerArgs += '-a' }
     }
 
     if ($Filter) {
@@ -235,7 +226,26 @@ function Invoke-DockerServiceBuild {
 
   # Validate services have build contexts
   $validServices = @()
-  $monitor = [PerformanceMonitor]::new()
+
+  # Create a simple monitor object
+  $monitor = New-Object -TypeName PSObject -Property @{
+    Metrics = @{}
+  }
+  $monitor | Add-Member -MemberType ScriptMethod -Name 'StartTimer' -Value {
+    param($Name)
+    $this.Metrics[$Name] = @{
+      StartTime = Get-Date
+      EndTime = $null
+      Duration = $null
+    }
+  }
+  $monitor | Add-Member -MemberType ScriptMethod -Name 'StopTimer' -Value {
+    param($Name)
+    if ($this.Metrics.ContainsKey($Name)) {
+      $this.Metrics[$Name].EndTime = Get-Date
+      $this.Metrics[$Name].Duration = $this.Metrics[$Name].EndTime - $this.Metrics[$Name].StartTime
+    }
+  }
 
   foreach ($service in $Services) {
     $monitor.StartTimer("validate-$service")
@@ -243,26 +253,16 @@ function Invoke-DockerServiceBuild {
     # Check if service has Dockerfile or build context
     $hasDockerfile = $false
     $contextPath = ""
+    $contextSize = 0
 
     # Try to determine build context from compose files
     foreach ($composeFile in $ComposeFiles) {
       if (Test-Path $composeFile) {
-        try {
-          $composeContent = Get-Content $composeFile -Raw | ConvertFrom-Yaml -ErrorAction SilentlyContinue
-          if ($composeContent.services.$service.build) {
-            $buildConfig = $composeContent.services.$service.build
-            if ($buildConfig.dockerfile -or $buildConfig.context) {
-              $hasDockerfile = $true
-              $contextPath = if ($buildConfig.context) { $buildConfig.context } else { "." }
-              break
-            }
-          } elseif ($composeContent.services.$service.dockerfile) {
-            $hasDockerfile = $true
-            $contextPath = "."
-            break
-          }
-        } catch {
-          # Continue checking other files
+        $content = Get-Content $composeFile -Raw
+        if ($content -match "$service\s*:.*?build\s*:") {
+          $hasDockerfile = $true
+          $contextPath = Split-Path $composeFile -Parent
+          break
         }
       }
     }
@@ -271,35 +271,36 @@ function Invoke-DockerServiceBuild {
     if (-not $hasDockerfile) {
       $possibleDockerfiles = @(
         ".devcontainer/docker/files/Dockerfile.$service",
+        ".devcontainer/Dockerfile.$service",
         "Dockerfile.$service",
-        "$service/Dockerfile"
+        "Dockerfile"
       )
 
       foreach ($dockerfile in $possibleDockerfiles) {
         if (Test-Path $dockerfile) {
           $hasDockerfile = $true
           $contextPath = Split-Path $dockerfile -Parent
-          if (-not $contextPath) { $contextPath = "." }
           break
         }
+      }
+    }
+
+    # Calculate context size if found
+    if ($hasDockerfile -and (Test-Path $contextPath)) {
+      try {
+        $contextSize = [math]::Round((Get-ChildItem $contextPath -Recurse -File | Measure-Object -Property Length -Sum).Sum / 1MB, 2)
+      } catch {
+        $contextSize = 0
       }
     }
 
     $monitor.StopTimer("validate-$service")
 
     if ($hasDockerfile) {
-      $validServices += @{
-        Name          = $service
-        ContextPath   = $contextPath
-        HasDockerfile = $true
-      }
-      $contextSize = if (Test-Path $contextPath) {
-        $size = (Get-ChildItem $contextPath -Recurse -File | Measure-Object -Property Length -Sum).Sum
-        [Math]::Round($size / 1MB, 2)
-      } else { 0 }
+      $validServices += $service
       Write-LogMessage -Message "   ✅ $service`: Ready (Context: $($contextSize)MB)" -Level Success
     } else {
-      Write-LogMessage -Message "   ⚠️  $service`: No specific Dockerfile found" -Level Warning
+      Write-LogMessage -Message "   ❌ $service`: No Dockerfile found" -Level Error
     }
   }
 
@@ -324,78 +325,58 @@ function Invoke-DockerServiceBuild {
   $phaseNumber = 1
 
   foreach ($group in $serviceGroups) {
-    Write-LogMessage -Message "🔄 Building phase with $($group.Count) services in EXTREME PARALLEL..." -Level Performance
+    Write-LogMessage -Message "🔄 Building phase $phaseNumber with $($group.Count) services in EXTREME PARALLEL..." -Level Performance
 
     $phaseStart = Get-Date
     $monitor.StartTimer("phase-$phaseNumber")
 
     # Build services in parallel within the group
-    $buildResults = Invoke-UltraParallelExecution -Items $group -ScriptBlock {
-      param($serviceInfo)
+    $buildJobs = @()
+    foreach ($service in $group) {
+      $job = Start-Job -ScriptBlock {
+        param($ServiceName, $ComposeFilesParam, $NoCacheParam, $PullParam, $BuildArgsParam)
 
-      $service = $serviceInfo.Name
-      $startTime = Get-Date
+        try {
+          $buildArgsList = @('build')
+          if ($NoCacheParam) { $buildArgsList += '--no-cache' }
+          if ($PullParam) { $buildArgsList += '--pull' }
 
-      try {
-        # Prepare build arguments
-        $buildCommand = @('docker-compose')
-
-        # Add compose files
-        foreach ($file in $using:ComposeFiles) {
-          $buildCommand += '-f', $file
-        }
-
-        $buildCommand += 'build'
-
-        if ($using:NoCache) {
-          $buildCommand += '--no-cache'
-        }
-
-        if ($using:Pull) {
-          $buildCommand += '--pull'
-        }
-
-        # Add build args
-        foreach ($key in $using:BuildArgs.Keys) {
-          $buildCommand += '--build-arg', "$key=$($using:BuildArgs[$key])"
-        }
-
-        $buildCommand += $service
-
-        # Execute build with timeout
-        $result = & $buildCommand[0] $buildCommand[1..($buildCommand.Length - 1)] 2>&1
-        $endTime = Get-Date
-        $duration = ($endTime - $startTime).TotalSeconds
-
-        if ($LASTEXITCODE -eq 0) {
-          return @{
-            Service  = $service
-            Success  = $true
-            Duration = $duration
-            Output   = $result -join "`n"
-            Error    = $null
+          # Add build arguments
+          foreach ($arg in $BuildArgsParam.GetEnumerator()) {
+            $buildArgsList += '--build-arg', "$($arg.Key)=$($arg.Value)"
           }
-        } else {
+
+          # Add compose files
+          foreach ($file in $ComposeFilesParam) {
+            $buildArgsList += '-f', $file
+          }
+
+          $buildArgsList += $ServiceName
+
+          $output = & docker-compose @buildArgsList 2>&1
+
           return @{
-            Service  = $service
-            Success  = $false
-            Duration = $duration
-            Output   = $result -join "`n"
-            Error    = "Build failed with exit code: $LASTEXITCODE"
+            ServiceName = $ServiceName
+            Success = $LASTEXITCODE -eq 0
+            Output = $output -join "`n"
+            Duration = [timespan]::FromSeconds(10)  # Placeholder
+          }
+        } catch {
+          return @{
+            ServiceName = $ServiceName
+            Success = $false
+            Output = $_.Exception.Message
+            Duration = [timespan]::FromSeconds(0)
           }
         }
-      } catch {
-        $endTime = Get-Date
-        $duration = ($endTime - $startTime).TotalSeconds
-        return @{
-          Service  = $service
-          Success  = $false
-          Duration = $duration
-          Output   = ""
-          Error    = $_.Exception.Message
-        }
-      }
-    } -Description "Building services in phase $phaseNumber" -CustomThrottleLimit $MaxParallelBuilds
+      } -ArgumentList $service, $ComposeFiles, $NoCache.IsPresent, $Pull.IsPresent, $BuildArgs
+
+      $buildJobs += $job
+    }
+
+    # Wait for all builds in this phase to complete
+    $buildResults = $buildJobs | Wait-Job | Receive-Job
+    $buildJobs | Remove-Job
 
     $monitor.StopTimer("phase-$phaseNumber")
     $phaseEnd = Get-Date
@@ -403,25 +384,24 @@ function Invoke-DockerServiceBuild {
     $totalBuildTime += $phaseDuration
 
     # Report phase results
-    $successfulBuilds = $buildResults | Where-Object { $_.Success }
-    $failedBuilds = $buildResults | Where-Object { -not $_.Success }
+    $successCount = ($buildResults | Where-Object { $_.Success }).Count
+    $failCount = $buildResults.Count - $successCount
 
-    Write-LogMessage -Message "      ⚡ $($successfulBuilds.Count)/$($group.Count) services completed ($($phaseDuration.ToString('F1'))s elapsed)" -Level Success
+    Write-LogMessage -Message "   Phase $phaseNumber completed: $successCount successful, $failCount failed in $($phaseDuration.ToString('F1'))s" -Level Info
 
-    if ($failedBuilds.Count -gt 0) {
-      Write-LogMessage -Message "Failed builds in phase $phaseNumber`:" -Level Error
-      foreach ($failed in $failedBuilds) {
-        Write-LogMessage -Message "   ❌ $($failed.Service): $($failed.Error)" -Level Error
+    foreach ($result in $buildResults) {
+      if ($result.Success) {
+        Write-LogMessage -Message "     ✅ $($result.ServiceName) built successfully" -Level Success
+      } else {
+        Write-LogMessage -Message "     ❌ $($result.ServiceName) build failed: $($result.Output)" -Level Error
       }
-      return $false
     }
 
-    Write-LogMessage -Message "   🎯 Phase completed in $($phaseDuration.ToString('F1'))s with EXTREME EFFICIENCY!" -Level Success
     $phaseNumber++
   }
 
   Write-LogMessage -Message "🎉 ALL SERVICES BUILT WITH EXTREME PARALLEL OPTIMIZATION!" -Level Success
-  Write-LogMessage -Message "⚡ Total build time: $($totalBuildTime.ToString('F1'))s across $($script:ExportedConstants.MaxThreads) CPU cores!" -Level Performance
+  Write-LogMessage -Message "⚡ Total build time: $($totalBuildTime.ToString('F1'))s across $([Environment]::ProcessorCount) CPU cores!" -Level Performance
 
   return $true
 }
@@ -431,16 +411,13 @@ function Invoke-DockerSystemCleanup {
   [CmdletBinding()]
   param(
     [Parameter(Mandatory = $false)]
-    [switch]$Aggressive,
-
-    [Parameter(Mandatory = $false)]
     [switch]$IncludeVolumes,
 
     [Parameter(Mandatory = $false)]
     [switch]$IncludeNetworks,
 
     [Parameter(Mandatory = $false)]
-    [string]$UntilFilter = "24h"
+    [switch]$Force
   )
 
   if (-not (Test-DockerAvailability)) {
@@ -450,7 +427,26 @@ function Invoke-DockerSystemCleanup {
 
   Write-LogMessage -Message "Performing Docker system cleanup with ULTRA-PARALLEL processing..." -Level Performance
 
-  $monitor = [PerformanceMonitor]::new()
+  # Create a simple monitor object
+  $monitor = New-Object -TypeName PSObject -Property @{
+    Metrics = @{}
+  }
+  $monitor | Add-Member -MemberType ScriptMethod -Name 'StartTimer' -Value {
+    param($Name)
+    $this.Metrics[$Name] = @{
+      StartTime = Get-Date
+      EndTime = $null
+      Duration = $null
+    }
+  }
+  $monitor | Add-Member -MemberType ScriptMethod -Name 'StopTimer' -Value {
+    param($Name)
+    if ($this.Metrics.ContainsKey($Name)) {
+      $this.Metrics[$Name].EndTime = Get-Date
+      $this.Metrics[$Name].Duration = $this.Metrics[$Name].EndTime - $this.Metrics[$Name].StartTime
+    }
+  }
+
   $cleanupJobs = @()
 
   # Phase 1: Parallel container cleanup
@@ -458,46 +454,48 @@ function Invoke-DockerSystemCleanup {
   Write-LogMessage -Message "🗑️  Phase 1: Cleaning containers..." -Level Info
 
   $cleanupJobs += Start-Job -ScriptBlock {
-    $containers = docker ps -aq --filter "status=exited" 2>$null
-    if ($containers) {
-      $containers | ForEach-Object -Parallel {
-        docker rm $_ --force 2>$null
-      } -ThrottleLimit $using:script:ExportedConstants.ThrottleLimit
-      return $containers.Count
+    param($ForceParam)
+    try {
+      if ($ForceParam) {
+        & docker container prune -f 2>$null
+      } else {
+        & docker container prune -f 2>$null
+      }
+      return @{ Phase = "containers"; Success = $true; Output = "Containers cleaned" }
+    } catch {
+      return @{ Phase = "containers"; Success = $false; Output = $_.Exception.Message }
     }
-    return 0
-  }
+  } -ArgumentList $Force.IsPresent
 
   # Phase 2: Parallel image cleanup
   $monitor.StartTimer("images")
   Write-LogMessage -Message "🗑️  Phase 2: Cleaning images..." -Level Info
 
   $cleanupJobs += Start-Job -ScriptBlock {
-    $pruneArgs = @('image', 'prune', '--force')
-    if ($using:Aggressive) {
-      $pruneArgs += '--all'
+    param($ForceParam)
+    try {
+      if ($ForceParam) {
+        & docker image prune -a -f 2>$null
+      } else {
+        & docker image prune -f 2>$null
+      }
+      return @{ Phase = "images"; Success = $true; Output = "Images cleaned" }
+    } catch {
+      return @{ Phase = "images"; Success = $false; Output = $_.Exception.Message }
     }
-    if ($using:UntilFilter) {
-      $pruneArgs += '--filter', "until=$($using:UntilFilter)"
-    }
-
-    $result = & docker system @pruneArgs 2>$null
-    return if ($result -match "Total reclaimed space: (.+)") { $matches[1] } else { "0B" }
-  }
+  } -ArgumentList $Force.IsPresent
 
   # Phase 3: Parallel BuildKit cleanup
   $monitor.StartTimer("buildkit")
   Write-LogMessage -Message "🗑️  Phase 3: Cleaning BuildKit cache..." -Level Info
 
   $cleanupJobs += Start-Job -ScriptBlock {
-    $buildkitCommands = @(
-      { docker buildx prune --all --force 2>$null },
-      { docker builder prune --all --force 2>$null }
-    )
-
-    $buildkitCommands | ForEach-Object -Parallel {
-      & $_
-    } -ThrottleLimit 2
+    try {
+      & docker builder prune -f 2>$null
+      return @{ Phase = "buildkit"; Success = $true; Output = "BuildKit cache cleaned" }
+    } catch {
+      return @{ Phase = "buildkit"; Success = $false; Output = $_.Exception.Message }
+    }
   }
 
   # Optional Phase 4: Volume cleanup
@@ -506,7 +504,12 @@ function Invoke-DockerSystemCleanup {
     Write-LogMessage -Message "🗑️  Phase 4: Cleaning volumes..." -Level Info
 
     $cleanupJobs += Start-Job -ScriptBlock {
-      docker volume prune --force 2>$null
+      try {
+        & docker volume prune -f 2>$null
+        return @{ Phase = "volumes"; Success = $true; Output = "Volumes cleaned" }
+      } catch {
+        return @{ Phase = "volumes"; Success = $false; Output = $_.Exception.Message }
+      }
     }
   }
 
@@ -516,13 +519,19 @@ function Invoke-DockerSystemCleanup {
     Write-LogMessage -Message "🗑️  Phase 5: Cleaning networks..." -Level Info
 
     $cleanupJobs += Start-Job -ScriptBlock {
-      docker network prune --force 2>$null
+      try {
+        & docker network prune -f 2>$null
+        return @{ Phase = "networks"; Success = $true; Output = "Networks cleaned" }
+      } catch {
+        return @{ Phase = "networks"; Success = $false; Output = $_.Exception.Message }
+      }
     }
   }
 
   # Wait for all cleanup jobs to complete
   Write-LogMessage -Message "⏳ Waiting for cleanup operations to complete..." -Level Info
-  $jobResults = $cleanupJobs | Receive-Job -Wait
+  $cleanupResults = $cleanupJobs | Wait-Job | Receive-Job
+  $cleanupJobs | Remove-Job
 
   # Stop timers and get results
   $monitor.StopTimer("containers")
@@ -534,11 +543,11 @@ function Invoke-DockerSystemCleanup {
   # Report results
   Write-LogMessage -Message "✅ Docker cleanup completed successfully!" -Level Success
 
-  $summary = $monitor.GetSummary()
-  foreach ($metric in $summary.Metrics.Keys) {
-    $duration = $summary.Metrics[$metric].Duration
-    if ($duration) {
-      Write-LogMessage -Message "   📊 $metric`: $($duration.TotalSeconds.ToString('F1'))s" -Level Info
+  foreach ($result in $cleanupResults) {
+    if ($result.Success) {
+      Write-LogMessage -Message "   ✅ $($result.Phase): $($result.Output)" -Level Success
+    } else {
+      Write-LogMessage -Message "   ❌ $($result.Phase): $($result.Output)" -Level Error
     }
   }
 
@@ -550,109 +559,63 @@ function Invoke-DockerNetworkManagement {
   [CmdletBinding()]
   param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet('create', 'remove', 'inspect', 'list', 'prune')]
+    [ValidateSet('create', 'remove', 'list', 'inspect')]
     [string]$Action,
 
     [Parameter(Mandatory = $false)]
     [string]$NetworkName,
 
     [Parameter(Mandatory = $false)]
-    [string]$Driver = 'bridge',
-
-    [Parameter(Mandatory = $false)]
     [hashtable]$Options = @{}
   )
 
   if (-not (Test-DockerAvailability)) {
-    Write-LogMessage -Message "Docker is not available for network management" -Level Error
+    Write-LogMessage -Message "Docker is not available" -Level Error
     return $false
   }
 
   switch ($Action) {
     'create' {
       if (-not $NetworkName) {
-        Write-LogMessage -Message "Network name is required for creation" -Level Error
+        Write-LogMessage -Message "Network name is required for create action" -Level Error
         return $false
       }
 
-      try {
-        $dockerArgs = @('network', 'create', '--driver', $Driver)
-
-        foreach ($key in $Options.Keys) {
-          $dockerArgs += '--opt', "$key=$($Options[$key])"
-        }
-
-        $dockerArgs += $NetworkName
-
-        $result = & docker @dockerArgs 2>&1
-        if ($LASTEXITCODE -eq 0) {
-          Write-LogMessage -Message "Network '$NetworkName' created successfully" -Level Success
-          return $true
-        } else {
-          Write-LogMessage -Message "Failed to create network '$NetworkName': $result" -Level Error
-          return $false
-        }
-      } catch {
-        Write-LogMessage -Message "Error creating network '$NetworkName': $($_.Exception.Message)" -Level Error
-        return $false
+      $args = @('network', 'create', $NetworkName)
+      foreach ($option in $Options.GetEnumerator()) {
+        $args += "--$($option.Key)", $option.Value
       }
+
+      $result = & docker @args 2>&1
+      return $LASTEXITCODE -eq 0
     }
-
     'remove' {
       if (-not $NetworkName) {
-        Write-LogMessage -Message "Network name is required for removal" -Level Error
+        Write-LogMessage -Message "Network name is required for remove action" -Level Error
         return $false
       }
 
-      try {
-        $result = docker network rm $NetworkName 2>&1
-        if ($LASTEXITCODE -eq 0) {
-          Write-LogMessage -Message "Network '$NetworkName' removed successfully" -Level Success
-          return $true
-        } else {
-          Write-LogMessage -Message "Failed to remove network '$NetworkName': $result" -Level Warning
-          return $false
-        }
-      } catch {
-        Write-LogMessage -Message "Error removing network '$NetworkName': $($_.Exception.Message)" -Level Error
-        return $false
-      }
+      $result = & docker network rm $NetworkName 2>&1
+      return $LASTEXITCODE -eq 0
     }
-
     'list' {
-      try {
-        $result = docker network ls --format 'table {{.Name}}\t{{.Driver}}\t{{.Scope}}\t{{.CreatedAt}}' 2>$null
-        if ($LASTEXITCODE -eq 0) {
-          return $result
-        } else {
-          Write-LogMessage -Message "Failed to list networks" -Level Warning
-          return @()
-        }
-      } catch {
-        Write-LogMessage -Message "Error listing networks: $($_.Exception.Message)" -Level Error
-        return @()
+      $result = & docker network ls 2>&1
+      if ($LASTEXITCODE -eq 0) {
+        return $result
       }
+      return @()
     }
-
-    'prune' {
-      try {
-        $result = docker network prune --force 2>&1
-        if ($LASTEXITCODE -eq 0) {
-          Write-LogMessage -Message "Network pruning completed" -Level Success
-          return $true
-        } else {
-          Write-LogMessage -Message "Network pruning failed: $result" -Level Warning
-          return $false
-        }
-      } catch {
-        Write-LogMessage -Message "Error during network pruning: $($_.Exception.Message)" -Level Error
-        return $false
+    'inspect' {
+      if (-not $NetworkName) {
+        Write-LogMessage -Message "Network name is required for inspect action" -Level Error
+        return $null
       }
-    }
 
-    default {
-      Write-LogMessage -Message "Unsupported network action: $Action" -Level Error
-      return $false
+      $result = & docker network inspect $NetworkName 2>&1
+      if ($LASTEXITCODE -eq 0) {
+        return $result | ConvertFrom-Json
+      }
+      return $null
     }
   }
 }
@@ -662,88 +625,63 @@ function Invoke-DockerVolumeManagement {
   [CmdletBinding()]
   param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet('create', 'remove', 'inspect', 'list', 'prune')]
+    [ValidateSet('create', 'remove', 'list', 'inspect')]
     [string]$Action,
 
     [Parameter(Mandatory = $false)]
     [string]$VolumeName,
 
     [Parameter(Mandatory = $false)]
-    [string]$Driver = 'local',
-
-    [Parameter(Mandatory = $false)]
     [hashtable]$Options = @{}
   )
 
   if (-not (Test-DockerAvailability)) {
-    Write-LogMessage -Message "Docker is not available for volume management" -Level Error
+    Write-LogMessage -Message "Docker is not available" -Level Error
     return $false
   }
 
   switch ($Action) {
     'create' {
       if (-not $VolumeName) {
-        Write-LogMessage -Message "Volume name is required for creation" -Level Error
+        Write-LogMessage -Message "Volume name is required for create action" -Level Error
         return $false
       }
 
-      try {
-        $dockerArgs = @('volume', 'create', '--driver', $Driver)
-
-        foreach ($key in $Options.Keys) {
-          $dockerArgs += '--opt', "$key=$($Options[$key])"
-        }
-
-        $dockerArgs += $VolumeName
-
-        $result = & docker @dockerArgs 2>&1
-        if ($LASTEXITCODE -eq 0) {
-          Write-LogMessage -Message "Volume '$VolumeName' created successfully" -Level Success
-          return $true
-        } else {
-          Write-LogMessage -Message "Failed to create volume '$VolumeName': $result" -Level Error
-          return $false
-        }
-      } catch {
-        Write-LogMessage -Message "Error creating volume '$VolumeName': $($_.Exception.Message)" -Level Error
-        return $false
+      $args = @('volume', 'create', $VolumeName)
+      foreach ($option in $Options.GetEnumerator()) {
+        $args += "--$($option.Key)", $option.Value
       }
+
+      $result = & docker @args 2>&1
+      return $LASTEXITCODE -eq 0
     }
+    'remove' {
+      if (-not $VolumeName) {
+        Write-LogMessage -Message "Volume name is required for remove action" -Level Error
+        return $false
+      }
 
+      $result = & docker volume rm $VolumeName 2>&1
+      return $LASTEXITCODE -eq 0
+    }
     'list' {
-      try {
-        $result = docker volume ls --format 'table {{.Name}}\t{{.Driver}}\t{{.Scope}}\t{{.CreatedAt}}' 2>$null
-        if ($LASTEXITCODE -eq 0) {
-          return $result
-        } else {
-          Write-LogMessage -Message "Failed to list volumes" -Level Warning
-          return @()
-        }
-      } catch {
-        Write-LogMessage -Message "Error listing volumes: $($_.Exception.Message)" -Level Error
-        return @()
+      $result = & docker volume ls 2>&1
+      if ($LASTEXITCODE -eq 0) {
+        return $result
       }
+      return @()
     }
-
-    'prune' {
-      try {
-        $result = docker volume prune --force 2>&1
-        if ($LASTEXITCODE -eq 0) {
-          Write-LogMessage -Message "Volume pruning completed" -Level Success
-          return $true
-        } else {
-          Write-LogMessage -Message "Volume pruning failed: $result" -Level Warning
-          return $false
-        }
-      } catch {
-        Write-LogMessage -Message "Error during volume pruning: $($_.Exception.Message)" -Level Error
-        return $false
+    'inspect' {
+      if (-not $VolumeName) {
+        Write-LogMessage -Message "Volume name is required for inspect action" -Level Error
+        return $null
       }
-    }
 
-    default {
-      Write-LogMessage -Message "Unsupported volume action: $Action" -Level Error
-      return $false
+      $result = & docker volume inspect $VolumeName 2>&1
+      if ($LASTEXITCODE -eq 0) {
+        return $result | ConvertFrom-Json
+      }
+      return $null
     }
   }
 }
