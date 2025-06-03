@@ -139,22 +139,22 @@ cat >> /home/vscode/.bashrc << 'EOF'
 
 # Node.js aliases - commented out for non-interactive use
 # alias ni='npm install'
-alias ns='npm start'
-alias nt='npm test'
-alias nb='npm run build'
-alias yi='yarn install'
-alias ys='yarn start'
-alias yt='yarn test'
-alias yb='yarn build'
+# alias ns='npm start'
+# alias nt='npm test'
+# alias nb='npm run build'
+# alias yi='yarn install'
+# alias ys='yarn start'
+# alias yt='yarn test'
+# alias yb='yarn build'
 
-# Redis CLI shortcut
-alias redis='redis-cli -h redis'
+# Redis CLI shortcut - commented out for non-interactive use
+# alias redis='redis-cli -h redis'
 
-# PostgreSQL shortcuts
-alias psql-dev='psql -h postgres -U devuser -d devdb'
+# PostgreSQL shortcuts - commented out for non-interactive use
+# alias psql-dev='psql -h postgres -U devuser -d devdb'
 
-# Registry operations
-alias docker-push-local='docker tag $1 localhost:5000/$1 && docker push localhost:5000/$1'
+# Registry operations - commented out for non-interactive use
+# alias docker-push-local='docker tag $1 localhost:5000/$1 && docker push localhost:5000/$1'
 EOF
 
 # Set up Git configuration
