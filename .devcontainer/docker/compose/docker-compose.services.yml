@@ -1,0 +1,125 @@
+version: '3.9'
+services:
+  buildkit:
+    build:
+      context: ../../../
+      dockerfile: .devcontainer/docker/files/Dockerfile.buildkit
+    image: dind-buildkit:latest
+    container_name: dind-buildkit
+    privileged: true
+    restart: unless-stopped
+    volumes:
+      - dind-buildkit-cache:/var/lib/buildkit
+      - ../../config/buildkitd.toml:/etc/buildkit/buildkitd.toml:ro
+    networks:
+      - devcontainer-network
+    environment:
+      - BUILDKITD_FLAGS=--oci-worker-no-process-sandbox --allow-insecure-entitlement security.insecure --allow-insecure-entitlement network.host
+    healthcheck:
+      test: ["CMD", "buildctl", "debug", "workers"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  redis:
+    build:
+      context: ../../../
+      dockerfile: .devcontainer/docker/files/Dockerfile.redis
+    image: dind-redis:latest
+    container_name: dind-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - dind-redis-data:/data
+    networks:
+      - devcontainer-network
+    environment:
+      - REDIS_MAXMEMORY=256mb
+      - REDIS_MAXMEMORY_POLICY=allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+  registry:
+    build:
+      context: ../../../
+      dockerfile: .devcontainer/docker/files/Dockerfile.registry
+    image: dind-registry:latest
+    container_name: dind-registry
+    restart: unless-stopped
+    ports:
+      - "5001:5000"
+    volumes:
+      - dind-registry-data:/var/lib/registry
+      - ../../config/registry-config.yml:/etc/docker/registry/config.yml:ro
+    networks:
+      - devcontainer-network
+    environment:
+      - REGISTRY_STORAGE_DELETE_ENABLED=true
+      - REGISTRY_HTTP_HEADERS_Access-Control-Allow-Origin=['*']
+      - REGISTRY_HTTP_HEADERS_Access-Control-Allow-Methods=['HEAD','GET','OPTIONS','DELETE']
+      - REGISTRY_HTTP_HEADERS_Access-Control-Allow-Headers=['Authorization','Accept','Cache-Control']
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5000/v2/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  postgres:
+    build:
+      dockerfile: .devcontainer/docker/files/Dockerfile.postgres
+    image: dind-postgres:latest
+    container_name: dind-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    volumes:
+      - ../../config/postgresql.conf:/usr/local/share/postgresql/postgresql.conf.sample:ro
+    networks:
+      - devcontainer-network
+    environment:
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
+    env_file:
+      - ../../config/performance.env
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "devuser", "-d", "devdb", "-h", "localhost"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+  node:
+    build:
+      dockerfile: .devcontainer/docker/files/Dockerfile.node
+    image: dind-node:latest
+    container_name: dind-node
+    restart: unless-stopped
+    ports:
+      - "9229:9229"
+    volumes:
+      - ../../../:/workspace:cached
+    networks:
+      - devcontainer-network
+    environment:
+      - YARN_CACHE_FOLDER=/opt/yarn-cache
+    working_dir: /workspace
+    healthcheck:
+      start_period: 5s
+
+networks:
+  devcontainer-network:
+    driver: bridge
+
+volumes:
+  dind-buildkit-cache:
+    driver: local
+  dind-redis-data:
+    driver: local
+  dind-registry-data:
+    driver: local

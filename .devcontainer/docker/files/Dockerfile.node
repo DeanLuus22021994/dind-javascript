@@ -1,0 +1,83 @@
+# syntax=docker/dockerfile:1.8
+FROM node:slim AS base
+
+# Build arguments for optimization
+ARG BUILDKIT_INLINE_CACHE=1
+ARG BUILDPLATFORM
+ARG TARGETPLATFORM
+
+# Performance environment variables
+ENV NODE_ENV=development \
+  NPM_CONFIG_LOGLEVEL=warn \
+  YARN_CACHE_FOLDER=/cache/yarn \
+  NPM_CONFIG_CACHE=/cache/npm \
+  PNPM_HOME=/cache/pnpm \
+  NODE_OPTIONS="--max-old-space-size=4096 --enable-source-maps"
+
+WORKDIR /app
+
+# Install system dependencies with aggressive caching
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked,id=apt-cache-node-$TARGETPLATFORM \
+  --mount=type=cache,target=/var/lib/apt,sharing=locked,id=apt-lib-node-$TARGETPLATFORM \
+  rm -f /etc/apt/apt.conf.d/docker-clean \
+  && echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache \
+  && apt-get update \
+  && apt-get install -y --no-install-recommends \
+  git \
+  curl \
+  wget \
+  build-essential \
+  python3 \
+  make \
+  g++ \
+  htop \
+  procps
+
+# Create optimized cache structure
+RUN --mount=type=cache,target=/cache/node,sharing=locked,id=node-cache-$TARGETPLATFORM \
+  mkdir -p /cache/{npm,yarn,pnpm,node} \
+  && chown -R node:node /cache /app
+
+# Install global tools with aggressive caching
+RUN --mount=type=cache,target=/cache/npm,sharing=locked,id=npm-cache-node-$TARGETPLATFORM \
+  --mount=type=cache,target=/root/.npm,sharing=locked,id=npm-root-node-$TARGETPLATFORM \
+  npm config set cache /cache/npm \
+  && npm config set prefer-offline true \
+  && npm config set fetch-retries 5 \
+  && npm config set fetch-retry-mintimeout 20000 \
+  && npm config set fetch-retry-maxtimeout 120000 \
+  && npm install -g --cache /cache/npm --prefer-offline \
+  npm@latest \
+  nodemon \
+  pm2 \
+  typescript \
+  ts-node \
+  eslint \
+  prettier \
+  @angular/cli \
+  @vue/cli \
+  create-react-app \
+  nx \
+  nest \
+  @storybook/cli
+
+# Configure yarn with caching
+RUN --mount=type=cache,target=/cache/yarn,sharing=locked,id=yarn-cache-node-$TARGETPLATFORM \
+  yarn config set cache-folder /cache/yarn \
+  && yarn config set prefer-offline true
+
+USER node
+
+# Create optimized package.json with performance settings
+RUN echo '{\n  "name": "dind-node-service",\n  "version": "1.0.0",\n  "description": "High-performance Node.js development service",\n  "main": "index.js",\n  "scripts": {\n    "start": "node --enable-source-maps index.js",\n    "dev": "nodemon --enable-source-maps index.js",\n    "debug": "node --inspect=0.0.0.0:9229 --enable-source-maps index.js",\n    "test": "echo \\\"Error: no test specified\\\" && exit 1",\n    "cache:clear": "npm cache clean --force && yarn cache clean",\n    "perf:check": "node --v8-options | grep -E \\\"(max_old_space_size|enable_source_maps)\\\"\n  },\n  "engines": {\n    "node": ">=18.0.0",\n    "npm": ">=8.0.0"\n  },\n  "dependencies": {},\n  "devDependencies": {}\n}' > package.json
+
+USER root
+
+# Performance-optimized health check
+HEALTHCHECK --interval=10s --timeout=3s --start-period=3s --retries=2 \
+  CMD node --version || exit 1
+
+EXPOSE 3000 3001 8080 9000 9229
+
+# High-performance startup command
+CMD ["sh", "-c", "echo 'Node.js service ready with performance optimizations' && tail -f /dev/null"]

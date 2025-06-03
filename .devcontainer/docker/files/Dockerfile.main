@@ -1,0 +1,115 @@
+# syntax=docker/dockerfile:1.8
+FROM mcr.microsoft.com/devcontainers/base:bullseye AS base
+
+# Build arguments for maximum optimization
+ARG BUILDKIT_INLINE_CACHE=1
+ARG NODE_VERSION=lts
+ARG DEBIAN_FRONTEND=noninteractive
+ARG BUILDPLATFORM
+ARG TARGETPLATFORM
+
+# Set up environment variables for performance
+ENV DEBIAN_FRONTEND=noninteractive \
+  TZ=UTC \
+  SHELL=/bin/bash \
+  NODE_ENV=development \
+  DOCKER_BUILDKIT=1 \
+  COMPOSE_DOCKER_CLI_BUILD=1 \
+  BUILDKIT_PROGRESS=plain \
+  BUILDKIT_INLINE_CACHE=1
+
+# Create cache mount points
+RUN mkdir -p /cache/{buildkit,docker,npm,yarn,pnpm,apt,pip} \
+  && chmod 777 /cache/*
+
+# Install essential packages with aggressive caching
+FROM base AS system-deps
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked,id=apt-cache-$TARGETPLATFORM \
+  --mount=type=cache,target=/var/lib/apt,sharing=locked,id=apt-lib-$TARGETPLATFORM \
+  --mount=type=cache,target=/cache/apt,sharing=locked,id=custom-apt-$TARGETPLATFORM \
+  rm -f /etc/apt/apt.conf.d/docker-clean \
+  && echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache \
+  && apt-get update \
+  && apt-get install -y --no-install-recommends \
+  ca-certificates \
+  curl \
+  gnupg \
+  lsb-release \
+  wget \
+  software-properties-common \
+  apt-transport-https \
+  build-essential \
+  python3 \
+  python3-pip \
+  git \
+  vim \
+  nano \
+  htop \
+  jq \
+  unzip \
+  zip \
+  tree \
+  net-tools \
+  iputils-ping \
+  telnet \
+  tcpdump \
+  strace \
+  procps \
+  file \
+  rsync \
+  openssh-client \
+  sudo \
+  && mkdir -p /etc/apt/keyrings
+
+# Install Docker CLI with aggressive caching
+FROM system-deps AS docker-install
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked,id=apt-cache-docker-$TARGETPLATFORM \
+  --mount=type=cache,target=/var/lib/apt,sharing=locked,id=apt-lib-docker-$TARGETPLATFORM \
+  apt-get update && apt-get install -y docker-ce-cli
+
+# Install Node.js with caching
+FROM docker-install AS node-install
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked,id=apt-cache-node-$TARGETPLATFORM \
+  curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - \
+  && apt-get install -y nodejs
+
+# Install global Node.js tools with aggressive npm caching
+FROM node-install AS npm-global
+RUN --mount=type=cache,target=/root/.npm,sharing=locked,id=npm-root-$TARGETPLATFORM \
+  npm install -g npm@latest yarn
+
+# Install development tools with caching
+FROM npm-global AS dev-tools
+RUN --mount=type=cache,target=/cache/tools,sharing=locked,id=dev-tools-$TARGETPLATFORM \
+  yarn global add typescript ts-node eslint prettier
+
+# Final optimized stage
+FROM dev-tools AS final
+
+# Configure buildkit for maximum performance
+ENV BUILDKIT_HOST=docker-container://buildkit \
+  PATH="/home/vscode/.yarn/bin:$PATH"
+
+# Create optimized cache structure
+RUN mkdir -p /home/vscode/{.cache,.local/share,.config}
+
+# Performance-optimized shell configuration
+RUN echo '# Performance aliases' >> /home/vscode/.bashrc
+
+# Git performance optimization
+RUN git config --global --add safe.directory '*'
+
+# Switch to vscode user for final configuration
+USER vscode
+
+# Configure package managers for maximum caching
+RUN npm config set cache /cache/npm
+
+USER root
+
+# Optimized health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD node --version || exit 1
+
+# Final cleanup with cache preservation
+RUN apt-get autoremove -y

@@ -1,0 +1,47 @@
+# syntax=docker/dockerfile:1.8
+FROM registry:2 AS base
+
+# Build arguments
+ARG BUILDKIT_INLINE_CACHE=1
+ARG BUILDPLATFORM
+ARG TARGETPLATFORM
+
+# Install performance tools with caching
+RUN --mount=type=cache,target=/var/cache/apk,sharing=locked,id=apk-cache-registry-$TARGETPLATFORM \
+  --mount=type=cache,target=/etc/apk/cache,sharing=locked,id=apk-etc-registry-$TARGETPLATFORM \
+  apk add --no-cache \
+  curl \
+  wget \
+  jq \
+  htop \
+  iotop \
+  bash
+
+# Create performance-optimized registry structure
+RUN --mount=type=cache,target=/cache/registry,sharing=locked,id=registry-cache-$TARGETPLATFORM \
+  mkdir -p /var/lib/registry /cache/registry \
+  && chmod 755 /var/lib/registry /cache/registry
+
+# Performance-optimized registry configuration
+RUN echo 'version: 0.1' > /etc/docker/registry/config-perf.yml \
+  && echo 'log:' >> /etc/docker/registry/config-perf.yml \
+  && echo '  level: info' >> /etc/docker/registry/config-perf.yml \
+  && echo 'storage:' >> /etc/docker/registry/config-perf.yml \
+  && echo '  cache:' >> /etc/docker/registry/config-perf.yml \
+  && echo '    blobdescriptor: inmemory' >> /etc/docker/registry/config-perf.yml \
+  && echo '  filesystem:' >> /etc/docker/registry/config-perf.yml \
+  && echo '    rootdirectory: /var/lib/registry' >> /etc/docker/registry/config-perf.yml \
+  && echo '    maxthreads: 100' >> /etc/docker/registry/config-perf.yml \
+  && echo 'http:' >> /etc/docker/registry/config-perf.yml \
+  && echo '  addr: :5000' >> /etc/docker/registry/config-perf.yml \
+  && echo '  headers:' >> /etc/docker/registry/config-perf.yml \
+  && echo '    X-Content-Type-Options: [nosniff]' >> /etc/docker/registry/config-perf.yml
+
+# High-performance health check
+HEALTHCHECK --interval=15s --timeout=5s --retries=2 --start-period=10s \
+  CMD wget --quiet --tries=1 --spider http://localhost:5000/v2/ || curl -f http://localhost:5000/v2/ || exit 1
+
+EXPOSE 5000
+
+# Performance-optimized command
+CMD ["registry", "serve", "/etc/docker/registry/config-perf.yml"]

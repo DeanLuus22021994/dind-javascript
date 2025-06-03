@@ -1,0 +1,17 @@
+# BuildKit daemon configuration (higher)
+[worker.oci]
+enabled = true
+platforms = ["linux/amd64"]
+snapshotter = "overlayfs"
+rootless = false
+noProcessSandbox = true
+
+[grpc]
+address = ["tcp://0.0.0.0:1234"]
+
+[cache]
+maxAge = "168h"
+maxSize = "10GB"
+
+[experimental]
+enabled = true

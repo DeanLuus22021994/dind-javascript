@@ -1,0 +1,79 @@
+version: '3.9'
+services:
+  devcontainer:
+    build:
+      context: ../../../
+      dockerfile: .devcontainer/docker/files/Dockerfile.main
+      cache_from:
+        - mcr.microsoft.com/devcontainers/base:bullseye
+      args:
+        - BUILDKIT_INLINE_CACHE=1
+        - NODE_VERSION=lts
+    image: dind-javascript-dev:latest
+    container_name: dind-javascript-devcontainer
+    restart: unless-stopped
+    volumes:
+      - ../../../:/workspace:cached
+      - /var/run/docker.sock:/var/run/docker-host.sock
+      - dind-var-lib-docker:/var/lib/docker
+      - dind-home:/home/vscode:cached
+      - dind-buildkit-cache:/tmp/buildkit:cached
+      - dind-docker-cache:/tmp/docker:cached
+      - dind-npm-cache:/tmp/npm:cached
+      - dind-yarn-cache:/tmp/yarn:cached
+      - dind-node-modules:/workspace/node_modules:cached
+      - dind-vscode-extensions:/home/vscode/.vscode-server/extensions:cached
+      - dind-bash-history:/home/vscode/.bash_history:cached
+      - dind-ssh-keys:/home/vscode/.ssh:cached
+      - dind-tmp:/tmp:cached
+    networks:
+      - devcontainer-network
+    privileged: true
+    command: sleep infinity
+    working_dir: /workspace
+
+networks:
+  devcontainer-network:
+    driver: bridge
+    ipam:
+      driver: default
+    driver_opts:
+      com.docker.network.driver.mtu: 1500
+
+volumes:
+  dind-var-lib-docker:
+    driver: local
+  dind-buildkit-cache:
+    driver: local
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
+      o: size=1G,uid=1000,gid=1000
+  dind-docker-cache:
+    driver: local
+  dind-npm-cache:
+    driver: local
+  dind-yarn-cache:
+    driver: local
+  dind-node-modules:
+    driver: local
+  dind-vscode-extensions:
+    driver: local
+  dind-bash-history:
+    driver: local
+  dind-ssh-keys:
+    driver: local
+  dind-tmp:
+    driver: local
+  dind-home:
+    driver: local
+  dind-redis-data:
+    driver: local
+  dind-registry-data:
+    driver: local
+  dind-postgres-data:
+    driver: local
+  dind-postgres-init:
+    driver: local
+  dind-node-cache:
+    driver: local
