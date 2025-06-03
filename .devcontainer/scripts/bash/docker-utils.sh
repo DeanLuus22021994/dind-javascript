@@ -1,9 +1,9 @@
 #!/bin/bash
+# shellcheck disable=SC1090,SC1091
 # Docker-specific utilities for devcontainer
 # Provides Docker management and optimization functions
 
 # Source core utilities
-# shellcheck disable=SC1091
 # shellcheck source=./core-utils.sh
 source "$(dirname "$0")/core-utils.sh"
 
