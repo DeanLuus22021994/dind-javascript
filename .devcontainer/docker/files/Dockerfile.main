@@ -117,5 +117,14 @@ USER root
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD node --version || exit 1
 
+
+# Copy package files and preinstall dependencies into /workspace/node_modules (volume mount target)
+COPY --chown=vscode:vscode package.json package-lock.json /workspace/
+USER vscode
+WORKDIR /workspace
+RUN npm config set cache /cache/npm \
+  && if [ -f package-lock.json ]; then npm ci; else npm install; fi
+USER root
+
 # Final cleanup with cache preservation
 RUN apt-get autoremove -y
