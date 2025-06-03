@@ -9,9 +9,6 @@ ENV YARN_CACHE_FOLDER=/opt/yarn-cache
 # Create application directory
 WORKDIR /app
 
-# The node user already exists in node:slim, so we don't need to create it
-# Just ensure proper ownership of directories
-
 # Install system dependencies for Node.js development
 RUN apt-get update && apt-get install -y \
   git \
@@ -28,10 +25,9 @@ RUN mkdir -p /opt/yarn-cache \
   && chown -R node:node /opt/yarn-cache \
   && chown -R node:node /app
 
-# Install global Node.js tools
+# Install global Node.js tools (excluding yarn since it's already installed)
 RUN npm install -g \
   npm@latest \
-  yarn \
   nodemon \
   pm2 \
   typescript \
