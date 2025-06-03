@@ -80,5 +80,8 @@
       ],
       "url": "https://json.schemastore.org/jest.json"
     }
-  ]
+  ],
+  "[dockercompose]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  }
 }

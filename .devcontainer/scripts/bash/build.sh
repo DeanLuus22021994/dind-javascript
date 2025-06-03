@@ -2,10 +2,11 @@
 # build.sh - High-level build script using micro docker scripts
 set -euo pipefail
 
+
 # Configurable variables (edit as needed)
-CONTEXT=".."
-DOCKERFILE="../Dockerfile"
-TAG="dind-javascript:dev"
+CONTEXT="${SCRIPT_DIR}/../../.."
+DOCKERFILE="${SCRIPT_DIR}/../../docker/files/Dockerfile.main"
+TAG="dind-javascript-dev:latest"
 
 # Pass through any extra build args
 EXTRA_ARGS=("$@")

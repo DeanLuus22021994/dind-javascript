@@ -15,7 +15,7 @@ services:
     environment:
       - BUILDKITD_FLAGS=--oci-worker-no-process-sandbox --allow-insecure-entitlement security.insecure --allow-insecure-entitlement network.host
     healthcheck:
-      test: ["CMD", "buildctl", "debug", "workers"]
+      test: ['CMD', 'buildctl', 'debug', 'workers']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -29,7 +29,7 @@ services:
     container_name: dind-redis
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      - '6379:6379'
     volumes:
       - dind-redis-data:/data
     networks:
@@ -38,7 +38,7 @@ services:
       - REDIS_MAXMEMORY=256mb
       - REDIS_MAXMEMORY_POLICY=allkeys-lru
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 10s
       timeout: 3s
       retries: 3
@@ -52,7 +52,7 @@ services:
     container_name: dind-registry
     restart: unless-stopped
     ports:
-      - "5001:5000"
+      - '5001:5000'
     volumes:
       - dind-registry-data:/var/lib/registry
       - ../../config/registry-config.yml:/etc/docker/registry/config.yml:ro
@@ -64,7 +64,7 @@ services:
       - REGISTRY_HTTP_HEADERS_Access-Control-Allow-Methods=['HEAD','GET','OPTIONS','DELETE']
       - REGISTRY_HTTP_HEADERS_Access-Control-Allow-Headers=['Authorization','Accept','Cache-Control']
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5000/v2/"]
+      test: ['CMD', 'wget', '--quiet', '--tries=1', '--spider', 'http://localhost:5000/v2/']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -77,7 +77,7 @@ services:
     container_name: dind-postgres
     restart: unless-stopped
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - ../../config/postgresql.conf:/usr/local/share/postgresql/postgresql.conf.sample:ro
     networks:
@@ -87,7 +87,7 @@ services:
     env_file:
       - ../../config/performance.env
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "devuser", "-d", "devdb", "-h", "localhost"]
+      test: ['CMD', 'pg_isready', '-U', 'devuser', '-d', 'devdb', '-h', 'localhost']
       interval: 10s
       timeout: 3s
       retries: 3
@@ -100,7 +100,7 @@ services:
     container_name: dind-node
     restart: unless-stopped
     ports:
-      - "9229:9229"
+      - '9229:9229'
     volumes:
       - ../../../:/workspace:cached
     networks:
