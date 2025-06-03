@@ -9,9 +9,25 @@ $ErrorActionPreference = "Stop"
 Set-Location -Path (Split-Path -Parent -Path (Split-Path -Parent -Path (Split-Path -Parent -Path $PSScriptRoot)))
 
 Write-Host "🏗️  Building DevContainer..." -ForegroundColor Blue
+Write-Host "📍 Current directory: $(Get-Location)" -ForegroundColor Yellow
 
 try {
-  # Build the DevContainer using the modular Docker Compose files
+  # Verify compose files exist
+  $composeFiles = @(
+    ".devcontainer/docker/compose/docker-compose.main.yml",
+    ".devcontainer/docker/compose/docker-compose.services.yml",
+    ".devcontainer/docker/compose/docker-compose.override.yml"
+  )
+
+  foreach ($file in $composeFiles) {
+    if (-not (Test-Path $file)) {
+      Write-Host "❌ Missing compose file: $file" -ForegroundColor Red
+      exit 1
+    }
+    Write-Host "✅ Found: $file" -ForegroundColor Green
+  }
+
+  # Build with explicit context
   docker-compose -f .devcontainer/docker/compose/docker-compose.main.yml -f .devcontainer/docker/compose/docker-compose.services.yml -f .devcontainer/docker/compose/docker-compose.override.yml build --no-cache
 
   if ($LASTEXITCODE -eq 0) {
