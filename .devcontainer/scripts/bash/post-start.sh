@@ -82,42 +82,39 @@ redis-cli -h localhost FLUSHDB > /dev/null 2>&1 || echo "⚠️  Redis setup ski
 redis-cli -h localhost SET "app:version" "1.0.0" > /dev/null 2>&1 || true
 redis-cli -h localhost SET "app:status" "ready" > /dev/null 2>&1 || true
 
-# Create helpful shortcuts and aliases in workspace
-echo "🔗 Creating workspace shortcuts..."
+# Create helpful shortcuts - commented out for non-interactive use
+echo "🔗 Skipping workspace shortcuts for non-interactive use..."
 cat > /workspace/.devcontainer-aliases << 'EOF'
-# Development shortcuts
-alias dc='docker-compose'
-alias dcu='docker-compose up -d'
-alias dcd='docker-compose down'
-alias dcr='docker-compose restart'
-alias dcl='docker-compose logs -f'
+# Development shortcuts - commented out for non-interactive use
+# alias dc='docker-compose'
+# alias dcu='docker-compose up -d'
+# alias dcd='docker-compose down'
+# alias dcr='docker-compose restart'
+# alias dcl='docker-compose logs -f'
 
-# Docker shortcuts
-alias dps='docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"'
-alias di='docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}"'
-alias dv='docker volume ls'
-alias dn='docker network ls'
+# Docker shortcuts - commented out for non-interactive use
+# alias dps='docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"'
+# alias di='docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}"'
+# alias dv='docker volume ls'
+# alias dn='docker network ls'
 
-# Service connections
-alias redis-cli='redis-cli -h localhost'
-alias psql-dev='PGPASSWORD=devpass psql -h localhost -U devuser -d devdb'
+# Service connections - commented out for non-interactive use
+# alias redis-cli='redis-cli -h localhost'
+# alias psql-dev='PGPASSWORD=devpass psql -h localhost -U devuser -d devdb'
 
-# Health checks
-alias health='bash /workspace/.devcontainer/validate.sh'
+# Health checks - commented out for non-interactive use
+# alias health='bash /workspace/.devcontainer/validate.sh'
 
-# Development helpers
-alias logs-app='tail -f /workspace/logs/combined.log'
-alias logs-error='tail -f /workspace/logs/error.log'
-alias test-watch='npm run test:watch'
-alias build-local='docker buildx bake --load'
-alias push-local='docker buildx bake --set *.output=type=registry,registry.insecure=true'
+# Development helpers - commented out for non-interactive use
+# alias logs-app='tail -f /workspace/logs/combined.log'
+# alias logs-error='tail -f /workspace/logs/error.log'
+# alias test-watch='npm run test:watch'
+# alias build-local='docker buildx bake --load'
+# alias push-local='docker buildx bake --set *.output=type=registry,registry.insecure=true'
 EOF
 
-# Source aliases in current session (with proper error handling)
-if [ -f /workspace/.devcontainer-aliases ]; then
-    # shellcheck source=/dev/null
-    source /workspace/.devcontainer-aliases 2>/dev/null || true
-fi
+# Skip sourcing aliases for non-interactive use
+echo "ℹ️  Aliases disabled for non-interactive use. Use full commands in scripts."
 
 # Create a development status dashboard
 echo "📊 Creating development dashboard..."

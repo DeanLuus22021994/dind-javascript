@@ -104,18 +104,8 @@ ENV COMPOSE_DOCKER_CLI_BUILD=1
 RUN npm config set cache /cache/npm --global \
   && yarn config set cache-folder /cache/yarn --global
 
-# Set up shell enhancements
-RUN echo 'alias ll="ls -alF"' >> /home/vscode/.bashrc \
-  && echo 'alias la="ls -A"' >> /home/vscode/.bashrc \
-  && echo 'alias l="ls -CF"' >> /home/vscode/.bashrc \
-  && echo 'alias dps="docker ps"' >> /home/vscode/.bashrc \
-  && echo 'alias dimg="docker images"' >> /home/vscode/.bashrc \
-  && echo 'alias dlog="docker logs"' >> /home/vscode/.bashrc \
-  && echo 'alias dexec="docker exec -it"' >> /home/vscode/.bashrc \
-  && echo 'alias dcup="docker-compose up"' >> /home/vscode/.bashrc \
-  && echo 'alias dcdown="docker-compose down"' >> /home/vscode/.bashrc \
-  && echo 'alias k="kubectl"' >> /home/vscode/.bashrc \
-  && echo 'export PATH="$PATH:/home/vscode/.local/bin"' >> /home/vscode/.bashrc
+# Set up shell enhancements - aliases removed for non-interactive use
+RUN echo 'export PATH="$PATH:/home/vscode/.local/bin"' >> /home/vscode/.bashrc
 
 # Set up Git configuration helpers
 RUN git config --global --add safe.directory '*' \

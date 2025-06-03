@@ -110,35 +110,35 @@ cat > /etc/buildkit/buildkitd.toml << 'EOF'
   insecure = true
 EOF
 
-# Create helpful aliases
-echo "🔗 Creating helpful aliases..."
+# Create helpful aliases - commented out for non-interactive use
+echo "🔗 Skipping alias creation for non-interactive use..."
 cat >> /home/vscode/.bashrc << 'EOF'
 
-# Docker aliases
-alias dc='docker-compose'
-alias dcu='docker-compose up'
-alias dcd='docker-compose down'
-alias dcl='docker-compose logs'
-alias dps='docker ps'
-alias di='docker images'
-alias dv='docker volume ls'
-alias dn='docker network ls'
+# Docker aliases - commented out for non-interactive use
+# alias dc='docker-compose'
+# alias dcu='docker-compose up'
+# alias dcd='docker-compose down'
+# alias dcl='docker-compose logs'
+# alias dps='docker ps'
+# alias di='docker images'
+# alias dv='docker volume ls'
+# alias dn='docker network ls'
 
-# Kubernetes aliases
-alias k='kubectl'
-alias kgp='kubectl get pods'
-alias kgs='kubectl get services'
-alias kgd='kubectl get deployments'
+# Kubernetes aliases - commented out for non-interactive use
+# alias k='kubectl'
+# alias kgp='kubectl get pods'
+# alias kgs='kubectl get services'
+# alias kgd='kubectl get deployments'
 
-# Git aliases
-alias gs='git status'
-alias ga='git add'
-alias gc='git commit'
-alias gp='git push'
-alias gl='git log --oneline'
+# Git aliases - commented out for non-interactive use
+# alias gs='git status'
+# alias ga='git add'
+# alias gc='git commit'
+# alias gp='git push'
+# alias gl='git log --oneline'
 
-# Node.js aliases
-alias ni='npm install'
+# Node.js aliases - commented out for non-interactive use
+# alias ni='npm install'
 alias ns='npm start'
 alias nt='npm test'
 alias nb='npm run build'
