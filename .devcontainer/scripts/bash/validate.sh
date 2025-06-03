@@ -4,8 +4,11 @@
 
 # Source utilities
 SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
+# shellcheck source=./core-utils.sh
 source "$SCRIPT_DIR/core-utils.sh"
+# shellcheck source=./docker-utils.sh
 source "$SCRIPT_DIR/docker-utils.sh"
+# shellcheck source=./service-utils.sh
 source "$SCRIPT_DIR/service-utils.sh"
 
 # Configuration

@@ -3,6 +3,7 @@
 # Provides Docker management and optimization functions
 
 # Source core utilities
+# shellcheck source=./core-utils.sh
 source "$(dirname "$0")/core-utils.sh"
 
 # Function to check Docker system status
@@ -282,9 +283,9 @@ exec_in_container() {
     log_info "Executing command in container $container_name: $command"
 
     if [[ "$interactive" == "true" ]]; then
-        docker exec -it "$container_name" $command
+        docker exec -it "$container_name" "$command"
     else
-        docker exec "$container_name" $command
+        docker exec "$container_name" "$command"
     fi
 }
 
