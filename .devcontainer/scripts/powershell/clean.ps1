@@ -3,11 +3,12 @@
 Import-Module "$PSScriptRoot\micro\rm.psm1"
 Import-Module "$PSScriptRoot\micro\images.psm1"
 
+
 # Remove all stopped containers
 $stopped = & docker ps -a -q -f status=exited
 if ($stopped) {
   foreach ($id in $stopped) {
-    Microsoft.PowerShell.Core\Rm -Container $id -Force | Out-Null
+    Remove-Item -Container $id -Force | Out-Null
   }
 }
 
