@@ -13,6 +13,5 @@ export default {
   coverageReporters: ['text', 'lcov', 'html'],
   verbose: false,
   silent: false,
-  transform: {},
-  extensionsToTreatAsEsm: ['.js', '.mjs']
+  transform: {}
 };
