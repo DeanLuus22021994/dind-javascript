@@ -4,14 +4,6 @@
   "service": "devcontainer",
   "workspaceFolder": "/workspace",
   "shutdownAction": "none",
-  "privileged": true,
-  "init": true,
-  "capAdd": [
-    "SYS_PTRACE"
-  ],
-  "securityOpt": [
-    "seccomp:unconfined"
-  ],
   "features": {
     "ghcr.io/devcontainers/features/docker-in-docker:2": {
       "version": "latest",
