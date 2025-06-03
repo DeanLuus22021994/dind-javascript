@@ -61,11 +61,17 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked,id=apt-cache-$TARGET
   sudo \
   && mkdir -p /etc/apt/keyrings
 
-# Install Docker CLI with aggressive caching
+
+# Install Docker CLI with aggressive caching (add Docker's official GPG key and repo)
 FROM system-deps AS docker-install
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked,id=apt-cache-docker-$TARGETPLATFORM \
   --mount=type=cache,target=/var/lib/apt,sharing=locked,id=apt-lib-docker-$TARGETPLATFORM \
-  apt-get update && apt-get install -y docker-ce-cli
+  set -eux; \
+  install -m 0755 -d /etc/apt/keyrings; \
+  curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg; \
+  echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list; \
+  apt-get update; \
+  apt-get install -y docker-ce-cli;
 
 # Install Node.js with caching
 FROM docker-install AS node-install
