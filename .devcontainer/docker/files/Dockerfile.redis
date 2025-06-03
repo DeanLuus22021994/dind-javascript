@@ -1,9 +1,8 @@
 # Redis optimized Dockerfile
 FROM redis:7-alpine
 
-# Install redis-cli tools and monitoring
+# Install monitoring tools
 RUN apk add --no-cache \
-  redis-cli \
   procps \
   htop
 
