@@ -1,0 +1,21 @@
+# PostgreSQL optimized Dockerfile
+FROM postgres:15-alpine
+
+# Install additional tools
+RUN apk add --no-cache \
+  postgresql-contrib \
+  curl \
+  wget
+
+# Copy initialization scripts
+COPY init-scripts/ /docker-entrypoint-initdb.d/
+
+# Copy optimized PostgreSQL configuration
+COPY postgresql.conf /usr/local/share/postgresql/postgresql.conf.sample
+
+# Health check optimized for PostgreSQL
+HEALTHCHECK --interval=10s --timeout=5s --retries=3 --start-period=30s \
+  CMD pg_isready -U ${POSTGRES_USER:-devuser} -d ${POSTGRES_DB:-devdb} || exit 1
+
+# Performance optimizations
+ENV POSTGRES_INITDB_ARGS="--encoding=UTF-8 --lc-collate=C --lc-ctype=C"

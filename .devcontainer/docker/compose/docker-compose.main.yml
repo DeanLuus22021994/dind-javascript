@@ -1,0 +1,109 @@
+services:
+  devcontainer:
+    build:
+      context: ../
+      dockerfile: docker/files/Dockerfile.main
+      cache_from:
+        - mcr.microsoft.com/devcontainers/base:bullseye
+      args:
+        - BUILDKIT_INLINE_CACHE=1
+        - NODE_VERSION=lts
+    image: dind-javascript-dev:latest
+    container_name: dind-javascript-devcontainer
+    restart: unless-stopped
+    volumes:
+      - ../../:/workspace:cached
+      - /var/run/docker.sock:/var/run/docker-host.sock
+      - dind-var-lib-docker:/var/lib/docker
+      - dind-buildkit-cache:/cache/buildkit
+      - dind-docker-cache:/cache/docker
+      - dind-npm-cache:/cache/npm
+      - dind-yarn-cache:/cache/yarn
+      - dind-node-modules:/workspace/node_modules
+      - dind-vscode-extensions:/home/vscode/.vscode-server/extensions
+      - dind-bash-history:/home/vscode/.bash_history
+      - dind-ssh-keys:/home/vscode/.ssh
+      - dind-tmp:/tmp:cached
+      - dind-home:/home/vscode:cached
+    environment:
+      - DOCKER_HOST=unix:///var/run/docker-host.sock
+      - BUILDKIT_HOST=docker-container://buildkit
+      - DOCKER_BUILDKIT=1
+      - COMPOSE_DOCKER_CLI_BUILD=1
+      - NPM_CONFIG_CACHE=/cache/npm
+      - YARN_CACHE_FOLDER=/cache/yarn
+      - NODE_ENV=development
+      - TERM=xterm-256color
+      - COLORTERM=truecolor
+      - SHELL=/bin/bash
+      - HUSKY=0
+    env_file:
+      - ../config/performance.env
+    networks:
+      - devcontainer-network
+    ports:
+      - "3000:3000"   # Main app
+      - "3001:3001"   # Secondary app
+      - "4000:4000"   # GraphQL/API
+      - "8080:8080"   # Alt HTTP
+      - "9229:9229"   # Node.js debugger
+    healthcheck:
+      test: ["CMD", "docker", "version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    command: sleep infinity
+    depends_on:
+      buildkit:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+networks:
+  devcontainer-network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 192.168.100.0/24
+          gateway: 192.168.100.1
+    driver_opts:
+      com.docker.network.bridge.name: dind-br0
+      com.docker.network.driver.mtu: 1500
+
+volumes:
+  dind-var-lib-docker:
+    driver: local
+  dind-buildkit-cache:
+    driver: local
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
+      o: size=1G,uid=1000,gid=1000
+  dind-docker-cache:
+    driver: local
+  dind-npm-cache:
+    driver: local
+  dind-yarn-cache:
+    driver: local
+  dind-node-modules:
+    driver: local
+  dind-vscode-extensions:
+    driver: local
+  dind-bash-history:
+    driver: local
+  dind-ssh-keys:
+    driver: local
+  dind-tmp:
+    driver: local
+  dind-home:
+    driver: local
+  dind-redis-data:
+    driver: local
+  dind-registry-data:
+    driver: local
+  dind-postgres-data:
+    driver: local
+  dind-postgres-init:
+    driver: local

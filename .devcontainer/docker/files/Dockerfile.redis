@@ -1,0 +1,21 @@
+# Redis optimized Dockerfile
+FROM redis:7-alpine
+
+# Install redis-cli tools and monitoring
+RUN apk add --no-cache \
+  redis-cli \
+  procps \
+  htop
+
+# Copy optimized Redis configuration
+COPY redis.conf /usr/local/etc/redis/redis.conf
+
+# Create data directory with proper permissions
+RUN mkdir -p /data && chown redis:redis /data
+
+# Health check optimized for Redis
+HEALTHCHECK --interval=10s --timeout=3s --retries=3 --start-period=10s \
+  CMD redis-cli ping || exit 1
+
+# Use custom configuration
+CMD ["redis-server", "/usr/local/etc/redis/redis.conf"]

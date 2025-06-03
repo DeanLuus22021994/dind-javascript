@@ -1,0 +1,17 @@
+# BuildKit optimized Dockerfile
+FROM moby/buildkit:latest
+
+# Set BuildKit configuration
+ENV BUILDKITD_FLAGS="--oci-worker-no-process-sandbox --allow-insecure-entitlement security.insecure --allow-insecure-entitlement network.host"
+
+# Configure BuildKit daemon
+RUN mkdir -p /etc/buildkit
+COPY buildkitd.toml /etc/buildkit/
+
+# Health check specific to BuildKit
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 --start-period=40s \
+  CMD buildctl debug workers || exit 1
+
+# Optimize for caching
+VOLUME ["/var/lib/buildkit"]
+EXPOSE 1234
