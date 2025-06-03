@@ -7,7 +7,7 @@ describe('Logger Utility', () => {
   beforeEach(() => {
     consoleOutput = [];
     originalConsoleLog = console.log;
-    console.log = jest.fn((message) => {
+    console.log = jest.fn(message => {
       consoleOutput.push(message);
     });
   });

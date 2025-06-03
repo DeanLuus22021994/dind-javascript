@@ -5,21 +5,21 @@ const logger = require('../../utils/logger');
 
 const userResolvers = {
   Query: {
-    me: async(parent, args, { user }) => {
+    me: async (parent, args, { user }) => {
       if (!user) {
         throw new AuthenticationError('Authentication required');
       }
       return user;
     },
 
-    users: async(parent, args, { user }) => {
+    users: async (parent, args, { user }) => {
       if (!user || user.role !== 'admin') {
         throw new ForbiddenError('Admin access required');
       }
       return await User.find({ isActive: true });
     },
 
-    user: async(parent, { id }, { user }) => {
+    user: async (parent, { id }, { user }) => {
       if (!user) {
         throw new AuthenticationError('Authentication required');
       }
@@ -34,7 +34,7 @@ const userResolvers = {
   },
 
   Mutation: {
-    register: async(parent, { input }) => {
+    register: async (parent, { input }) => {
       try {
         const { username, email, password, firstName, lastName } = input;
 
@@ -82,7 +82,7 @@ const userResolvers = {
       }
     },
 
-    login: async(parent, { email, password }) => {
+    login: async (parent, { email, password }) => {
       try {
         const user = await User.findOne({ email, isActive: true });
 
@@ -119,17 +119,16 @@ const userResolvers = {
       }
     },
 
-    updateProfile: async(parent, { input }, { user }) => {
+    updateProfile: async (parent, { input }, { user }) => {
       if (!user) {
         throw new AuthenticationError('Authentication required');
       }
 
       try {
-        const updatedUser = await User.findByIdAndUpdate(
-          user._id,
-          input,
-          { new: true, runValidators: true }
-        );
+        const updatedUser = await User.findByIdAndUpdate(user._id, input, {
+          new: true,
+          runValidators: true
+        });
 
         if (process.env.NODE_ENV !== 'test') {
           logger.info(`User profile updated via GraphQL: ${user.email}`);
@@ -149,7 +148,7 @@ const userResolvers = {
       }
     },
 
-    changePassword: async(parent, { currentPassword, newPassword }, { user }) => {
+    changePassword: async (parent, { currentPassword, newPassword }, { user }) => {
       if (!user) {
         throw new AuthenticationError('Authentication required');
       }
@@ -199,7 +198,7 @@ const userResolvers = {
       }
     },
 
-    deleteUser: async(parent, { id }, { user }) => {
+    deleteUser: async (parent, { id }, { user }) => {
       if (!user || user.role !== 'admin') {
         throw new ForbiddenError('Admin access required');
       }

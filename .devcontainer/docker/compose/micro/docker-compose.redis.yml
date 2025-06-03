@@ -5,7 +5,7 @@ services:
     container_name: dind-micro-redis
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      - '6379:6379'
     volumes:
       - ../../config/micro/redis.micro.conf:/usr/local/etc/redis/redis.conf:ro
     networks:
@@ -14,7 +14,7 @@ services:
       - REDIS_MAXMEMORY=256mb
       - REDIS_MAXMEMORY_POLICY=allkeys-lru
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 10s
       timeout: 3s
       retries: 3

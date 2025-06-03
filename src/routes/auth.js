@@ -10,7 +10,7 @@ const router = express.Router();
  * @apiName RegisterUser
  * @apiGroup Authentication
  */
-router.post('/register', async(req, res) => {
+router.post('/register', async (req, res) => {
   try {
     const { username, email, password, firstName, lastName } = req.body;
 
@@ -75,7 +75,7 @@ router.post('/register', async(req, res) => {
  * @apiName LoginUser
  * @apiGroup Authentication
  */
-router.post('/login', async(req, res) => {
+router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -129,7 +129,7 @@ router.post('/login', async(req, res) => {
  * @apiName GetProfile
  * @apiGroup Authentication
  */
-router.get('/profile', requireAuth, async(req, res) => {
+router.get('/profile', requireAuth, async (req, res) => {
   try {
     // Since req.user is already a plain object without password, we can return it directly
     res.json({
@@ -148,7 +148,7 @@ router.get('/profile', requireAuth, async(req, res) => {
  * @apiName UpdateProfile
  * @apiGroup Authentication
  */
-router.put('/profile', requireAuth, async(req, res) => {
+router.put('/profile', requireAuth, async (req, res) => {
   try {
     const { firstName, lastName } = req.body;
 
@@ -181,7 +181,7 @@ router.put('/profile', requireAuth, async(req, res) => {
  * @apiName LogoutUser
  * @apiGroup Authentication
  */
-router.post('/logout', requireAuth, async(req, res) => {
+router.post('/logout', requireAuth, async (req, res) => {
   try {
     // In a more sophisticated implementation, you might blacklist the token
     // For now, we'll just return success since JWT tokens are stateless

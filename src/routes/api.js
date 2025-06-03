@@ -109,7 +109,8 @@ router.get('/info', (req, res) => {
  *       400:
  *         description: Validation error
  */
-router.post('/echo',
+router.post(
+  '/echo',
   [
     body('message').notEmpty().withMessage('Message is required'),
     body('message').isLength({ max: 1000 }).withMessage('Message must be less than 1000 characters')
@@ -192,11 +193,18 @@ router.post('/echo',
  *                     pages:
  *                       type: integer
  */
-router.get('/data',
+router.get(
+  '/data',
   [
     query('page').optional().isInt({ min: 1 }).withMessage('Page must be a positive integer'),
-    query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be between 1 and 100'),
-    query('search').optional().isLength({ max: 100 }).withMessage('Search term must be less than 100 characters')
+    query('limit')
+      .optional()
+      .isInt({ min: 1, max: 100 })
+      .withMessage('Limit must be between 1 and 100'),
+    query('search')
+      .optional()
+      .isLength({ max: 100 })
+      .withMessage('Search term must be less than 100 characters')
   ],
   handleValidationErrors,
   (req, res) => {
@@ -218,10 +226,11 @@ router.get('/data',
     // Apply search filter
     let filteredData = sampleData;
     if (search) {
-      filteredData = sampleData.filter(item =>
-        item.name.toLowerCase().includes(search.toLowerCase()) ||
-        item.description.toLowerCase().includes(search.toLowerCase()) ||
-        item.category.toLowerCase().includes(search.toLowerCase())
+      filteredData = sampleData.filter(
+        item =>
+          item.name.toLowerCase().includes(search.toLowerCase()) ||
+          item.description.toLowerCase().includes(search.toLowerCase()) ||
+          item.category.toLowerCase().includes(search.toLowerCase())
       );
     }
 
@@ -232,7 +241,9 @@ router.get('/data',
 
     // Only log in non-test environments
     if (process.env.NODE_ENV !== 'test') {
-      logger.info(`Data request: page=${page}, limit=${limit}, search="${search}", results=${paginatedData.length}`);
+      logger.info(
+        `Data request: page=${page}, limit=${limit}, search="${search}", results=${paginatedData.length}`
+      );
     }
 
     res.json({
@@ -275,10 +286,10 @@ router.get('/status', (req, res) => {
       human: formatUptime(process.uptime())
     },
     memory: {
-      rss: `${Math.round(memoryUsage.rss / 1024 / 1024 * 100) / 100} MB`,
-      heapTotal: `${Math.round(memoryUsage.heapTotal / 1024 / 1024 * 100) / 100} MB`,
-      heapUsed: `${Math.round(memoryUsage.heapUsed / 1024 / 1024 * 100) / 100} MB`,
-      external: `${Math.round(memoryUsage.external / 1024 / 1024 * 100) / 100} MB`
+      rss: `${Math.round((memoryUsage.rss / 1024 / 1024) * 100) / 100} MB`,
+      heapTotal: `${Math.round((memoryUsage.heapTotal / 1024 / 1024) * 100) / 100} MB`,
+      heapUsed: `${Math.round((memoryUsage.heapUsed / 1024 / 1024) * 100) / 100} MB`,
+      external: `${Math.round((memoryUsage.external / 1024 / 1024) * 100) / 100} MB`
     },
     cpu: {
       user: cpuUsage.user,

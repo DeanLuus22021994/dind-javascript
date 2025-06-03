@@ -1,14 +1,18 @@
 # Enhanced Docker-in-Docker JavaScript Environment
 
-This project demonstrates an advanced Docker DevContainer setup with optimized caching, Docker Compose integration, and BuildKit support for instant subsequent builds.
+This project demonstrates an advanced Docker DevContainer setup with optimized
+caching, Docker Compose integration, and BuildKit support for instant subsequent
+builds.
 
 ## Features
 
-- 🚀 **Instant Rebuilds**: Pre-compiled volume cache mounts for near-instantaneous builds
+- 🚀 **Instant Rebuilds**: Pre-compiled volume cache mounts for
+  near-instantaneous builds
 - 🐳 **Docker Compose Integration**: Start with `docker compose up -d`
 - 🔧 **Privileged Access**: Full host resource access for development
 - 📦 **BuildKit & Bake**: Advanced build caching and multi-platform support
-- 💾 **Persistent Caches**: Separate volumes for BuildKit, Docker, NPM, and Node modules
+- 💾 **Persistent Caches**: Separate volumes for BuildKit, Docker, NPM, and Node
+  modules
 
 ## Quick Start
 
@@ -54,4 +58,5 @@ The setup includes:
 3. Run `npm run dev` to start the development server
 4. Visit `http://localhost:3000` to see the application
 
-The DevContainer will remain running in detached mode, ready for VS Code to attach to it. All caches persist between sessions for maximum performance.
+The DevContainer will remain running in detached mode, ready for VS Code to
+attach to it. All caches persist between sessions for maximum performance.

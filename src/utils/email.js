@@ -206,7 +206,9 @@ class EmailService {
       isConfigured: this.isConfigured,
       host: config.email.host,
       port: config.email.port,
-      user: config.email.user ? config.email.user.replace(/(.{2}).*(@.*)/, '$1***$2') : 'Not configured'
+      user: config.email.user
+        ? config.email.user.replace(/(.{2}).*(@.*)/, '$1***$2')
+        : 'Not configured'
     };
   }
 }

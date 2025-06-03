@@ -28,9 +28,11 @@ class WebSocketServer {
     });
 
     // Authentication middleware
-    this.io.use(async(socket, next) => {
+    this.io.use(async (socket, next) => {
       try {
-        const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.replace('Bearer ', '');
+        const token =
+          socket.handshake.auth.token ||
+          socket.handshake.headers.authorization?.replace('Bearer ', '');
 
         if (!token) {
           socket.isAuthenticated = false;
@@ -57,20 +59,20 @@ class WebSocketServer {
   }
 
   setupEventHandlers() {
-    this.io.on('connection', (socket) => {
+    this.io.on('connection', socket => {
       this.handleConnection(socket);
 
       // Event handlers
-      socket.on('join-room', (data) => this.handleJoinRoom(socket, data));
-      socket.on('leave-room', (data) => this.handleLeaveRoom(socket, data));
-      socket.on('send-message', (data) => this.handleSendMessage(socket, data));
-      socket.on('typing-start', (data) => this.handleTypingStart(socket, data));
-      socket.on('typing-stop', (data) => this.handleTypingStop(socket, data));
+      socket.on('join-room', data => this.handleJoinRoom(socket, data));
+      socket.on('leave-room', data => this.handleLeaveRoom(socket, data));
+      socket.on('send-message', data => this.handleSendMessage(socket, data));
+      socket.on('typing-start', data => this.handleTypingStart(socket, data));
+      socket.on('typing-stop', data => this.handleTypingStop(socket, data));
       socket.on('get-online-users', () => this.handleGetOnlineUsers(socket));
       socket.on('ping', () => this.handlePing(socket));
 
-      socket.on('disconnect', (reason) => this.handleDisconnection(socket, reason));
-      socket.on('error', (error) => this.handleError(socket, error));
+      socket.on('disconnect', reason => this.handleDisconnection(socket, reason));
+      socket.on('error', error => this.handleError(socket, error));
     });
   }
 
@@ -85,7 +87,9 @@ class WebSocketServer {
       user: socket.user
     });
 
-    logger.info(`WebSocket connection established: ${socket.id} (${socket.isAuthenticated ? 'authenticated' : 'anonymous'})`);
+    logger.info(
+      `WebSocket connection established: ${socket.id} (${socket.isAuthenticated ? 'authenticated' : 'anonymous'})`
+    );
 
     // Send welcome message
     socket.emit('connected', {
@@ -100,11 +104,15 @@ class WebSocketServer {
 
     // Store connection in Redis for scaling
     if (socket.isAuthenticated) {
-      redisClient.set(`ws:user:${userId}`, {
-        socketId: socket.id,
-        connectedAt: new Date(),
-        serverId: process.env.SERVER_ID || 'server-1'
-      }, 24 * 60 * 60);
+      redisClient.set(
+        `ws:user:${userId}`,
+        {
+          socketId: socket.id,
+          connectedAt: new Date(),
+          serverId: process.env.SERVER_ID || 'server-1'
+        },
+        24 * 60 * 60
+      );
     }
   }
 
@@ -228,7 +236,8 @@ class WebSocketServer {
   leaveAllRooms(socket) {
     const rooms = Array.from(socket.rooms);
     rooms.forEach(room => {
-      if (room !== socket.id) { // Skip the default room (socket.id)
+      if (room !== socket.id) {
+        // Skip the default room (socket.id)
         this.leaveRoom(socket, room);
       }
     });
@@ -321,8 +330,9 @@ class WebSocketServer {
 
   broadcastUserCount() {
     const totalUsers = this.connectedUsers.size;
-    const authenticatedUsers = Array.from(this.connectedUsers.values())
-      .filter(user => user.isAuthenticated).length;
+    const authenticatedUsers = Array.from(this.connectedUsers.values()).filter(
+      user => user.isAuthenticated
+    ).length;
 
     this.io.emit('user-count', {
       total: totalUsers,
@@ -334,8 +344,9 @@ class WebSocketServer {
 
   // Public methods for external use
   sendToUser(userId, event, data) {
-    const userConnections = Array.from(this.connectedUsers.values())
-      .filter(conn => conn.userId === userId);
+    const userConnections = Array.from(this.connectedUsers.values()).filter(
+      conn => conn.userId === userId
+    );
 
     userConnections.forEach(conn => {
       this.io.to(conn.socketId).emit(event, data);
@@ -353,8 +364,9 @@ class WebSocketServer {
   getStats() {
     return {
       connectedUsers: this.connectedUsers.size,
-      authenticatedUsers: Array.from(this.connectedUsers.values())
-        .filter(user => user.isAuthenticated).length,
+      authenticatedUsers: Array.from(this.connectedUsers.values()).filter(
+        user => user.isAuthenticated
+      ).length,
       activeRooms: this.rooms.size
     };
   }

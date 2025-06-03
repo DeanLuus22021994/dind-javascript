@@ -9,15 +9,16 @@ const logger = require('../utils/logger');
 
 // Configure storage
 const storage = multer.diskStorage({
-  destination: function(req, file, cb) {
+  destination: function (req, file, cb) {
     // Use test directory for tests, regular uploads otherwise
-    const uploadDir = process.env.NODE_ENV === 'test'
-      ? path.join(__dirname, '../../uploads/test')
-      : path.join(__dirname, '../../uploads');
+    const uploadDir =
+      process.env.NODE_ENV === 'test'
+        ? path.join(__dirname, '../../uploads/test')
+        : path.join(__dirname, '../../uploads');
 
     cb(null, uploadDir);
   },
-  filename: function(req, file, cb) {
+  filename: function (req, file, cb) {
     // Generate unique filename with original extension
     const ext = path.extname(file.originalname);
     cb(null, `${uuidv4()}${ext}`);
@@ -27,7 +28,18 @@ const storage = multer.diskStorage({
 // File filter
 const fileFilter = (req, file, cb) => {
   // Allow only certain file types
-  const allowedTypes = ['.jpg', '.jpeg', '.png', '.gif', '.pdf', '.txt', '.doc', '.docx', '.xls', '.xlsx'];
+  const allowedTypes = [
+    '.jpg',
+    '.jpeg',
+    '.png',
+    '.gif',
+    '.pdf',
+    '.txt',
+    '.doc',
+    '.docx',
+    '.xls',
+    '.xlsx'
+  ];
   const ext = path.extname(file.originalname).toLowerCase();
 
   if (allowedTypes.includes(ext)) {
@@ -75,7 +87,7 @@ const handleMulterError = (err, req, res, next) => {
 router.post('/single', conditionalAuth, (req, res, next) => {
   const singleUpload = upload.single('file');
 
-  singleUpload(req, res, (err) => {
+  singleUpload(req, res, err => {
     if (err) {
       return handleMulterError(err, req, res, next);
     }
@@ -104,7 +116,7 @@ router.post('/single', conditionalAuth, (req, res, next) => {
 router.post('/multiple', conditionalAuth, (req, res, next) => {
   const multiUpload = upload.array('files', 10); // Max 10 files
 
-  multiUpload(req, res, (err) => {
+  multiUpload(req, res, err => {
     if (err) {
       return handleMulterError(err, req, res, next);
     }
@@ -129,19 +141,20 @@ router.post('/multiple', conditionalAuth, (req, res, next) => {
  * @route GET /api/upload/files
  * @description List uploaded files
  */
-router.get('/files', conditionalAuth, async(req, res) => {
+router.get('/files', conditionalAuth, async (req, res) => {
   try {
     // Determine which directory to use
-    const uploadDir = process.env.NODE_ENV === 'test'
-      ? path.join(__dirname, '../../uploads/test')
-      : path.join(__dirname, '../../uploads');
+    const uploadDir =
+      process.env.NODE_ENV === 'test'
+        ? path.join(__dirname, '../../uploads/test')
+        : path.join(__dirname, '../../uploads');
 
     // Read directory
     const files = await fs.readdir(uploadDir);
 
     // Get file details
     const fileDetails = await Promise.all(
-      files.map(async(filename) => {
+      files.map(async filename => {
         const filePath = path.join(uploadDir, filename);
         const stats = await fs.stat(filePath);
 
@@ -164,7 +177,7 @@ router.get('/files', conditionalAuth, async(req, res) => {
  * @route DELETE /api/upload/files/:filename
  * @description Delete a file
  */
-router.delete('/files/:filename', conditionalAuth, async(req, res) => {
+router.delete('/files/:filename', conditionalAuth, async (req, res) => {
   try {
     const { filename } = req.params;
 
@@ -174,9 +187,10 @@ router.delete('/files/:filename', conditionalAuth, async(req, res) => {
     }
 
     // Determine which directory to use
-    const uploadDir = process.env.NODE_ENV === 'test'
-      ? path.join(__dirname, '../../uploads/test')
-      : path.join(__dirname, '../../uploads');
+    const uploadDir =
+      process.env.NODE_ENV === 'test'
+        ? path.join(__dirname, '../../uploads/test')
+        : path.join(__dirname, '../../uploads');
 
     const filePath = path.join(uploadDir, filename);
 

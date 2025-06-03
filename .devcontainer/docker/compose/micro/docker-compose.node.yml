@@ -5,7 +5,7 @@ services:
     container_name: dind-micro-node
     restart: unless-stopped
     ports:
-      - "9229:9229"
+      - '9229:9229'
     volumes:
       - ../../../:/workspace:cached
     networks:

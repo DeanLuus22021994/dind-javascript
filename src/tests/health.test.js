@@ -14,10 +14,8 @@ describe('Health Check Routes', () => {
   });
 
   describe('GET /api/health', () => {
-    test('should return basic health status', async() => {
-      const response = await request(app)
-        .get('/api/health/')
-        .expect(200);
+    test('should return basic health status', async () => {
+      const response = await request(app).get('/api/health/').expect(200);
 
       expect(response.body).toHaveProperty('status', 'healthy');
       expect(response.body).toHaveProperty('timestamp');
@@ -31,10 +29,8 @@ describe('Health Check Routes', () => {
   });
 
   describe('GET /api/health/detailed', () => {
-    test('should return detailed health information', async() => {
-      const response = await request(app)
-        .get('/api/health/detailed')
-        .expect(200);
+    test('should return detailed health information', async () => {
+      const response = await request(app).get('/api/health/detailed').expect(200);
 
       expect(response.body).toHaveProperty('status');
       expect(response.body).toHaveProperty('timestamp');
@@ -68,10 +64,8 @@ describe('Health Check Routes', () => {
   });
 
   describe('GET /api/health/services', () => {
-    test('should return service status', async() => {
-      const response = await request(app)
-        .get('/api/health/services')
-        .expect(200); // Should be 200 in test environment
+    test('should return service status', async () => {
+      const response = await request(app).get('/api/health/services').expect(200); // Should be 200 in test environment
 
       expect(response.body).toHaveProperty('status', 'healthy'); // Should be healthy in test environment
       expect(response.body).toHaveProperty('timestamp');
@@ -93,10 +87,8 @@ describe('Health Check Routes', () => {
   });
 
   describe('GET /api/health/ready', () => {
-    test('should return readiness status', async() => {
-      const response = await request(app)
-        .get('/api/health/ready')
-        .expect(200);
+    test('should return readiness status', async () => {
+      const response = await request(app).get('/api/health/ready').expect(200);
 
       expect(response.body).toHaveProperty('status', 'ready');
       expect(response.body).toHaveProperty('ready', true);
@@ -112,10 +104,8 @@ describe('Health Check Routes', () => {
   });
 
   describe('GET /api/health/live', () => {
-    test('should return liveness status', async() => {
-      const response = await request(app)
-        .get('/api/health/live')
-        .expect(200);
+    test('should return liveness status', async () => {
+      const response = await request(app).get('/api/health/live').expect(200);
 
       expect(response.body).toHaveProperty('status', 'alive');
       expect(response.body).toHaveProperty('alive', true);
@@ -129,7 +119,7 @@ describe('Health Check Routes', () => {
   });
 
   describe('Health Check Edge Cases', () => {
-    test('should handle health check gracefully under load', async() => {
+    test('should handle health check gracefully under load', async () => {
       // Simulate multiple concurrent requests
       const promises = Array.from({ length: 5 }, () =>
         request(app).get('/api/health/').expect(200)
@@ -143,10 +133,8 @@ describe('Health Check Routes', () => {
       });
     });
 
-    test('should return consistent response format', async() => {
-      const response = await request(app)
-        .get('/api/health/')
-        .expect(200);
+    test('should return consistent response format', async () => {
+      const response = await request(app).get('/api/health/').expect(200);
 
       // Verify response structure consistency
       expect(typeof response.body.status).toBe('string');
@@ -160,23 +148,19 @@ describe('Health Check Routes', () => {
   });
 
   describe('Performance Tests', () => {
-    test('should respond quickly to health checks', async() => {
+    test('should respond quickly to health checks', async () => {
       const startTime = Date.now();
 
-      await request(app)
-        .get('/api/health/')
-        .expect(200);
+      await request(app).get('/api/health/').expect(200);
 
       const responseTime = Date.now() - startTime;
       expect(responseTime).toBeLessThan(100); // Should respond within 100ms
     });
 
-    test('should handle detailed health check efficiently', async() => {
+    test('should handle detailed health check efficiently', async () => {
       const startTime = Date.now();
 
-      const response = await request(app)
-        .get('/api/health/detailed')
-        .expect(200);
+      const response = await request(app).get('/api/health/detailed').expect(200);
 
       const responseTime = Date.now() - startTime;
       expect(responseTime).toBeLessThan(500); // Should respond within 500ms

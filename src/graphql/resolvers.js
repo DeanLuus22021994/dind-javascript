@@ -3,21 +3,21 @@ const { generateToken } = require('../utils/auth');
 
 const resolvers = {
   Query: {
-    me: async(parent, args, context) => {
+    me: async (parent, args, context) => {
       if (!context.user) {
         throw new Error('Authentication required');
       }
       return context.user;
     },
 
-    users: async(parent, args, context) => {
+    users: async (parent, args, context) => {
       if (!context.user || context.user.role !== 'admin') {
         throw new Error('Admin access required');
       }
       return await User.find({ isActive: true });
     },
 
-    user: async(parent, { id }, context) => {
+    user: async (parent, { id }, context) => {
       if (!context.user || (context.user.role !== 'admin' && context.user._id.toString() !== id)) {
         throw new Error('Access denied');
       }
@@ -26,7 +26,7 @@ const resolvers = {
   },
 
   Mutation: {
-    register: async(parent, { input }) => {
+    register: async (parent, { input }) => {
       const { username, email, password, firstName, lastName } = input;
 
       // Check if user already exists
@@ -58,7 +58,7 @@ const resolvers = {
       };
     },
 
-    login: async(parent, { input }) => {
+    login: async (parent, { input }) => {
       const { email, password } = input;
 
       const user = await User.findOne({ email, isActive: true });
@@ -87,7 +87,7 @@ const resolvers = {
       };
     },
 
-    updateProfile: async(parent, { input }, context) => {
+    updateProfile: async (parent, { input }, context) => {
       if (!context.user) {
         throw new Error('Authentication required');
       }
@@ -103,7 +103,7 @@ const resolvers = {
       return user;
     },
 
-    changePassword: async(parent, { currentPassword, newPassword }, context) => {
+    changePassword: async (parent, { currentPassword, newPassword }, context) => {
       if (!context.user) {
         throw new Error('Authentication required');
       }
@@ -121,15 +121,12 @@ const resolvers = {
       return true;
     },
 
-    deleteAccount: async(parent, args, context) => {
+    deleteAccount: async (parent, args, context) => {
       if (!context.user) {
         throw new Error('Authentication required');
       }
 
-      await User.findByIdAndUpdate(
-        context.user._id,
-        { isActive: false }
-      );
+      await User.findByIdAndUpdate(context.user._id, { isActive: false });
 
       return true;
     }

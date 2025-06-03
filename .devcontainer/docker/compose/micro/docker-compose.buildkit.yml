@@ -13,7 +13,7 @@ services:
     environment:
       - BUILDKITD_FLAGS=--oci-worker-no-process-sandbox --allow-insecure-entitlement security.insecure --allow-insecure-entitlement network.host
     healthcheck:
-      test: ["CMD", "buildctl", "debug", "workers"]
+      test: ['CMD', 'buildctl', 'debug', 'workers']
       interval: 30s
       timeout: 10s
       retries: 3

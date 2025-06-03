@@ -6,7 +6,7 @@ const fs = require('fs');
 let mongoServer;
 
 // Global setup before all tests
-beforeAll(async() => {
+beforeAll(async () => {
   // Start in-memory MongoDB instance
   mongoServer = await MongoMemoryServer.create();
   const mongoUri = mongoServer.getUri();
@@ -14,7 +14,7 @@ beforeAll(async() => {
   // Connect to the in-memory database
   await mongoose.connect(mongoUri, {
     useNewUrlParser: true,
-    useUnifiedTopology: true,
+    useUnifiedTopology: true
   });
 
   // Create test upload directory
@@ -25,7 +25,7 @@ beforeAll(async() => {
 });
 
 // Global cleanup after all tests
-afterAll(async() => {
+afterAll(async () => {
   // Close database connection
   await mongoose.disconnect();
 

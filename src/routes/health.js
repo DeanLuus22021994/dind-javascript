@@ -29,7 +29,7 @@ router.get('/', (req, res) => {
  * @route GET /api/health/detailed
  * @description Detailed health check with system information
  */
-router.get('/detailed', async(req, res) => {
+router.get('/detailed', async (req, res) => {
   try {
     const startTime = Date.now();
 
@@ -118,7 +118,7 @@ router.get('/detailed', async(req, res) => {
  * @route GET /api/health/services
  * @description Service status check
  */
-router.get('/services', async(req, res) => {
+router.get('/services', async (req, res) => {
   try {
     const startTime = Date.now();
 
@@ -145,8 +145,9 @@ router.get('/services', async(req, res) => {
     const coreServicesHealthy = coreServices.every(service => service.status === 'healthy');
 
     // In test environment, ignore email service status for overall health
-    const allServicesHealthy = config.isTest ? coreServicesHealthy :
-      Object.values(serviceHealth).every(service => service.status === 'healthy');
+    const allServicesHealthy = config.isTest
+      ? coreServicesHealthy
+      : Object.values(serviceHealth).every(service => service.status === 'healthy');
 
     res.status(allServicesHealthy ? 200 : 503).json({
       status: allServicesHealthy ? 'healthy' : 'degraded',
@@ -300,7 +301,9 @@ async function checkEmailServiceStatus() {
 
   return {
     status: hasEmailConfig ? 'healthy' : 'degraded',
-    message: hasEmailConfig ? 'Email service configured' : 'Email service credentials not configured'
+    message: hasEmailConfig
+      ? 'Email service configured'
+      : 'Email service credentials not configured'
   };
 }
 

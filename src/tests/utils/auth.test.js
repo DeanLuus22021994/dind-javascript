@@ -45,13 +45,11 @@ describe('Authentication Utilities', () => {
       }).toThrow('Invalid token');
     });
 
-    test('should reject an expired token', (done) => {
+    test('should reject an expired token', done => {
       // Create an expired token
-      const expiredToken = jwt.sign(
-        { userId: '507f1f77bcf86cd799439011' },
-        config.jwtSecret,
-        { expiresIn: '0s' }
-      );
+      const expiredToken = jwt.sign({ userId: '507f1f77bcf86cd799439011' }, config.jwtSecret, {
+        expiresIn: '0s'
+      });
 
       // Wait a bit to ensure expiration
       setTimeout(() => {
@@ -81,7 +79,7 @@ describe('Authentication Utilities', () => {
       User.findById.mockReset();
     });
 
-    test('should authenticate user with valid token', async() => {
+    test('should authenticate user with valid token', async () => {
       const userId = '507f1f77bcf86cd799439011';
       const token = generateToken(userId);
       const mockUser = {
@@ -112,7 +110,7 @@ describe('Authentication Utilities', () => {
       expect(next).toHaveBeenCalled();
     });
 
-    test('should reject request without token', async() => {
+    test('should reject request without token', async () => {
       await requireAuth(req, res, next);
 
       expect(req.user).toBeNull();
@@ -121,7 +119,7 @@ describe('Authentication Utilities', () => {
       expect(next).not.toHaveBeenCalled();
     });
 
-    test('should reject request with invalid token', async() => {
+    test('should reject request with invalid token', async () => {
       req.headers.authorization = 'Bearer invalid-token';
 
       await requireAuth(req, res, next);
@@ -132,7 +130,7 @@ describe('Authentication Utilities', () => {
       expect(next).not.toHaveBeenCalled();
     });
 
-    test('should handle token without Bearer prefix', async() => {
+    test('should handle token without Bearer prefix', async () => {
       const userId = '507f1f77bcf86cd799439011';
       const token = generateToken(userId);
       req.headers.authorization = token; // No Bearer prefix
@@ -144,7 +142,7 @@ describe('Authentication Utilities', () => {
       expect(next).not.toHaveBeenCalled();
     });
 
-    test('should handle non-existent user', async() => {
+    test('should handle non-existent user', async () => {
       const userId = '507f1f77bcf86cd799439011';
       const token = generateToken(userId);
 
@@ -174,7 +172,7 @@ describe('Authentication Utilities', () => {
       next = jest.fn();
     });
 
-    test('should allow access for user with correct role', async() => {
+    test('should allow access for user with correct role', async () => {
       req.user = {
         _id: '507f1f77bcf86cd799439011',
         role: 'admin'
@@ -186,7 +184,7 @@ describe('Authentication Utilities', () => {
       expect(next).toHaveBeenCalled();
     });
 
-    test('should deny access for user with incorrect role', async() => {
+    test('should deny access for user with incorrect role', async () => {
       req.user = {
         _id: 'd8ac872f-523a-42e0-91e8-da86de118e98',
         role: 'user'
@@ -200,7 +198,7 @@ describe('Authentication Utilities', () => {
       expect(next).not.toHaveBeenCalled();
     });
 
-    test('should deny access when no user is present', async() => {
+    test('should deny access when no user is present', async () => {
       const middleware = requireRole('admin');
       await middleware(req, res, next);
 
@@ -209,7 +207,7 @@ describe('Authentication Utilities', () => {
       expect(next).not.toHaveBeenCalled();
     });
 
-    test('should allow access for multiple valid roles', async() => {
+    test('should allow access for multiple valid roles', async () => {
       req.user = {
         _id: '507f1f77bcf86cd799439011',
         role: 'moderator'

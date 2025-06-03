@@ -34,15 +34,9 @@ const typeDefs = gql`
       lastName: String
     ): AuthPayload!
 
-    login(
-      email: String!
-      password: String!
-    ): AuthPayload!
+    login(email: String!, password: String!): AuthPayload!
 
-    updateProfile(
-      firstName: String
-      lastName: String
-    ): User!
+    updateProfile(firstName: String, lastName: String): User!
 
     deleteAccount: Boolean!
   }

@@ -23,7 +23,7 @@ class RedisClient {
 
       const redisConfig = {
         url: config.redis.url,
-        retry_strategy: (options) => {
+        retry_strategy: options => {
           if (options.error && options.error.code === 'ECONNREFUSED') {
             logger.error('Redis server connection refused');
             return new Error('Redis server connection refused');
@@ -46,7 +46,7 @@ class RedisClient {
 
       this.client = redis.createClient(redisConfig);
 
-      this.client.on('error', (error) => {
+      this.client.on('error', error => {
         logger.error('Redis client error:', error);
         this.isConnected = false;
       });

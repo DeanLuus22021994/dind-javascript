@@ -2,7 +2,8 @@
 
 ## Created Files
 
-- **`.vscode/settings.json`** - IDE settings for consistent development environment
+- **`.vscode/settings.json`** - IDE settings for consistent development
+  environment
 - **`.vscode/launch.json`** - Debug configurations for tests and application
 - **`.vscode/tasks.json`** - Build and test tasks
 - **`.vscode/extensions.json`** - Recommended extensions
@@ -13,7 +14,8 @@
 
 - **Run All Tests** - Execute complete test suite
 - **Run Current Test File** - Run tests in currently open file
-- **Debug Current Test File** - Debug tests in currently open file with breakpoints
+- **Debug Current Test File** - Debug tests in currently open file with
+  breakpoints
 - **Debug Specific Test** - Run a specific test by name pattern
 
 ### Application Debugging

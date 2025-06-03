@@ -40,13 +40,9 @@ const metricsMiddleware = (req, res, next) => {
     const duration = (Date.now() - start) / 1000;
     const route = req.route ? req.route.path : req.path;
 
-    httpRequestDuration
-      .labels(req.method, route, res.statusCode)
-      .observe(duration);
+    httpRequestDuration.labels(req.method, route, res.statusCode).observe(duration);
 
-    httpRequestTotal
-      .labels(req.method, route, res.statusCode)
-      .inc();
+    httpRequestTotal.labels(req.method, route, res.statusCode).inc();
 
     activeConnections.dec();
   });

@@ -11,7 +11,7 @@ describe('GraphQL API', () => {
   let token;
   let userId;
 
-  beforeAll(async() => {
+  beforeAll(async () => {
     // Setup Express app with GraphQL
     app = express();
     app.use(express.json());
@@ -24,7 +24,9 @@ describe('GraphQL API', () => {
       console.warn('GraphQL server setup failed, tests may be limited:', error.message);
       // Create a mock endpoint for tests
       app.use('/graphql', (req, res) => {
-        res.status(500).json({ errors: [{ message: 'GraphQL server not available in test environment' }] });
+        res
+          .status(500)
+          .json({ errors: [{ message: 'GraphQL server not available in test environment' }] });
       });
     }
 
@@ -42,19 +44,19 @@ describe('GraphQL API', () => {
     token = generateToken(userId);
   });
 
-  afterAll(async() => {
+  afterAll(async () => {
     if (server) {
       await server.stop();
     }
   });
 
-  beforeEach(async() => {
+  beforeEach(async () => {
     // Keep only the test user, remove others
     await User.deleteMany({ _id: { $ne: userId } });
   });
 
   describe('Query: me', () => {
-    test('should return current user when authenticated', async() => {
+    test('should return current user when authenticated', async () => {
       const query = `
         query {
           me {
@@ -72,7 +74,11 @@ describe('GraphQL API', () => {
         .set('Authorization', `Bearer ${token}`)
         .send({ query });
 
-      if (response.status !== 200 || (response.body.errors && response.body.errors[0].message.includes('GraphQL server not available'))) {
+      if (
+        response.status !== 200 ||
+        (response.body.errors &&
+          response.body.errors[0].message.includes('GraphQL server not available'))
+      ) {
         // Skip test if GraphQL server is not available
         expect(true).toBe(true);
         return;
@@ -83,7 +89,7 @@ describe('GraphQL API', () => {
       expect(response.body.data.me.username).toBe('testuser');
     });
 
-    test('should return error when not authenticated', async() => {
+    test('should return error when not authenticated', async () => {
       const query = `
         query {
           me {
@@ -94,11 +100,13 @@ describe('GraphQL API', () => {
         }
       `;
 
-      const response = await request(app)
-        .post('/graphql')
-        .send({ query });
+      const response = await request(app).post('/graphql').send({ query });
 
-      if (response.status !== 200 || (response.body.errors && response.body.errors[0].message.includes('GraphQL server not available'))) {
+      if (
+        response.status !== 200 ||
+        (response.body.errors &&
+          response.body.errors[0].message.includes('GraphQL server not available'))
+      ) {
         // Skip test if GraphQL server is not available
         expect(true).toBe(true);
         return;
@@ -110,7 +118,7 @@ describe('GraphQL API', () => {
   });
 
   describe('Query: users', () => {
-    beforeEach(async() => {
+    beforeEach(async () => {
       // Create additional test users
       await User.create([
         {
@@ -133,7 +141,7 @@ describe('GraphQL API', () => {
       await User.findByIdAndUpdate(userId, { role: 'admin' });
     });
 
-    test('should return list of users when authenticated as admin', async() => {
+    test('should return list of users when authenticated as admin', async () => {
       const query = `
         query {
           users {
@@ -151,7 +159,11 @@ describe('GraphQL API', () => {
         .set('Authorization', `Bearer ${token}`)
         .send({ query });
 
-      if (response.status !== 200 || (response.body.errors && response.body.errors[0].message.includes('GraphQL server not available'))) {
+      if (
+        response.status !== 200 ||
+        (response.body.errors &&
+          response.body.errors[0].message.includes('GraphQL server not available'))
+      ) {
         // Skip test if GraphQL server is not available
         expect(true).toBe(true);
         return;
@@ -162,7 +174,7 @@ describe('GraphQL API', () => {
       expect(response.body.data.users.length).toBeGreaterThan(0);
     });
 
-    test('should return error when not authenticated as admin', async() => {
+    test('should return error when not authenticated as admin', async () => {
       // Reset user role to regular user
       await User.findByIdAndUpdate(userId, { role: 'user' });
 
@@ -181,7 +193,11 @@ describe('GraphQL API', () => {
         .set('Authorization', `Bearer ${token}`)
         .send({ query });
 
-      if (response.status !== 200 || (response.body.errors && response.body.errors[0].message.includes('GraphQL server not available'))) {
+      if (
+        response.status !== 200 ||
+        (response.body.errors &&
+          response.body.errors[0].message.includes('GraphQL server not available'))
+      ) {
         // Skip test if GraphQL server is not available
         expect(true).toBe(true);
         return;
@@ -192,7 +208,7 @@ describe('GraphQL API', () => {
   });
 
   describe('Mutation: updateProfile', () => {
-    test('should update user profile when authenticated', async() => {
+    test('should update user profile when authenticated', async () => {
       const mutation = `
         mutation {
           updateProfile(input: {
@@ -211,7 +227,11 @@ describe('GraphQL API', () => {
         .set('Authorization', `Bearer ${token}`)
         .send({ query: mutation });
 
-      if (response.status !== 200 || (response.body.errors && response.body.errors[0].message.includes('GraphQL server not available'))) {
+      if (
+        response.status !== 200 ||
+        (response.body.errors &&
+          response.body.errors[0].message.includes('GraphQL server not available'))
+      ) {
         // Skip test if GraphQL server is not available
         expect(true).toBe(true);
         return;
@@ -222,7 +242,7 @@ describe('GraphQL API', () => {
       expect(response.body.data.updateProfile.lastName).toBe('Name');
     });
 
-    test('should return error when not authenticated', async() => {
+    test('should return error when not authenticated', async () => {
       const mutation = `
         mutation {
           updateProfile(input: {
@@ -236,11 +256,13 @@ describe('GraphQL API', () => {
         }
       `;
 
-      const response = await request(app)
-        .post('/graphql')
-        .send({ query: mutation });
+      const response = await request(app).post('/graphql').send({ query: mutation });
 
-      if (response.status !== 200 || (response.body.errors && response.body.errors[0].message.includes('GraphQL server not available'))) {
+      if (
+        response.status !== 200 ||
+        (response.body.errors &&
+          response.body.errors[0].message.includes('GraphQL server not available'))
+      ) {
         // Skip test if GraphQL server is not available
         expect(true).toBe(true);
         return;
@@ -251,7 +273,7 @@ describe('GraphQL API', () => {
   });
 
   describe('Mutation: changePassword', () => {
-    test('should change password with correct current password', async() => {
+    test('should change password with correct current password', async () => {
       // First, ensure the user password is set correctly
       await User.findByIdAndUpdate(userId, { password: 'password123' });
 
@@ -272,7 +294,11 @@ describe('GraphQL API', () => {
         .set('Authorization', `Bearer ${token}`)
         .send({ query: mutation });
 
-      if (response.status !== 200 || (response.body.errors && response.body.errors[0].message.includes('GraphQL server not available'))) {
+      if (
+        response.status !== 200 ||
+        (response.body.errors &&
+          response.body.errors[0].message.includes('GraphQL server not available'))
+      ) {
         // Skip test if GraphQL server is not available
         expect(true).toBe(true);
         return;
@@ -288,7 +314,7 @@ describe('GraphQL API', () => {
       expect(response.body.data.changePassword.success).toBe(true);
     });
 
-    test('should return error with incorrect current password', async() => {
+    test('should return error with incorrect current password', async () => {
       // Ensure the user password is set correctly
       await User.findByIdAndUpdate(userId, { password: 'password123' });
 
@@ -309,7 +335,11 @@ describe('GraphQL API', () => {
         .set('Authorization', `Bearer ${token}`)
         .send({ query: mutation });
 
-      if (response.status !== 200 || (response.body.errors && response.body.errors[0].message.includes('GraphQL server not available'))) {
+      if (
+        response.status !== 200 ||
+        (response.body.errors &&
+          response.body.errors[0].message.includes('GraphQL server not available'))
+      ) {
         // Skip test if GraphQL server is not available
         expect(true).toBe(true);
         return;

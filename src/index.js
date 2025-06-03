@@ -68,21 +68,25 @@ async function initializeConnections() {
 app.use(helmet(config.helmetOptions));
 
 // CORS
-app.use(cors({
-  origin: config.corsOrigin,
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: config.corsOrigin,
+    credentials: true
+  })
+);
 
 // Compression
 app.use(compression());
 
 // Request logging - disabled in test environment
 if (!config.isTest) {
-  app.use(morgan('combined', {
-    stream: {
-      write: (message) => logger.info(message.trim())
-    }
-  }));
+  app.use(
+    morgan('combined', {
+      stream: {
+        write: message => logger.info(message.trim())
+      }
+    })
+  );
 }
 
 // Rate limiting
@@ -115,16 +119,18 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
 // Session middleware
-app.use(session({
-  secret: config.sessionSecret,
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: config.isProduction,
-    httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
-  }
-}));
+app.use(
+  session({
+    secret: config.sessionSecret,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: config.isProduction,
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    }
+  })
+);
 
 // Metrics middleware
 if (config.enableMetrics) {
@@ -134,16 +140,20 @@ if (config.enableMetrics) {
 // API Documentation
 if (!config.isProduction) {
   const specs = swaggerJsdoc(config.swaggerOptions);
-  app.use('/docs', swaggerUi.serve, swaggerUi.setup(specs, {
-    explorer: true,
-    customCss: '.swagger-ui .topbar { display: none }',
-    customSiteTitle: 'DIND JavaScript API Documentation'
-  }));
+  app.use(
+    '/docs',
+    swaggerUi.serve,
+    swaggerUi.setup(specs, {
+      explorer: true,
+      customCss: '.swagger-ui .topbar { display: none }',
+      customSiteTitle: 'DIND JavaScript API Documentation'
+    })
+  );
 }
 
 // GraphQL
 if (!config.isTest) {
-  (async() => {
+  (async () => {
     try {
       const apolloServer = await createApolloServer();
       await apolloServer.start();
@@ -219,7 +229,7 @@ app.use('/upload', uploadRoutes);
 
 // Metrics endpoint
 if (config.enableMetrics) {
-  app.get('/metrics', async(req, res) => {
+  app.get('/metrics', async (req, res) => {
     try {
       res.set('Content-Type', register.contentType);
       res.end(await register.metrics());
@@ -289,7 +299,7 @@ process.on('SIGINT', () => {
 });
 
 // Handle uncaught exceptions
-process.on('uncaughtException', (error) => {
+process.on('uncaughtException', error => {
   logger.error('Uncaught Exception:', error);
   process.exit(1);
 });

@@ -5,10 +5,7 @@
       "label": "DevContainer: Build (PowerShell)",
       "type": "shell",
       "command": "pwsh",
-      "args": [
-        "-File",
-        ".devcontainer/scripts/powershell/build.ps1"
-      ],
+      "args": ["-File", ".devcontainer/scripts/powershell/build.ps1"],
       "group": "build",
       "options": {
         "cwd": "${workspaceFolder}"
@@ -19,10 +16,7 @@
       "label": "DevContainer: Clean (PowerShell)",
       "type": "shell",
       "command": "pwsh",
-      "args": [
-        "-File",
-        ".devcontainer/scripts/powershell/clean.ps1"
-      ],
+      "args": ["-File", ".devcontainer/scripts/powershell/clean.ps1"],
       "group": "build",
       "options": {
         "cwd": "${workspaceFolder}"
@@ -33,9 +27,7 @@
       "label": "DevContainer: Build (Bash)",
       "type": "shell",
       "command": "bash",
-      "args": [
-        ".devcontainer/scripts/bash/build.sh"
-      ],
+      "args": [".devcontainer/scripts/bash/build.sh"],
       "group": "build",
       "options": {
         "cwd": "${workspaceFolder}"
@@ -46,9 +38,7 @@
       "label": "DevContainer: Clean (Bash)",
       "type": "shell",
       "command": "bash",
-      "args": [
-        ".devcontainer/scripts/bash/clean.sh"
-      ],
+      "args": [".devcontainer/scripts/bash/clean.sh"],
       "group": "build",
       "options": {
         "cwd": "${workspaceFolder}"
@@ -59,9 +49,7 @@
       "label": "DevContainer: View Status",
       "type": "shell",
       "command": "bash",
-      "args": [
-        ".devcontainer/scripts/bash/dev-status.sh"
-      ],
+      "args": [".devcontainer/scripts/bash/dev-status.sh"],
       "group": "build",
       "options": {
         "cwd": "${workspaceFolder}"
@@ -72,9 +60,7 @@
       "label": "DevContainer: Health Check",
       "type": "shell",
       "command": "bash",
-      "args": [
-        ".devcontainer/scripts/bash/validate.sh"
-      ],
+      "args": [".devcontainer/scripts/bash/validate.sh"],
       "group": "test",
       "options": {
         "cwd": "${workspaceFolder}"
@@ -86,9 +72,7 @@
       "label": "npm: test",
       "type": "shell",
       "command": "npm",
-      "args": [
-        "test"
-      ],
+      "args": ["test"],
       "group": {
         "kind": "test",
         "isDefault": true
@@ -101,9 +85,7 @@
         "showReuseMessage": true,
         "clear": false
       },
-      "problemMatcher": [
-        "$eslint-stylish"
-      ],
+      "problemMatcher": ["$eslint-stylish"],
       "options": {
         "cwd": "${workspaceFolder}"
       }
@@ -112,10 +94,7 @@
       "label": "npm: test:watch",
       "type": "shell",
       "command": "npm",
-      "args": [
-        "run",
-        "test:watch"
-      ],
+      "args": ["run", "test:watch"],
       "group": "test",
       "presentation": {
         "echo": true,
@@ -152,10 +131,7 @@
       "label": "npm: test:coverage",
       "type": "shell",
       "command": "npm",
-      "args": [
-        "run",
-        "test:coverage"
-      ],
+      "args": ["run", "test:coverage"],
       "group": "test",
       "presentation": {
         "echo": true,
@@ -165,9 +141,7 @@
         "showReuseMessage": true,
         "clear": false
       },
-      "problemMatcher": [
-        "$eslint-stylish"
-      ],
+      "problemMatcher": ["$eslint-stylish"],
       "options": {
         "cwd": "${workspaceFolder}"
       }
@@ -176,11 +150,7 @@
       "label": "Jest: Run Current File",
       "type": "shell",
       "command": "npm",
-      "args": [
-        "test",
-        "--",
-        "${relativeFile}"
-      ],
+      "args": ["test", "--", "${relativeFile}"],
       "group": "test",
       "presentation": {
         "echo": true,
@@ -190,9 +160,7 @@
         "showReuseMessage": true,
         "clear": false
       },
-      "problemMatcher": [
-        "$eslint-stylish"
-      ],
+      "problemMatcher": ["$eslint-stylish"],
       "options": {
         "cwd": "${workspaceFolder}"
       }
@@ -201,9 +169,7 @@
       "label": "npm: start",
       "type": "shell",
       "command": "npm",
-      "args": [
-        "start"
-      ],
+      "args": ["start"],
       "group": {
         "kind": "build",
         "isDefault": true
@@ -243,10 +209,7 @@
       "label": "npm: dev",
       "type": "shell",
       "command": "npm",
-      "args": [
-        "run",
-        "dev"
-      ],
+      "args": ["run", "dev"],
       "group": "build",
       "presentation": {
         "echo": true,
@@ -283,11 +246,7 @@
       "label": "ESLint: Fix All",
       "type": "shell",
       "command": "npx",
-      "args": [
-        "eslint",
-        ".",
-        "--fix"
-      ],
+      "args": ["eslint", ".", "--fix"],
       "group": "build",
       "presentation": {
         "echo": true,
@@ -297,9 +256,7 @@
         "showReuseMessage": true,
         "clear": false
       },
-      "problemMatcher": [
-        "$eslint-stylish"
-      ],
+      "problemMatcher": ["$eslint-stylish"],
       "options": {
         "cwd": "${workspaceFolder}"
       }
@@ -308,11 +265,7 @@
       "label": "Prettier: Format All",
       "type": "shell",
       "command": "npx",
-      "args": [
-        "prettier",
-        "--write",
-        "."
-      ],
+      "args": ["prettier", "--write", "."],
       "group": "build",
       "presentation": {
         "echo": true,
@@ -330,10 +283,7 @@
       "label": "DevContainer: Start Services",
       "type": "shell",
       "command": "docker-compose",
-      "args": [
-        "up",
-        "-d"
-      ],
+      "args": ["up", "-d"],
       "group": "build",
       "presentation": {
         "echo": true,
@@ -350,9 +300,7 @@
       "label": "DevContainer: Stop Services",
       "type": "shell",
       "command": "docker-compose",
-      "args": [
-        "down"
-      ],
+      "args": ["down"],
       "group": "build",
       "presentation": {
         "echo": true,
@@ -369,10 +317,7 @@
       "label": "Logs: View All Services",
       "type": "shell",
       "command": "docker-compose",
-      "args": [
-        "logs",
-        "-f"
-      ],
+      "args": ["logs", "-f"],
       "group": "build",
       "isBackground": true,
       "presentation": {
@@ -390,10 +335,7 @@
       "label": "Logs: Application Logs",
       "type": "shell",
       "command": "tail",
-      "args": [
-        "-f",
-        "logs/combined.log"
-      ],
+      "args": ["-f", "logs/combined.log"],
       "group": "build",
       "isBackground": true,
       "presentation": {
@@ -411,11 +353,7 @@
       "label": "Docker: Build with Cache",
       "type": "shell",
       "command": "docker",
-      "args": [
-        "buildx",
-        "bake",
-        "--load"
-      ],
+      "args": ["buildx", "bake", "--load"],
       "group": "build",
       "presentation": {
         "echo": true,
@@ -454,14 +392,7 @@
       "label": "Database: Connect PostgreSQL",
       "type": "shell",
       "command": "psql",
-      "args": [
-        "-h",
-        "localhost",
-        "-U",
-        "devuser",
-        "-d",
-        "devdb"
-      ],
+      "args": ["-h", "localhost", "-U", "devuser", "-d", "devdb"],
       "group": "build",
       "presentation": {
         "echo": true,
@@ -481,10 +412,7 @@
       "label": "Database: Connect Redis",
       "type": "shell",
       "command": "redis-cli",
-      "args": [
-        "-h",
-        "localhost"
-      ],
+      "args": ["-h", "localhost"],
       "group": "build",
       "presentation": {
         "echo": true,

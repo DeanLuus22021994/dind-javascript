@@ -3,13 +3,13 @@ const bcrypt = require('bcryptjs');
 const User = require('../../models/User');
 
 describe('User Model', () => {
-  beforeEach(async() => {
+  beforeEach(async () => {
     // Clear users collection before each test
     await User.deleteMany({});
   });
 
   describe('User Creation', () => {
-    test('should create a user with valid data', async() => {
+    test('should create a user with valid data', async () => {
       const userData = {
         username: 'testuser',
         email: 'test@example.com',
@@ -30,7 +30,7 @@ describe('User Model', () => {
       expect(user.createdAt).toBeDefined();
     });
 
-    test('should hash password before saving', async() => {
+    test('should hash password before saving', async () => {
       const password = 'password123';
       const user = new User({
         username: 'testuser',
@@ -50,7 +50,7 @@ describe('User Model', () => {
       expect(isMatch).toBe(true);
     });
 
-    test('should require username', async() => {
+    test('should require username', async () => {
       const user = new User({
         email: 'test@example.com',
         password: 'password123',
@@ -69,7 +69,7 @@ describe('User Model', () => {
       expect(error.errors.username).toBeDefined();
     });
 
-    test('should require email', async() => {
+    test('should require email', async () => {
       const user = new User({
         username: 'testuser',
         password: 'password123',
@@ -88,7 +88,7 @@ describe('User Model', () => {
       expect(error.errors.email).toBeDefined();
     });
 
-    test('should require password', async() => {
+    test('should require password', async () => {
       const user = new User({
         username: 'testuser',
         email: 'test@example.com',
@@ -107,7 +107,7 @@ describe('User Model', () => {
       expect(error.errors.password).toBeDefined();
     });
 
-    test('should enforce unique email', async() => {
+    test('should enforce unique email', async () => {
       const userData1 = {
         username: 'testuser1',
         email: 'test@example.com',
@@ -139,7 +139,7 @@ describe('User Model', () => {
       expect(error.code).toBe(11000); // MongoDB duplicate key error
     });
 
-    test('should enforce unique username', async() => {
+    test('should enforce unique username', async () => {
       const userData1 = {
         username: 'testuser',
         email: 'test1@example.com',
@@ -171,7 +171,7 @@ describe('User Model', () => {
       expect(error.code).toBe(11000); // MongoDB duplicate key error
     });
 
-    test('should validate email format', async() => {
+    test('should validate email format', async () => {
       const user = new User({
         username: 'testuser',
         email: 'invalid-email',
@@ -191,7 +191,7 @@ describe('User Model', () => {
       expect(error.errors.email).toBeDefined();
     });
 
-    test('should validate password minimum length', async() => {
+    test('should validate password minimum length', async () => {
       const user = new User({
         username: 'testuser',
         email: 'test@example.com',
@@ -215,7 +215,7 @@ describe('User Model', () => {
   describe('User Methods', () => {
     let user;
 
-    beforeEach(async() => {
+    beforeEach(async () => {
       user = new User({
         username: 'testuser',
         email: 'test@example.com',
@@ -226,7 +226,7 @@ describe('User Model', () => {
       await user.save();
     });
 
-    test('should compare password correctly', async() => {
+    test('should compare password correctly', async () => {
       const isMatch = await user.comparePassword('password123');
       expect(isMatch).toBe(true);
 
@@ -249,7 +249,7 @@ describe('User Model', () => {
   describe('User Updates', () => {
     let user;
 
-    beforeEach(async() => {
+    beforeEach(async () => {
       user = new User({
         username: 'testuser',
         email: 'test@example.com',
@@ -260,7 +260,7 @@ describe('User Model', () => {
       await user.save();
     });
 
-    test('should update user profile', async() => {
+    test('should update user profile', async () => {
       user.firstName = 'Updated';
       user.lastName = 'Name';
       await user.save();
@@ -270,7 +270,7 @@ describe('User Model', () => {
       expect(updatedUser.lastName).toBe('Name');
     });
 
-    test('should update lastLogin timestamp', async() => {
+    test('should update lastLogin timestamp', async () => {
       const originalLastLogin = user.lastLogin;
 
       user.lastLogin = new Date();
@@ -279,7 +279,7 @@ describe('User Model', () => {
       expect(user.lastLogin).not.toEqual(originalLastLogin);
     });
 
-    test('should not hash password on non-password updates', async() => {
+    test('should not hash password on non-password updates', async () => {
       const originalPassword = user.password;
 
       user.firstName = 'Updated';
@@ -288,7 +288,7 @@ describe('User Model', () => {
       expect(user.password).toBe(originalPassword);
     });
 
-    test('should hash new password on password update', async() => {
+    test('should hash new password on password update', async () => {
       const originalPassword = user.password;
 
       user.password = 'newpassword123';

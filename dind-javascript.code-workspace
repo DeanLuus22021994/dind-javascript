@@ -36,11 +36,7 @@
         "type": "node",
         "request": "launch",
         "program": "${workspaceFolder}/node_modules/.bin/jest",
-        "args": [
-          "--runInBand",
-          "--detectOpenHandles",
-          "--forceExit"
-        ],
+        "args": ["--runInBand", "--detectOpenHandles", "--forceExit"],
         "console": "integratedTerminal",
         "internalConsoleOptions": "neverOpen",
         "env": {
@@ -56,9 +52,7 @@
         "label": "Test All (Workspace)",
         "type": "shell",
         "command": "npm",
-        "args": [
-          "test"
-        ],
+        "args": ["test"],
         "group": {
           "kind": "test",
           "isDefault": true

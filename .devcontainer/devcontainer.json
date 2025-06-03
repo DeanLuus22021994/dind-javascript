@@ -92,15 +92,11 @@
         "terminal.integrated.profiles.linux": {
           "bash": {
             "path": "/bin/bash",
-            "args": [
-              "-l"
-            ]
+            "args": ["-l"]
           },
           "zsh": {
             "path": "/bin/zsh",
-            "args": [
-              "-l"
-            ]
+            "args": ["-l"]
           }
         },
         "docker.showStartPage": false,
@@ -163,14 +159,7 @@
     "YARN_CACHE_FOLDER": "/cache/yarn",
     "HUSKY": "0"
   },
-  "forwardPorts": [
-    3000,
-    3001,
-    4000,
-    5000,
-    6379,
-    9229
-  ],
+  "forwardPorts": [3000, 3001, 4000, 5000, 6379, 9229],
   "portsAttributes": {
     "3000": {
       "label": "Main App",

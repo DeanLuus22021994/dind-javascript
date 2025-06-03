@@ -72,13 +72,13 @@ const upload = multer({
 // File upload middleware functions
 const uploadMiddleware = {
   // Single file upload
-  single: (fieldName) => upload.single(fieldName),
+  single: fieldName => upload.single(fieldName),
 
   // Multiple files upload (same field)
   array: (fieldName, maxCount = 5) => upload.array(fieldName, maxCount),
 
   // Multiple files upload (different fields)
-  fields: (fields) => upload.fields(fields),
+  fields: fields => upload.fields(fields),
 
   // Any files
   any: () => upload.any(),
@@ -96,29 +96,29 @@ const handleUploadError = (error, req, res, next) => {
     const statusCode = 400;
 
     switch (error.code) {
-    case 'LIMIT_FILE_SIZE':
-      message = `File too large. Maximum size is ${config.upload.maxFileSize / (1024 * 1024)}MB`;
-      break;
-    case 'LIMIT_FILE_COUNT':
-      message = 'Too many files';
-      break;
-    case 'LIMIT_UNEXPECTED_FILE':
-      message = 'Unexpected file field';
-      break;
-    case 'LIMIT_PART_COUNT':
-      message = 'Too many parts';
-      break;
-    case 'LIMIT_FIELD_KEY':
-      message = 'Field name too long';
-      break;
-    case 'LIMIT_FIELD_VALUE':
-      message = 'Field value too long';
-      break;
-    case 'LIMIT_FIELD_COUNT':
-      message = 'Too many fields';
-      break;
-    default:
-      message = error.message;
+      case 'LIMIT_FILE_SIZE':
+        message = `File too large. Maximum size is ${config.upload.maxFileSize / (1024 * 1024)}MB`;
+        break;
+      case 'LIMIT_FILE_COUNT':
+        message = 'Too many files';
+        break;
+      case 'LIMIT_UNEXPECTED_FILE':
+        message = 'Unexpected file field';
+        break;
+      case 'LIMIT_PART_COUNT':
+        message = 'Too many parts';
+        break;
+      case 'LIMIT_FIELD_KEY':
+        message = 'Field name too long';
+        break;
+      case 'LIMIT_FIELD_VALUE':
+        message = 'Field value too long';
+        break;
+      case 'LIMIT_FIELD_COUNT':
+        message = 'Too many fields';
+        break;
+      default:
+        message = error.message;
     }
 
     return res.status(statusCode).json({
@@ -144,7 +144,7 @@ const handleUploadError = (error, req, res, next) => {
 // File utilities
 const fileUtils = {
   // Get file info
-  getFileInfo: (file) => ({
+  getFileInfo: file => ({
     filename: file.filename,
     originalName: file.originalname,
     mimetype: file.mimetype,
@@ -155,7 +155,7 @@ const fileUtils = {
   }),
 
   // Delete file
-  deleteFile: (filePath) => {
+  deleteFile: filePath => {
     try {
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
@@ -169,7 +169,7 @@ const fileUtils = {
     }
   },
   // Get file size in human readable format
-  formatFileSize: (bytes) => {
+  formatFileSize: bytes => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
@@ -178,7 +178,7 @@ const fileUtils = {
   },
 
   // Validate image dimensions (requires sharp package)
-  validateImageDimensions: async function(filePath, maxWidth = 2000, maxHeight = 2000) {
+  validateImageDimensions: async function (filePath, maxWidth = 2000, maxHeight = 2000) {
     let isValid = true;
     try {
       // To enable validation, uncomment the following lines and install 'sharp':

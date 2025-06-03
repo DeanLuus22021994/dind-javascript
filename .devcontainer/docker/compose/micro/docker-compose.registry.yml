@@ -5,7 +5,7 @@ services:
     container_name: dind-micro-registry
     restart: unless-stopped
     ports:
-      - "5001:5000"
+      - '5001:5000'
     volumes:
       - dind-registry-data:/var/lib/registry
       - ../../config/micro/registry-config.micro.yml:/etc/docker/registry/config.yml:ro
@@ -14,7 +14,7 @@ services:
     environment:
       - REGISTRY_STORAGE_DELETE_ENABLED=true
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5000/v2/"]
+      test: ['CMD', 'wget', '--quiet', '--tries=1', '--spider', 'http://localhost:5000/v2/']
       interval: 30s
       timeout: 10s
       retries: 3

@@ -7,7 +7,7 @@ describe('File Upload Routes', () => {
   let app;
   const uploadDir = path.join(__dirname, '../../uploads/test');
 
-  beforeAll(async() => {
+  beforeAll(async () => {
     app = express(); // Import and use upload routes
     const uploadRoutes = require('../routes/upload');
     app.use('/api/upload', uploadRoutes);
@@ -20,7 +20,7 @@ describe('File Upload Routes', () => {
     }
   });
 
-  afterAll(async() => {
+  afterAll(async () => {
     // Clean up test uploads
     try {
       const files = await fs.readdir(uploadDir);
@@ -32,7 +32,7 @@ describe('File Upload Routes', () => {
   });
 
   describe('POST /api/upload/single', () => {
-    test('should upload a single file successfully', async() => {
+    test('should upload a single file successfully', async () => {
       // Create a test file buffer
       const testContent = 'This is a test file content';
 
@@ -48,15 +48,13 @@ describe('File Upload Routes', () => {
       expect(response.body.file).toHaveProperty('size');
     });
 
-    test('should return error when no file is provided', async() => {
-      const response = await request(app)
-        .post('/api/upload/single')
-        .expect(400);
+    test('should return error when no file is provided', async () => {
+      const response = await request(app).post('/api/upload/single').expect(400);
 
       expect(response.body).toHaveProperty('error');
     });
 
-    test('should return error for unsupported file type', async() => {
+    test('should return error for unsupported file type', async () => {
       const testContent = 'This is a test file content';
 
       const response = await request(app)
@@ -67,7 +65,7 @@ describe('File Upload Routes', () => {
       expect(response.body).toHaveProperty('error');
     });
 
-    test('should return error for file too large', async() => {
+    test('should return error for file too large', async () => {
       // Create a large buffer (assuming 5MB limit)
       const largeContent = 'x'.repeat(6 * 1024 * 1024); // 6MB
 
@@ -81,7 +79,7 @@ describe('File Upload Routes', () => {
   });
 
   describe('POST /api/upload/multiple', () => {
-    test('should upload multiple files successfully', async() => {
+    test('should upload multiple files successfully', async () => {
       const testContent1 = 'This is test file 1';
       const testContent2 = 'This is test file 2';
 
@@ -97,15 +95,13 @@ describe('File Upload Routes', () => {
       expect(response.body.files).toHaveLength(2);
     });
 
-    test('should return error when no files are provided', async() => {
-      const response = await request(app)
-        .post('/api/upload/multiple')
-        .expect(400);
+    test('should return error when no files are provided', async () => {
+      const response = await request(app).post('/api/upload/multiple').expect(400);
 
       expect(response.body).toHaveProperty('error');
     });
 
-    test('should return error when too many files are uploaded', async() => {
+    test('should return error when too many files are uploaded', async () => {
       const files = [];
       // Create more than 10 files (assuming 10 is the limit)
       for (let i = 0; i < 12; i++) {
@@ -128,7 +124,7 @@ describe('File Upload Routes', () => {
   });
 
   describe('GET /api/upload/files', () => {
-    test('should list uploaded files', async() => {
+    test('should list uploaded files', async () => {
       // First upload a file
       const testContent = 'This is a test file content';
 
@@ -137,9 +133,7 @@ describe('File Upload Routes', () => {
         .attach('file', Buffer.from(testContent), 'test-list.txt');
 
       // Then list files
-      const response = await request(app)
-        .get('/api/upload/files')
-        .expect(200);
+      const response = await request(app).get('/api/upload/files').expect(200);
 
       expect(response.body).toHaveProperty('files');
       expect(Array.isArray(response.body.files)).toBe(true);
@@ -147,7 +141,7 @@ describe('File Upload Routes', () => {
   });
 
   describe('DELETE /api/upload/files/:filename', () => {
-    test('should delete an uploaded file', async() => {
+    test('should delete an uploaded file', async () => {
       // First upload a file
       const testContent = 'This is a test file content';
 
@@ -158,17 +152,13 @@ describe('File Upload Routes', () => {
       const filename = uploadResponse.body.file.filename;
 
       // Then delete it
-      const response = await request(app)
-        .delete(`/api/upload/files/${filename}`)
-        .expect(200);
+      const response = await request(app).delete(`/api/upload/files/${filename}`).expect(200);
 
       expect(response.body).toHaveProperty('message');
     });
 
-    test('should return error when trying to delete non-existent file', async() => {
-      const response = await request(app)
-        .delete('/api/upload/files/non-existent.txt')
-        .expect(404);
+    test('should return error when trying to delete non-existent file', async () => {
+      const response = await request(app).delete('/api/upload/files/non-existent.txt').expect(404);
 
       expect(response.body).toHaveProperty('error');
     });

@@ -46,7 +46,9 @@ const config = {
 
   // File Upload
   uploadMaxSize: parseInt(process.env.UPLOAD_MAX_SIZE, 10) || 5 * 1024 * 1024, // 5MB
-  uploadAllowedTypes: (process.env.UPLOAD_ALLOWED_TYPES || '.jpg,.jpeg,.png,.gif,.pdf,.txt,.doc,.docx,.xls,.xlsx').split(','),
+  uploadAllowedTypes: (
+    process.env.UPLOAD_ALLOWED_TYPES || '.jpg,.jpeg,.png,.gif,.pdf,.txt,.doc,.docx,.xls,.xlsx'
+  ).split(','),
 
   // Monitoring
   enableMetrics: process.env.ENABLE_METRICS === 'true',
@@ -56,10 +58,10 @@ const config = {
   helmetOptions: {
     contentSecurityPolicy: {
       directives: {
-        defaultSrc: ['\'self\''],
-        scriptSrc: ['\'self\'', '\'unsafe-inline\''],
-        styleSrc: ['\'self\'', '\'unsafe-inline\''],
-        imgSrc: ['\'self\'', 'data:', 'https:']
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", 'data:', 'https:']
       }
     }
   },
@@ -75,7 +77,9 @@ const config = {
       },
       servers: [
         {
-          url: process.env.API_BASE_URL || `http://localhost:${parseInt(process.env.PORT, 10) || 3000}`,
+          url:
+            process.env.API_BASE_URL ||
+            `http://localhost:${parseInt(process.env.PORT, 10) || 3000}`,
           description: 'Development server'
         }
       ]

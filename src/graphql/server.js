@@ -26,7 +26,7 @@ const schema = makeExecutableSchema({
 });
 
 // Context function to handle authentication
-const context = async({ req }) => {
+const context = async ({ req }) => {
   let user = null;
 
   try {
@@ -55,15 +55,13 @@ async function createApolloServer() {
     introspection: !config.isProduction,
     playground: !config.isProduction,
     // Error formatting
-    formatError: (error) => {
+    formatError: error => {
       if (process.env.NODE_ENV !== 'test') {
         logger.error('GraphQL Error:', error);
       }
 
       // Return sanitized error in production
-      return config.isProduction
-        ? new Error('Internal server error')
-        : error;
+      return config.isProduction ? new Error('Internal server error') : error;
     },
     // Handle CORS
     cors: {

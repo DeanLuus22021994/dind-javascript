@@ -15,7 +15,8 @@ class Database {
       if (this.isConnected) {
         logger.info('Database already connected');
         return this.connection;
-      } let dbUrl;
+      }
+      let dbUrl;
 
       // Use in-memory database if configured
       if (config.database.useInMemory) {
@@ -42,7 +43,7 @@ class Database {
       logger.info('✅ Database connected successfully');
 
       // Handle connection events
-      mongoose.connection.on('error', (error) => {
+      mongoose.connection.on('error', error => {
         logger.error('Database connection error:', error);
       });
 
@@ -68,7 +69,8 @@ class Database {
       if (!this.isConnected) {
         logger.info('Database not connected');
         return;
-      } await mongoose.disconnect();
+      }
+      await mongoose.disconnect();
       this.isConnected = false;
 
       // Stop in-memory database if it was used

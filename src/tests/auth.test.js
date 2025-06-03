@@ -6,7 +6,7 @@ const User = require('../models/User');
 describe('Authentication Routes', () => {
   let app;
 
-  beforeAll(async() => {
+  beforeAll(async () => {
     // Setup Express app with routes
     app = express();
     app.use(express.json());
@@ -14,12 +14,12 @@ describe('Authentication Routes', () => {
     app.use('/api/auth', authRoutes);
   });
 
-  beforeEach(async() => {
+  beforeEach(async () => {
     await User.deleteMany({});
   });
 
   describe('POST /api/auth/register', () => {
-    test('should register a new user successfully', async() => {
+    test('should register a new user successfully', async () => {
       const userData = {
         username: 'testuser',
         email: 'test@example.com',
@@ -28,10 +28,7 @@ describe('Authentication Routes', () => {
         lastName: 'User'
       };
 
-      const response = await request(app)
-        .post('/api/auth/register')
-        .send(userData)
-        .expect(201);
+      const response = await request(app).post('/api/auth/register').send(userData).expect(201);
 
       expect(response.body).toHaveProperty('token');
       expect(response.body).toHaveProperty('user');
@@ -39,7 +36,7 @@ describe('Authentication Routes', () => {
       expect(response.body.user).not.toHaveProperty('password');
     });
 
-    test('should return error for duplicate email', async() => {
+    test('should return error for duplicate email', async () => {
       const userData = {
         username: 'testuser',
         email: 'test@example.com',
@@ -49,46 +46,34 @@ describe('Authentication Routes', () => {
       };
 
       // Create first user
-      await request(app)
-        .post('/api/auth/register')
-        .send(userData)
-        .expect(201);
+      await request(app).post('/api/auth/register').send(userData).expect(201);
 
       // Try to create duplicate user
-      const response = await request(app)
-        .post('/api/auth/register')
-        .send(userData)
-        .expect(409);
+      const response = await request(app).post('/api/auth/register').send(userData).expect(409);
 
       expect(response.body).toHaveProperty('error');
     });
 
-    test('should return error for invalid email', async() => {
+    test('should return error for invalid email', async () => {
       const userData = {
         username: 'testuser',
         email: 'invalid-email',
         password: 'password123'
       };
 
-      const response = await request(app)
-        .post('/api/auth/register')
-        .send(userData)
-        .expect(400);
+      const response = await request(app).post('/api/auth/register').send(userData).expect(400);
 
       expect(response.body).toHaveProperty('error');
     });
 
-    test('should return error for weak password', async() => {
+    test('should return error for weak password', async () => {
       const userData = {
         username: 'testuser',
         email: 'test@example.com',
         password: '123'
       };
 
-      const response = await request(app)
-        .post('/api/auth/register')
-        .send(userData)
-        .expect(400);
+      const response = await request(app).post('/api/auth/register').send(userData).expect(400);
 
       expect(response.body).toHaveProperty('error');
     });
@@ -97,7 +82,7 @@ describe('Authentication Routes', () => {
   describe('POST /api/auth/login', () => {
     let registeredUser;
 
-    beforeEach(async() => {
+    beforeEach(async () => {
       const userData = {
         username: 'testuser',
         email: 'test@example.com',
@@ -114,72 +99,57 @@ describe('Authentication Routes', () => {
       registeredUser = registerResponse.body.user;
     });
 
-    test('should login with valid credentials', async() => {
+    test('should login with valid credentials', async () => {
       const loginData = {
         email: 'test@example.com',
         password: 'password123'
       };
 
-      const response = await request(app)
-        .post('/api/auth/login')
-        .send(loginData)
-        .expect(200);
+      const response = await request(app).post('/api/auth/login').send(loginData).expect(200);
 
       expect(response.body).toHaveProperty('token');
       expect(response.body).toHaveProperty('user');
       expect(response.body.user.email).toBe(loginData.email);
     });
 
-    test('should return error for invalid email', async() => {
+    test('should return error for invalid email', async () => {
       const loginData = {
         email: 'nonexistent@example.com',
         password: 'password123'
       };
 
-      const response = await request(app)
-        .post('/api/auth/login')
-        .send(loginData)
-        .expect(401);
+      const response = await request(app).post('/api/auth/login').send(loginData).expect(401);
 
       expect(response.body).toHaveProperty('error');
     });
 
-    test('should return error for invalid password', async() => {
+    test('should return error for invalid password', async () => {
       const loginData = {
         email: 'test@example.com',
         password: 'wrongpassword'
       };
 
-      const response = await request(app)
-        .post('/api/auth/login')
-        .send(loginData)
-        .expect(401);
+      const response = await request(app).post('/api/auth/login').send(loginData).expect(401);
 
       expect(response.body).toHaveProperty('error');
     });
 
-    test('should return error for missing email', async() => {
+    test('should return error for missing email', async () => {
       const loginData = {
         password: 'password123'
       };
 
-      const response = await request(app)
-        .post('/api/auth/login')
-        .send(loginData)
-        .expect(400);
+      const response = await request(app).post('/api/auth/login').send(loginData).expect(400);
 
       expect(response.body).toHaveProperty('error');
     });
 
-    test('should return error for missing password', async() => {
+    test('should return error for missing password', async () => {
       const loginData = {
         email: 'test@example.com'
       };
 
-      const response = await request(app)
-        .post('/api/auth/login')
-        .send(loginData)
-        .expect(400);
+      const response = await request(app).post('/api/auth/login').send(loginData).expect(400);
 
       expect(response.body).toHaveProperty('error');
     });
@@ -189,7 +159,7 @@ describe('Authentication Routes', () => {
     let token;
     let userId;
 
-    beforeEach(async() => {
+    beforeEach(async () => {
       const userData = {
         username: 'testuser',
         email: 'test@example.com',
@@ -207,7 +177,7 @@ describe('Authentication Routes', () => {
       userId = registerResponse.body.user._id;
     });
 
-    test('should get user profile with valid token', async() => {
+    test('should get user profile with valid token', async () => {
       const response = await request(app)
         .get('/api/auth/profile')
         .set('Authorization', `Bearer ${token}`)
@@ -218,15 +188,13 @@ describe('Authentication Routes', () => {
       expect(response.body.user).not.toHaveProperty('password');
     });
 
-    test('should return error without token', async() => {
-      const response = await request(app)
-        .get('/api/auth/profile')
-        .expect(401);
+    test('should return error without token', async () => {
+      const response = await request(app).get('/api/auth/profile').expect(401);
 
       expect(response.body).toHaveProperty('error');
     });
 
-    test('should return error with invalid token', async() => {
+    test('should return error with invalid token', async () => {
       const response = await request(app)
         .get('/api/auth/profile')
         .set('Authorization', 'Bearer invalid-token')
@@ -240,7 +208,7 @@ describe('Authentication Routes', () => {
     let token;
     let userId;
 
-    beforeEach(async() => {
+    beforeEach(async () => {
       const userData = {
         username: 'testuser',
         email: 'test@example.com',
@@ -258,7 +226,7 @@ describe('Authentication Routes', () => {
       userId = registerResponse.body.user._id;
     });
 
-    test('should update user profile with valid token', async() => {
+    test('should update user profile with valid token', async () => {
       const updateData = {
         firstName: 'Updated',
         lastName: 'Name'
@@ -275,16 +243,13 @@ describe('Authentication Routes', () => {
       expect(response.body.user.lastName).toBe('Name');
     });
 
-    test('should return error without token', async() => {
+    test('should return error without token', async () => {
       const updateData = {
         firstName: 'Updated',
         lastName: 'Name'
       };
 
-      const response = await request(app)
-        .put('/api/auth/profile')
-        .send(updateData)
-        .expect(401);
+      const response = await request(app).put('/api/auth/profile').send(updateData).expect(401);
 
       expect(response.body).toHaveProperty('error');
     });
@@ -293,7 +258,7 @@ describe('Authentication Routes', () => {
   describe('POST /api/auth/logout', () => {
     let token;
 
-    beforeEach(async() => {
+    beforeEach(async () => {
       const userData = {
         username: 'testuser',
         email: 'test@example.com',
@@ -310,7 +275,7 @@ describe('Authentication Routes', () => {
       token = registerResponse.body.token;
     });
 
-    test('should logout with valid token', async() => {
+    test('should logout with valid token', async () => {
       const response = await request(app)
         .post('/api/auth/logout')
         .set('Authorization', `Bearer ${token}`)
@@ -319,10 +284,8 @@ describe('Authentication Routes', () => {
       expect(response.body).toHaveProperty('message');
     });
 
-    test('should return error without token', async() => {
-      const response = await request(app)
-        .post('/api/auth/logout')
-        .expect(401);
+    test('should return error without token', async () => {
+      const response = await request(app).post('/api/auth/logout').expect(401);
 
       expect(response.body).toHaveProperty('error');
     });

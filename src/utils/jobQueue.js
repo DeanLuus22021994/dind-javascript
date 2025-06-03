@@ -95,25 +95,25 @@ class JobQueue {
     // Email queue processor
     const emailQueue = this.queues.get('email');
     if (emailQueue) {
-      emailQueue.process('send-welcome', config.jobConcurrency, async(job) => {
+      emailQueue.process('send-welcome', config.jobConcurrency, async job => {
         const { userEmail, userName } = job.data;
         logger.debug(`Processing welcome email job for ${userEmail}`);
         return emailService.sendWelcomeEmail(userEmail, userName);
       });
 
-      emailQueue.process('send-reset', config.jobConcurrency, async(job) => {
+      emailQueue.process('send-reset', config.jobConcurrency, async job => {
         const { userEmail, resetToken, userName } = job.data;
         logger.debug(`Processing password reset email job for ${userEmail}`);
         return emailService.sendPasswordResetEmail(userEmail, resetToken, userName);
       });
 
-      emailQueue.process('send-notification', config.jobConcurrency, async(job) => {
+      emailQueue.process('send-notification', config.jobConcurrency, async job => {
         const { userEmail, title, message, userName } = job.data;
         logger.debug(`Processing notification email job for ${userEmail}`);
         return emailService.sendNotificationEmail(userEmail, title, message, userName);
       });
 
-      emailQueue.process('send-bulk', 1, async(job) => {
+      emailQueue.process('send-bulk', 1, async job => {
         const { recipients, subject, html } = job.data;
         logger.debug(`Processing bulk email job for ${recipients.length} recipients`);
         return emailService.sendBulkEmail(recipients, subject, html);
@@ -123,7 +123,7 @@ class JobQueue {
     // Notifications queue processor
     const notificationsQueue = this.queues.get('notifications');
     if (notificationsQueue) {
-      notificationsQueue.process('push-notification', config.jobConcurrency, async(job) => {
+      notificationsQueue.process('push-notification', config.jobConcurrency, async job => {
         const { userId, title, message } = job.data;
         logger.debug(`Processing push notification job for user ${userId}`);
 
@@ -133,7 +133,7 @@ class JobQueue {
         return { success: true, userId, title, message };
       });
 
-      notificationsQueue.process('websocket-broadcast', config.jobConcurrency, async(job) => {
+      notificationsQueue.process('websocket-broadcast', config.jobConcurrency, async job => {
         const { event, room } = job.data;
         logger.debug(`Processing WebSocket broadcast job: ${event}`);
 
@@ -148,7 +148,7 @@ class JobQueue {
     // Analytics queue processor
     const analyticsQueue = this.queues.get('analytics');
     if (analyticsQueue) {
-      analyticsQueue.process('track-event', config.jobConcurrency * 2, async(job) => {
+      analyticsQueue.process('track-event', config.jobConcurrency * 2, async job => {
         const { event, userId, data, timestamp } = job.data;
         logger.debug(`Processing analytics event: ${event}`);
 
@@ -157,7 +157,7 @@ class JobQueue {
         return { success: true, event, userId };
       });
 
-      analyticsQueue.process('generate-report', 1, async(job) => {
+      analyticsQueue.process('generate-report', 1, async job => {
         const { reportType, filters, userId } = job.data;
         logger.debug(`Processing report generation: ${reportType}`);
 
@@ -170,7 +170,7 @@ class JobQueue {
     // Cleanup queue processor
     const cleanupQueue = this.queues.get('cleanup');
     if (cleanupQueue) {
-      cleanupQueue.process('clean-logs', 1, async(job) => {
+      cleanupQueue.process('clean-logs', 1, async job => {
         const { olderThan } = job.data;
         logger.debug('Processing log cleanup job');
 
@@ -179,7 +179,7 @@ class JobQueue {
         return { success: true, cleanedAt: new Date() };
       });
 
-      cleanupQueue.process('clean-uploads', 1, async(job) => {
+      cleanupQueue.process('clean-uploads', 1, async job => {
         const { olderThan } = job.data;
         logger.debug('Processing upload cleanup job');
 
@@ -210,7 +210,7 @@ class JobQueue {
         });
       });
 
-      queue.on('stalled', (job) => {
+      queue.on('stalled', job => {
         logger.warn(`Job stalled in queue '${name}':`, {
           jobId: job.id,
           jobType: job.name

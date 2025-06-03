@@ -9,11 +9,9 @@ const logger = require('./logger');
  * @returns {string} JWT token
  */
 function generateToken(userId) {
-  return jwt.sign(
-    { userId: userId.toString() },
-    config.jwtSecret,
-    { expiresIn: config.jwtExpiresIn }
-  );
+  return jwt.sign({ userId: userId.toString() }, config.jwtSecret, {
+    expiresIn: config.jwtExpiresIn
+  });
 }
 
 /**
@@ -81,7 +79,7 @@ async function requireAuth(req, res, next) {
  * @returns {function} Express middleware function
  */
 function requireRole(roles) {
-  return async(req, res, next) => {
+  return async (req, res, next) => {
     try {
       if (!req.user) {
         return res.status(403).json({ error: 'Access denied. Insufficient permissions.' });
@@ -94,7 +92,9 @@ function requireRole(roles) {
 
       if (!hasRole) {
         if (process.env.NODE_ENV !== 'test') {
-          logger.warn(`Authorization failed for user ${req.user._id}: required roles ${requiredRoles.join(',')}, user roles ${userRoles.join(',')}`);
+          logger.warn(
+            `Authorization failed for user ${req.user._id}: required roles ${requiredRoles.join(',')}, user roles ${userRoles.join(',')}`
+          );
         }
         return res.status(403).json({
           error: 'Access denied. Insufficient permissions.'
