@@ -17,9 +17,6 @@ param(
   [switch]$NoCache,
 
   [Parameter(Mandatory = $false)]
-  [switch]$Verbose,
-
-  [Parameter(Mandatory = $false)]
   [switch]$CleanFirst,
 
   [Parameter(Mandatory = $false)]
