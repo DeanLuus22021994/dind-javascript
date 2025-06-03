@@ -42,11 +42,11 @@
     "redis": "^4.6.7",
     "bcryptjs": "^2.4.3",
     "jsonwebtoken": "^9.0.1",
-    "multer": "^1.4.5-lts.1",
+    "multer": "^2.0.0",
     "uuid": "^9.0.0",
     "cookie-parser": "^1.4.6",
     "express-session": "^1.17.3",
-    "apollo-server-express": "^3.12.1",
+    "@apollo/server": "^4.9.0",
     "graphql": "^16.7.1",
     "@graphql-tools/schema": "^10.0.0",
     "prom-client": "^14.2.0",
@@ -55,13 +55,19 @@
   },
   "devDependencies": {
     "jest": "^29.6.1",
-    "supertest": "^6.3.3",
-    "nodemon": "^3.0.1",
-    "eslint": "^8.45.0",
+    "supertest": "^7.4.2",
+    "nodemon": "^3.1.0",
+    "eslint": "^8.57.0",
     "mongodb-memory-server": "^8.14.0",
     "cross-env": "^7.0.3"
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "overrides": {
+    "rimraf": ">=4.0.0",
+    "glob": ">=9.0.0",
+    "lodash.isequal": false,
+    "lodash.get": false
   }
 }
