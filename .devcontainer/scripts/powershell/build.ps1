@@ -31,9 +31,14 @@ try {
   Write-Host "🧹 Cleaning up existing containers..." -ForegroundColor Yellow
   docker-compose -f .devcontainer/docker/compose/docker-compose.main.yml -f .devcontainer/docker/compose/docker-compose.services.yml -f .devcontainer/docker/compose/docker-compose.override.yml down --remove-orphans 2>$null
 
-  # Build with explicit context and better error handling
-  Write-Host "🔨 Building containers..." -ForegroundColor Yellow
-  $buildResult = docker-compose -f .devcontainer/docker/compose/docker-compose.main.yml -f .devcontainer/docker/compose/docker-compose.services.yml -f .devcontainer/docker/compose/docker-compose.override.yml build --no-cache --parallel
+  # Build with explicit context and FULL BUILD OUTPUT
+  Write-Host "🔨 Building containers with FULL OUTPUT..." -ForegroundColor Yellow
+  Write-Host "════════════════════════════════════════════════════════════════" -ForegroundColor Cyan
+
+  # Use docker-compose build with verbose output - NO SUPPRESSION
+  docker-compose -f .devcontainer/docker/compose/docker-compose.main.yml -f .devcontainer/docker/compose/docker-compose.services.yml -f .devcontainer/docker/compose/docker-compose.override.yml build --no-cache --progress=plain
+
+  Write-Host "════════════════════════════════════════════════════════════════" -ForegroundColor Cyan
 
   if ($LASTEXITCODE -eq 0) {
     Write-Host "✅ DevContainer build completed successfully!" -ForegroundColor Green
