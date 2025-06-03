@@ -1,5 +1,5 @@
-const winston = require('winston');
-const config = require('../config');
+import winston from 'winston';
+import config from '../config/index.js';
 
 // Custom format that includes timestamp and level
 const customFormat = winston.format.combine(
@@ -57,4 +57,4 @@ const logger = winston.createLogger({
   silent: config.isTest
 });
 
-module.exports = logger;
+export default logger;

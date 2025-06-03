@@ -1,31 +1,31 @@
-const express = require('express');
-const helmet = require('helmet');
-const cors = require('cors');
-const morgan = require('morgan');
-const compression = require('compression');
-const rateLimit = require('express-rate-limit');
-const swaggerJsdoc = require('swagger-jsdoc');
-const swaggerUi = require('swagger-ui-express');
-const cookieParser = require('cookie-parser');
-const session = require('express-session');
-const http = require('http');
+import express from 'express';
+import helmet from 'helmet';
+import cors from 'cors';
+import morgan from 'morgan';
+import compression from 'compression';
+import rateLimit from 'express-rate-limit';
+import swaggerJsdoc from 'swagger-jsdoc';
+import swaggerUi from 'swagger-ui-express';
+import cookieParser from 'cookie-parser';
+import session from 'express-session';
+import { createServer } from 'http';
 
-const config = require('./config');
-const logger = require('./utils/logger');
-const database = require('./utils/database');
-const redisClient = require('./utils/redis');
-const websocketServer = require('./utils/websocket');
-const { register, metricsMiddleware } = require('./utils/metrics');
-const { createApolloServer } = require('./graphql/server');
+import config from './config/index.js';
+import logger from './utils/logger.js';
+import database from './utils/database.js';
+import redisClient from './utils/redis.js';
+import websocketServer from './utils/websocket.js';
+import { register, metricsMiddleware } from './utils/metrics.js';
+import { createApolloServer } from './graphql/server.js';
 
 // Import routes
-const apiRoutes = require('./routes/api');
-const healthRoutes = require('./routes/health');
-const authRoutes = require('./routes/auth');
-const uploadRoutes = require('./routes/upload');
+import apiRoutes from './routes/api.js';
+import healthRoutes from './routes/health.js';
+import authRoutes from './routes/auth.js';
+import uploadRoutes from './routes/upload.js';
 
 const app = express();
-const server = http.createServer(app);
+const server = createServer(app);
 
 // Initialize connections
 async function initializeConnections() {
@@ -346,11 +346,11 @@ async function startServer() {
 }
 
 // Only start server if not in test environment or not being required as module
-if (!config.isTest && require.main === module) {
+if (!config.isTest && process.argv[1] === new URL(import.meta.url).pathname) {
   startServer().catch(error => {
     logger.error('Failed to start server:', error);
     process.exit(1);
   });
 }
 
-module.exports = { app, startServer };
+export { app, startServer };
