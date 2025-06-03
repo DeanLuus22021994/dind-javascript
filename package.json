@@ -41,7 +41,7 @@
     "redis": "^4.8.1",
     "bcryptjs": "^2.4.3",
     "jsonwebtoken": "^9.0.2",
-    "multer": "^3.0.2",
+    "multer": "^1.4.5-lts.1",
     "uuid": "^9.0.1",
     "cookie-parser": "^1.4.7",
     "express-session": "^1.18.0",
@@ -54,7 +54,7 @@
     "@openapi-contrib/openapi-schema-to-json-schema": "^4.0.0"
   },
   "devDependencies": {
-    "jest": "^30.0.0",
+    "jest": "^29.7.0",
     "jest-fetch-mock": "^5.0.0",
     "nodemon": "^3.1.0",
     "eslint": "^9.0.0",
