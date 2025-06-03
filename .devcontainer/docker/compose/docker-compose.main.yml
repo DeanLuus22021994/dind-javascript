@@ -2,7 +2,7 @@ services:
   devcontainer:
     build:
       context: ../../
-      dockerfile: Dockerfile
+      dockerfile: .devcontainer/docker/files/Dockerfile.main
       cache_from:
         - mcr.microsoft.com/devcontainers/base:bullseye
       args:
