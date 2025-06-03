@@ -1,6 +1,10 @@
 {
   "name": "Docker in Docker Enhanced - Premium",
-  "dockerComposeFile": "docker-compose.yml",
+  "dockerComposeFile": [
+    "docker/compose/docker-compose.main.yml",
+    "docker/compose/docker-compose.services.yml",
+    "docker/compose/docker-compose.override.yml"
+  ],
   "service": "devcontainer",
   "workspaceFolder": "/workspace",
   "shutdownAction": "none",
@@ -145,8 +149,8 @@
     "source=dind-bash-history,target=/home/vscode/.bash_history,type=volume",
     "source=dind-ssh-keys,target=/home/vscode/.ssh,type=volume"
   ],
-  "postCreateCommand": "bash .devcontainer/setup.sh",
-  "postStartCommand": "bash .devcontainer/post-start.sh",
+  "postCreateCommand": "bash .devcontainer/scripts/bash/setup.sh",
+  "postStartCommand": "bash .devcontainer/scripts/bash/post-start.sh",
   "remoteUser": "vscode",
   "containerUser": "vscode",
   "updateRemoteUserUID": true,

@@ -1,0 +1,37 @@
+# BuildKit daemon configuration
+debug = true
+root = "/var/lib/buildkit"
+
+[worker.oci]
+  enabled = true
+  platforms = [ "linux/amd64" ]
+  snapshotter = "overlayfs"
+  rootless = false
+  noProcessSandbox = true
+
+  [[worker.oci.gcpolicy]]
+    keepBytes = 512000000
+    keepDuration = 172800
+    filters = [ "type==source.local", "type==exec.cachemount", "type==source.git.checkout"]
+
+  [[worker.oci.gcpolicy]]
+    all = true
+    keepBytes = 1024000000
+
+[worker.containerd]
+  enabled = false
+
+[grpc]
+  address = [ "tcp://0.0.0.0:1234" ]
+
+[registry."docker.io"]
+  mirrors = ["mirror.gcr.io"]
+
+# Development optimizations
+[cache]
+  maxAge = "168h"
+  maxSize = "10GB"
+
+# Experimental features for development
+[experimental]
+  enabled = true
