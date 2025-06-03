@@ -8,11 +8,11 @@ function Rm {
     [Parameter(Mandatory = $false)]
     [switch]$Force
   )
-  $dockerRmCmd = @('rm')
-  if ($Force) { $dockerRmCmd += '-f' }
-  $dockerRmCmd += $Container
-  Write-Host "🐳 docker $($dockerRmCmd -join ' ')"
-  & docker @dockerRmCmd
+  $dockerRmList = @('rm')
+  if ($Force) { $dockerRmList += '-f' }
+  $dockerRmList += $Container
+  Write-Host "🐳 docker $($dockerRmList -join ' ')"
+  & docker @dockerRmList
   return $LASTEXITCODE -eq 0
 }
 Export-ModuleMember -Function Rm

@@ -8,7 +8,7 @@ Import-Module "$PSScriptRoot\micro\images.psm1"
 $stopped = & docker ps -a -q -f status=exited
 if ($stopped) {
   foreach ($id in $stopped) {
-    Remove-Item -Container $id -Force | Out-Null
+    Microsoft.PowerShell.Core\Rm -Container $id -Force | Out-Null
   }
 }
 

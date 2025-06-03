@@ -16,15 +16,15 @@ function Build {
     [Parameter(Mandatory = $false)]
     [switch]$Pull
   )
-  $dockerBuildCmd = @('build', '-f', $Dockerfile, '-t', $Tag)
-  if ($NoCache) { $dockerBuildCmd += '--no-cache' }
-  if ($Pull) { $dockerBuildCmd += '--pull' }
+  $dockerBuildCmds = @('build', '-f', $Dockerfile, '-t', $Tag)
+  if ($NoCache) { $dockerBuildCmds += '--no-cache' }
+  if ($Pull) { $dockerBuildCmds += '--pull' }
   foreach ($key in $BuildArgs.Keys) {
-    $dockerBuildCmd += '--build-arg'; $dockerBuildCmd += "$key=$($BuildArgs[$key])"
+    $dockerBuildCmds += '--build-arg'; $dockerBuildCmds += "$key=$($BuildArgs[$key])"
   }
-  $dockerBuildCmd += $Context
-  Write-Host "🐳 docker $($dockerBuildCmd -join ' ')"
-  & docker @dockerBuildCmd
+  $dockerBuildCmds += $Context
+  Write-Host "🐳 docker $($dockerBuildCmds -join ' ')"
+  & docker @dockerBuildCmds
   return $LASTEXITCODE -eq 0
 }
 Export-ModuleMember -Function Build
