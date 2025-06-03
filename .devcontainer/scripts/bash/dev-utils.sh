@@ -1,50 +1,12 @@
 #!/bin/bash
 # Development Environment Configuration and Utilities
+# Updated to use modular utilities
 
-# Color codes for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-PURPLE='\033[0;35m'
-CYAN='\033[0;36m'
-NC='\033[0m' # No Color
-
-# Emoji shortcuts
-SUCCESS="✅"
-ERROR="❌"
-WARNING="⚠️"
-INFO="ℹ️"
-ROCKET="🚀"
-GEAR="⚙️"
-PACKAGE="📦"
-DATABASE="🗄️"
-NETWORK="🌐"
-DOCKER="🐳"
-BUILD="🏗️"
-
-# Function to print colored output
-print_status() {
-    local color=$1
-    local emoji=$2
-    local message=$3
-    echo -e "${color}${emoji} ${message}${NC}"
-}
-
-# Function to check if service is running
-check_service() {
-    local service=$1
-    local port=$2
-    local host=${3:-localhost}
-
-    if nc -z "$host" "$port" 2>/dev/null; then
-        print_status "$GREEN" "$SUCCESS" "$service is running on $host:$port"
-        return 0
-    else
-        print_status "$RED" "$ERROR" "$service is not accessible on $host:$port"
-        return 1
-    fi
-}
+# Source our modular utilities
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/core-utils.sh"
+source "$SCRIPT_DIR/docker-utils.sh"
+source "$SCRIPT_DIR/service-utils.sh"
 
 # Function to wait for service
 wait_for_service() {
