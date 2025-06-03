@@ -6,10 +6,18 @@ function Images {
         [Parameter(Mandatory = $false)]
         [string]$Filter
     )
-    $dockerImagesArgs = @('images')
-    if ($Filter) { $dockerImagesArgs += $Filter }
-    Write-Host "🐳 docker $($dockerImagesArgs -join ' ')"
-    & docker @dockerImagesArgs
-    return $LASTEXITCODE -eq 0
+    $argsList = @('images')
+    if ($Filter) { $argsList += $Filter }
+    Write-Host ("🐳 docker {0}" -f ($argsList -join ' '))
+    $output = & docker @argsList 2>&1
+    $exitCode = $LASTEXITCODE
+    if ($output) {
+        if ($exitCode -eq 0) {
+            Write-Host $output
+        } else {
+            Write-Error $output
+        }
+    }
+    return ($exitCode -eq 0)
 }
 Export-ModuleMember -Function Images

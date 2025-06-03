@@ -17,41 +17,28 @@ function Build {
     [switch]$Pull
   )
 
-  # Compose the docker build command arguments
-  $dockerBuildArgs = @('build', '-f', $Dockerfile, '-t', $Tag)
-  if ($NoCache.IsPresent) { $dockerBuildArgs += '--no-cache' }
-  if ($Pull.IsPresent) { $dockerBuildArgs += '--pull' }
+  $argsList = @('build', '-f', $Dockerfile, '-t', $Tag)
+  if ($NoCache.IsPresent) { $argsList += '--no-cache' }
+  if ($Pull.IsPresent) { $argsList += '--pull' }
   if ($BuildArgs -and $BuildArgs.Count -gt 0) {
     foreach ($key in $BuildArgs.Keys) {
-      $dockerBuildArgs += '--build-arg'
-      $dockerBuildArgs += ("{0}={1}" -f $key, $BuildArgs[$key])
+      $argsList += '--build-arg'
+      $argsList += ("{0}={1}" -f $key, $BuildArgs[$key])
     }
   }
-  $dockerBuildArgs += $Context
+  $argsList += $Context
 
-  # Output the command for visibility
-  Write-Host ("🐳 docker {0}" -f ($dockerBuildArgs -join ' '))
+  Write-Host ("🐳 docker {0}" -f ($argsList -join ' '))
 
-  # Run the docker build command and capture output
-  $processInfo = New-Object System.Diagnostics.ProcessStartInfo
-  $processInfo.FileName = 'docker'
-  $processInfo.Arguments = $dockerBuildArgs -join ' '
-  $processInfo.RedirectStandardOutput = $true
-  $processInfo.RedirectStandardError = $true
-  $processInfo.UseShellExecute = $false
-  $processInfo.CreateNoWindow = $true
-
-  $process = New-Object System.Diagnostics.Process
-  $process.StartInfo = $processInfo
-  $null = $process.Start()
-  $stdOut = $process.StandardOutput.ReadToEnd()
-  $stdErr = $process.StandardError.ReadToEnd()
-  $process.WaitForExit()
-  $exitCode = $process.ExitCode
-
-  if ($stdOut) { Write-Host $stdOut }
-  if ($stdErr) { Write-Error $stdErr }
-
+  $output = & docker @argsList 2>&1
+  $exitCode = $LASTEXITCODE
+  if ($output) {
+    if ($exitCode -eq 0) {
+      Write-Host $output
+    } else {
+      Write-Error $output
+    }
+  }
   return ($exitCode -eq 0)
 }
 Export-ModuleMember -Function Build

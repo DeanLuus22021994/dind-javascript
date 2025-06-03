@@ -6,9 +6,17 @@ function Pull {
     [Parameter(Mandatory = $true)]
     [string]$Image
   )
-  $dockerPullArray = @('pull', $Image)
-  Write-Host "🐳 docker $($dockerPullArray -join ' ')"
-  & docker @dockerPullArray
-  return $LASTEXITCODE -eq 0
+  $argsList = @('pull', $Image)
+  Write-Host ("🐳 docker {0}" -f ($argsList -join ' '))
+  $output = & docker @argsList 2>&1
+  $exitCode = $LASTEXITCODE
+  if ($output) {
+    if ($exitCode -eq 0) {
+      Write-Host $output
+    } else {
+      Write-Error $output
+    }
+  }
+  return ($exitCode -eq 0)
 }
 Export-ModuleMember -Function Pull
