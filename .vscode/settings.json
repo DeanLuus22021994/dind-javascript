@@ -55,9 +55,7 @@
       "icon": "terminal-cmd"
     }
   },
-  "eslint.workingDirectories": [
-    "c:\\Projects\\dind-javascript"
-  ],
+  "eslint.workingDirectories": ["c:\\Projects\\dind-javascript"],
   "eslint.validate": [
     "javascript",
     "javascriptreact",
@@ -68,16 +66,11 @@
   "prettier.configPath": ".prettierrc",
   "json.schemas": [
     {
-      "fileMatch": [
-        "package.json"
-      ],
+      "fileMatch": ["package.json"],
       "url": "https://json.schemastore.org/package.json"
     },
     {
-      "fileMatch": [
-        "jest.config.js",
-        "jest.config.json"
-      ],
+      "fileMatch": ["jest.config.js", "jest.config.json"],
       "url": "https://json.schemastore.org/jest.json"
     }
   ],

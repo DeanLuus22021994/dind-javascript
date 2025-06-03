@@ -11,7 +11,8 @@ builds.
 - 🐳 **Docker Compose Integration**: Start with `docker compose up -d`
 - 🔧 **Privileged Access**: Full host resource access for development
 - 📦 **BuildKit & Bake**: Advanced build caching and multi-platform support
-- 💾 **Persistent Caches**: Separate volumes for build artifacts and dependencies
+- 💾 **Persistent Caches**: Separate volumes for build artifacts and
+  dependencies
 
 ## Quick Start
 
