@@ -12,8 +12,8 @@
     "test:minimal": "cross-env NODE_ENV=test jest --silent --verbose=false --reporters=basic",
     "test:watch": "cross-env NODE_ENV=test jest --watch --silent",
     "test:coverage": "cross-env NODE_ENV=test jest --coverage --silent",
-    "lint": "eslint src/ __tests__/",
-    "lint:fix": "eslint src/ __tests__/ --fix",
+    "lint": "eslint --no-config-lookup --config .eslintrc.js src/ __tests__/",
+    "lint:fix": "eslint --no-config-lookup --config .eslintrc.js src/ __tests__/ --fix",
     "docker:build": "docker build -t dind-javascript .",
     "docker:run": "docker run -p 3000:3000 dind-javascript",
     "docs:generate": "node scripts/generate-docs.js"
