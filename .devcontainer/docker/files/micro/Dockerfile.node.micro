@@ -1,0 +1,9 @@
+# syntax=docker/dockerfile:1.8
+FROM node:slim
+
+WORKDIR /workspace
+
+# Use TOML for config if needed (not typical for node, but placeholder for type-safety)
+# COPY ../../config/micro/node.micro.toml /etc/node/node.toml
+
+CMD ["tail", "-f", "/dev/null"]

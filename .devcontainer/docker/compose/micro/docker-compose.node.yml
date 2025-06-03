@@ -1,0 +1,21 @@
+version: '3.9'
+services:
+  node:
+    image: node:slim
+    container_name: dind-micro-node
+    restart: unless-stopped
+    ports:
+      - "9229:9229"
+    volumes:
+      - ../../../:/workspace:cached
+    networks:
+      - devcontainer-network
+    environment:
+      - YARN_CACHE_FOLDER=/cache/yarn
+    working_dir: /workspace
+    healthcheck:
+      start_period: 5s
+
+networks:
+  devcontainer-network:
+    driver: bridge

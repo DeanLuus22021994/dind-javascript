@@ -1,0 +1,29 @@
+version: '3.9'
+services:
+  registry:
+    image: registry:2
+    container_name: dind-micro-registry
+    restart: unless-stopped
+    ports:
+      - "5001:5000"
+    volumes:
+      - dind-registry-data:/var/lib/registry
+      - ../../config/micro/registry-config.micro.yml:/etc/docker/registry/config.yml:ro
+    networks:
+      - devcontainer-network
+    environment:
+      - REGISTRY_STORAGE_DELETE_ENABLED=true
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5000/v2/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+networks:
+  devcontainer-network:
+    driver: bridge
+
+volumes:
+  dind-registry-data:
+    driver: local

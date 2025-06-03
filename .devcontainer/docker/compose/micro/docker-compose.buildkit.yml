@@ -1,0 +1,28 @@
+version: '3.9'
+services:
+  buildkit:
+    image: moby/buildkit:latest
+    container_name: dind-micro-buildkit
+    privileged: true
+    restart: unless-stopped
+    volumes:
+      - dind-buildkit-cache:/var/lib/buildkit
+      - ../../config/micro/buildkitd.micro.toml:/etc/buildkit/buildkitd.toml:ro
+    networks:
+      - devcontainer-network
+    environment:
+      - BUILDKITD_FLAGS=--oci-worker-no-process-sandbox --allow-insecure-entitlement security.insecure --allow-insecure-entitlement network.host
+    healthcheck:
+      test: ["CMD", "buildctl", "debug", "workers"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  devcontainer-network:
+    driver: bridge
+
+volumes:
+  dind-buildkit-cache:
+    driver: local

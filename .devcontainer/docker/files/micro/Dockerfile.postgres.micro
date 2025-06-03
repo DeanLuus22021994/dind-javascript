@@ -1,0 +1,9 @@
+# syntax=docker/dockerfile:1.8
+FROM postgres:15-alpine
+
+COPY ../../config/micro/postgresql.micro.conf /usr/local/share/postgresql/postgresql.conf.sample
+
+HEALTHCHECK --interval=5s --timeout=3s --retries=2 --start-period=10s \
+  CMD pg_isready -U ${POSTGRES_USER:-devuser} -d ${POSTGRES_DB:-devdb} -h localhost || exit 1
+
+CMD ["postgres", "-c", "config_file=/usr/local/share/postgresql/postgresql.conf.sample"]
