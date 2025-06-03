@@ -1,0 +1,57 @@
+# Node.js service for JavaScript development
+FROM node:slim
+
+# Set environment variables
+ENV NODE_ENV=development
+ENV NPM_CONFIG_LOGLEVEL=warn
+ENV YARN_CACHE_FOLDER=/opt/yarn-cache
+
+# Create application directory
+WORKDIR /app
+
+# Create non-root user for security
+RUN groupadd --gid 1000 node \
+  && useradd --uid 1000 --gid node --shell /bin/bash --create-home node
+
+# Install system dependencies for Node.js development
+RUN apt-get update && apt-get install -y \
+  git \
+  curl \
+  wget \
+  build-essential \
+  python3 \
+  make \
+  g++ \
+  && rm -rf /var/lib/apt/lists/*
+
+# Create yarn cache directory and set permissions
+RUN mkdir -p /opt/yarn-cache \
+  && chown -R node:node /opt/yarn-cache \
+  && chown -R node:node /app
+
+# Install global Node.js tools
+RUN npm install -g \
+  npm@latest \
+  yarn \
+  nodemon \
+  pm2 \
+  typescript \
+  ts-node \
+  eslint \
+  prettier
+
+# Switch to non-root user
+USER node
+
+# Create package.json placeholder for development
+RUN echo '{\n  "name": "dind-node-service",\n  "version": "1.0.0",\n  "description": "Node.js development service",\n  "main": "index.js",\n  "scripts": {\n    "start": "node index.js",\n    "dev": "nodemon index.js",\n    "test": "echo \\"Error: no test specified\\" && exit 1"\n  },\n  "dependencies": {},\n  "devDependencies": {}\n}' > package.json
+
+# Expose common Node.js ports
+EXPOSE 3000 3001 8080 9000 9229
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD node --version || exit 1
+
+# Default command
+CMD ["sh", "-c", "tail -f /dev/null"]
