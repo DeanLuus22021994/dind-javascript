@@ -1,18 +1,42 @@
-FROM moby/buildkit:latest
+# syntax=docker/dockerfile:1.8
+FROM moby/buildkit:latest AS base
 
-# Set BuildKit configuration
-ENV BUILDKITD_FLAGS="--oci-worker-no-process-sandbox --allow-insecure-entitlement security.insecure --allow-insecure-entitlement network.host"
+# Build arguments for optimization
+ARG BUILDKIT_INLINE_CACHE=1
+ARG BUILDPLATFORM
+ARG TARGETPLATFORM
 
-# Configure BuildKit daemon
-RUN mkdir -p /etc/buildkit
+# Maximum performance BuildKit configuration
+ENV BUILDKITD_FLAGS="--oci-worker-no-process-sandbox --allow-insecure-entitlement security.insecure --allow-insecure-entitlement network.host" \
+  BUILDKIT_STEP_LOG_MAX_SIZE=50000000 \
+  BUILDKIT_STEP_LOG_MAX_SPEED=100000000
 
-# Health check specific to BuildKit
-HEALTHCHECK --interval=30s --timeout=10s --retries=3 --start-period=40s \
-  CMD buildctl debug workers || exit 1
+# Create optimized cache structure
+RUN --mount=type=cache,target=/var/cache/buildkit,sharing=locked,id=buildkit-cache-$TARGETPLATFORM \
+  mkdir -p /etc/buildkit /var/lib/buildkit /cache/buildkit \
+  && chmod 755 /etc/buildkit /var/lib/buildkit /cache/buildkit
 
-# Optimize for caching
-VOLUME ["/var/lib/buildkit"]
+# Install performance monitoring tools
+RUN --mount=type=cache,target=/var/cache/apk,sharing=locked,id=apk-cache-buildkit-$TARGETPLATFORM \
+  apk add --no-cache \
+  htop \
+  iotop \
+  curl \
+  jq \
+  strace
+
+# Performance-optimized health check
+HEALTHCHECK --interval=15s --timeout=5s --retries=2 --start-period=10s \
+  CMD buildctl debug workers | jq -e '.[] | select(.labels."org.mobyproject.buildkit.worker.executor" == "oci")' >/dev/null 2>&1 || exit 1
+
+# Optimize for maximum caching and performance
+VOLUME ["/var/lib/buildkit", "/cache/buildkit"]
 EXPOSE 1234
 
-# Default command
-CMD ["buildkitd", "--addr", "tcp://0.0.0.0:1234"]
+# High-performance command with optimizations
+CMD ["buildkitd", \
+  "--addr", "tcp://0.0.0.0:1234", \
+  "--oci-worker-no-process-sandbox", \
+  "--allow-insecure-entitlement", "security.insecure", \
+  "--allow-insecure-entitlement", "network.host", \
+  "--debug"]

@@ -1,16 +1,45 @@
-FROM redis:7-alpine
+# syntax=docker/dockerfile:1.8
+FROM redis:7-alpine AS base
 
-# Install monitoring tools
-RUN apk add --no-cache \
+# Build arguments
+ARG BUILDKIT_INLINE_CACHE=1
+ARG BUILDPLATFORM
+ARG TARGETPLATFORM
+
+# Install performance tools with caching
+RUN --mount=type=cache,target=/var/cache/apk,sharing=locked,id=apk-cache-redis-$TARGETPLATFORM \
+  --mount=type=cache,target=/etc/apk/cache,sharing=locked,id=apk-etc-redis-$TARGETPLATFORM \
+  apk add --no-cache \
   procps \
-  htop
+  htop \
+  iotop \
+  curl \
+  jq \
+  redis-cli
 
-# Create data directory with proper permissions
-RUN mkdir -p /data && chown redis:redis /data
+# Performance-optimized data directory
+RUN --mount=type=cache,target=/cache/redis,sharing=locked,id=redis-cache-$TARGETPLATFORM \
+  mkdir -p /data /cache/redis \
+  && chown redis:redis /data /cache/redis \
+  && chmod 755 /data /cache/redis
 
-# Health check optimized for Redis
-HEALTHCHECK --interval=10s --timeout=3s --retries=3 --start-period=10s \
-  CMD redis-cli ping || exit 1
+# Optimize Redis configuration for development performance
+RUN echo '# Redis Performance Optimizations' > /usr/local/etc/redis/redis-perf.conf \
+  && echo 'save 900 1' >> /usr/local/etc/redis/redis-perf.conf \
+  && echo 'save 300 10' >> /usr/local/etc/redis/redis-perf.conf \
+  && echo 'save 60 10000' >> /usr/local/etc/redis/redis-perf.conf \
+  && echo 'rdbcompression yes' >> /usr/local/etc/redis/redis-perf.conf \
+  && echo 'rdbchecksum yes' >> /usr/local/etc/redis/redis-perf.conf \
+  && echo 'tcp-keepalive 300' >> /usr/local/etc/redis/redis-perf.conf \
+  && echo 'tcp-backlog 511' >> /usr/local/etc/redis/redis-perf.conf \
+  && echo 'timeout 0' >> /usr/local/etc/redis/redis-perf.conf
 
-# Use custom configuration
-CMD ["redis-server", "/usr/local/etc/redis/redis.conf"]
+# High-performance health check
+HEALTHCHECK --interval=5s --timeout=2s --retries=2 --start-period=5s \
+  CMD redis-cli ping | grep -q PONG || exit 1
+
+# Performance-optimized startup
+CMD ["redis-server", "/usr/local/etc/redis/redis.conf", \
+  "--include", "/usr/local/etc/redis/redis-perf.conf", \
+  "--appendonly", "yes", \
+  "--appendfsync", "everysec"]
