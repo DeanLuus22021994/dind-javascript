@@ -31,12 +31,23 @@ try {
   Write-Host "🧹 Cleaning up existing containers..." -ForegroundColor Yellow
   docker-compose -f .devcontainer/docker/compose/docker-compose.main.yml -f .devcontainer/docker/compose/docker-compose.services.yml -f .devcontainer/docker/compose/docker-compose.override.yml down --remove-orphans 2>$null
 
-  # Build with explicit context and FULL BUILD OUTPUT
-  Write-Host "🔨 Building containers with FULL OUTPUT..." -ForegroundColor Yellow
+  # Build individual services with full output
+  Write-Host "🔨 Building individual services with FULL OUTPUT..." -ForegroundColor Yellow
   Write-Host "════════════════════════════════════════════════════════════════" -ForegroundColor Cyan
 
-  # Use docker-compose build with verbose output - NO SUPPRESSION
-  docker-compose -f .devcontainer/docker/compose/docker-compose.main.yml -f .devcontainer/docker/compose/docker-compose.services.yml -f .devcontainer/docker/compose/docker-compose.override.yml build --no-cache --progress=plain
+  # Build services one by one for better error visibility
+  $services = @("devcontainer", "buildkit", "redis", "registry", "postgres", "node")
+
+  foreach ($service in $services) {
+    Write-Host "🏗️  Building $service..." -ForegroundColor Blue
+    docker-compose -f .devcontainer/docker/compose/docker-compose.main.yml -f .devcontainer/docker/compose/docker-compose.services.yml -f .devcontainer/docker/compose/docker-compose.override.yml build --no-cache --progress=plain $service
+
+    if ($LASTEXITCODE -ne 0) {
+      Write-Host "❌ Failed to build $service!" -ForegroundColor Red
+      exit 1
+    }
+    Write-Host "✅ Successfully built $service!" -ForegroundColor Green
+  }
 
   Write-Host "════════════════════════════════════════════════════════════════" -ForegroundColor Cyan
 
@@ -49,9 +60,9 @@ try {
 
     Write-Host "" -ForegroundColor White
     Write-Host "🎉 Next steps:" -ForegroundColor Green
-    Write-Host "   🚀 Run: docker-compose up -d" -ForegroundColor Cyan
+    Write-Host "   🚀 Run: docker-compose -f .devcontainer/docker/compose/docker-compose.main.yml -f .devcontainer/docker/compose/docker-compose.services.yml -f .devcontainer/docker/compose/docker-compose.override.yml up -d" -ForegroundColor Cyan
     Write-Host "   🔍 Check: docker-compose ps" -ForegroundColor Cyan
-    Write-Host "   📊 Status: ./dev-status.sh" -ForegroundColor Cyan
+    Write-Host "   📊 Status: bash .devcontainer/scripts/bash/validate.sh" -ForegroundColor Cyan
   } else {
     Write-Host "❌ DevContainer build failed!" -ForegroundColor Red
     Write-Host "💡 Try running the clean script first: pwsh .devcontainer\scripts\powershell\clean.ps1" -ForegroundColor Yellow

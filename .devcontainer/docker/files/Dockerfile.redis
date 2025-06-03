@@ -6,7 +6,7 @@ ARG BUILDKIT_INLINE_CACHE=1
 ARG BUILDPLATFORM
 ARG TARGETPLATFORM
 
-# Install performance tools with caching
+# Install performance tools with caching (redis-cli is already included in redis:7-alpine)
 RUN --mount=type=cache,target=/var/cache/apk,sharing=locked,id=apk-cache-redis-$TARGETPLATFORM \
   --mount=type=cache,target=/etc/apk/cache,sharing=locked,id=apk-etc-redis-$TARGETPLATFORM \
   apk add --no-cache \
@@ -14,8 +14,7 @@ RUN --mount=type=cache,target=/var/cache/apk,sharing=locked,id=apk-cache-redis-$
   htop \
   iotop \
   curl \
-  jq \
-  redis-cli
+  jq
 
 # Performance-optimized data directory
 RUN --mount=type=cache,target=/cache/redis,sharing=locked,id=redis-cache-$TARGETPLATFORM \
