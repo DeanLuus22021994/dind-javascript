@@ -1,5 +1,4 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/compose-spec/compose-spec/master/schema/compose-spec.json
-version: '3.8'
 
 services:
   buildkit:
@@ -139,20 +138,24 @@ services:
 networks:
   devcontainer-network:
     driver: bridge
-    external: true
+    external: false
 
 volumes:
   dind-buildkit-cache:
-    external: true
+    driver: local
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
+      o: size=1G,uid=1000,gid=1000
   dind-redis-data:
-    external: true
+    driver: local
   dind-registry-data:
-    external: true
+    driver: local
   dind-postgres-data:
-    external: true
+    driver: local
   dind-postgres-init:
-    external: true
+    driver: local
   dind-node-modules:
-    external: true
+    driver: local
   dind-node-cache:
-    external: true
+    driver: local
