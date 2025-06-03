@@ -6,8 +6,16 @@ set -euo pipefail
 
 # Source our modular utilities
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
+# shellcheck source=core-utils.sh
 source "$SCRIPT_DIR/core-utils.sh"
+
+# shellcheck disable=SC1091
+# shellcheck source=docker-utils.sh
 source "$SCRIPT_DIR/docker-utils.sh"
+
+# shellcheck disable=SC1091
+# shellcheck source=service-utils.sh
 source "$SCRIPT_DIR/service-utils.sh"
 
 # Load environment configuration

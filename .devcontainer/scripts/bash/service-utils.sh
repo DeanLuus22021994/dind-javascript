@@ -3,7 +3,9 @@
 # Provides functions to manage and monitor all services
 
 # Source core utilities
+# shellcheck disable=SC1091
 source "$(dirname "$0")/core-utils.sh"
+# shellcheck disable=SC1091
 source "$(dirname "$0")/docker-utils.sh"
 
 # Service configuration

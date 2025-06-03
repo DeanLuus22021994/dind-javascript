@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=SC1091
 # Post-start configuration for devcontainer
 # Updated to use modular utilities
 
