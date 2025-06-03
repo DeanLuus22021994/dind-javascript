@@ -25,8 +25,21 @@ http:
   headers:
     X-Content-Type-Options: [nosniff]
     Access-Control-Allow-Origin: ["*"]
-    Access-Control-Allow-Methods: ["HEAD", "GET", "OPTIONS", "DELETE", "PUT", "POST"]
-    Access-Control-Allow-Headers: ["Authorization", "Accept", "Cache-Control", "Content-Type", "DNT", "If-Modified-Since", "Keep-Alive", "Origin", "User-Agent", "X-Requested-With"]
+    Access-Control-Allow-Methods:
+      ["HEAD", "GET", "OPTIONS", "DELETE", "PUT", "POST"]
+    Access-Control-Allow-Headers:
+      [
+        "Authorization",
+        "Accept",
+        "Cache-Control",
+        "Content-Type",
+        "DNT",
+        "If-Modified-Since",
+        "Keep-Alive",
+        "Origin",
+        "User-Agent",
+        "X-Requested-With",
+      ]
     Access-Control-Max-Age: [864000]
     Access-Control-Allow-Credentials: [true]
 health:
