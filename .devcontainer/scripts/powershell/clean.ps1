@@ -489,7 +489,7 @@ function Clear-DockerSystemCache {
         Write-Host "   ⚠️  $($failedJobs.Count) cleanup jobs encountered issues (continuing...)" -ForegroundColor Yellow
       }
 
-      # Use $runningJobs for status monitoring
+      # Monitor running jobs status
       if ($runningJobs.Count -gt 0) {
         Write-Host "   🔄 $($runningJobs.Count) jobs still running..." -ForegroundColor DarkCyan
       }
@@ -573,7 +573,7 @@ function Clear-DockerSystemCache {
       Write-Host "   🧵 Thread limit used: $ThrottleLimit" -ForegroundColor DarkCyan
       Write-Host "   📦 Batch size: $ParallelBatchSize" -ForegroundColor DarkCyan
       Write-Host ("   ⏱️  Total cleanup time: {0:F1} seconds" -f $totalCleanupTime) -ForegroundColor DarkCyan
-      Write-Host ("   ⚡ Performance: {0:F1} threads/second efficiency" -f ($ThrottleLimit / $totalCleanupTime)) -ForegroundColor DarkCyan
+      Write-Host ("   ⚡ Performance: {0:F1} threads/second efficiency" -f ($ThrottleLimit / [Math]::Max($totalCleanupTime, 0.1))) -ForegroundColor DarkCyan
 
       $dockerInfo = docker info --format "{{.ServerVersion}}" 2>$null
       if ($dockerInfo) {
