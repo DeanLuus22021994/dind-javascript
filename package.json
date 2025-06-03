@@ -41,7 +41,7 @@
     "redis": "^4.6.7",
     "bcryptjs": "^2.4.3",
     "jsonwebtoken": "^9.0.2",
-    "multer": "^1.4.5-lts.1",
+    "multer": "^2.0.0",
     "uuid": "^9.0.1",
     "cookie-parser": "^1.4.7",
     "express-session": "^1.18.0",
