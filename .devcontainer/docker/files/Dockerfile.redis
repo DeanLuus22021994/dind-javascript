@@ -8,7 +8,7 @@ RUN apk add --no-cache \
   htop
 
 # Copy optimized Redis configuration
-COPY redis.conf /usr/local/etc/redis/redis.conf
+COPY .devcontainer/config/redis.conf /usr/local/etc/redis/redis.conf
 
 # Create data directory with proper permissions
 RUN mkdir -p /data && chown redis:redis /data
