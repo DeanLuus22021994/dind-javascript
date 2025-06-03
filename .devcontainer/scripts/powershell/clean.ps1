@@ -7,7 +7,7 @@ Import-Module "$PSScriptRoot\micro\images.psm1"
 $stopped = & docker ps -a -q -f status=exited
 if ($stopped) {
     foreach ($id in $stopped) {
-        Rm -Container $id -Force
+        Rm -Container $id -Force | Out-Null
     }
 }
 
@@ -15,6 +15,6 @@ if ($stopped) {
 $dangling = & docker images -q -f dangling=true
 if ($dangling) {
     foreach ($img in $dangling) {
-        & docker rmi $img
+        & docker rmi $img | Out-Null
     }
 }
