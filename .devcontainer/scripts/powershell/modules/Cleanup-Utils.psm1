@@ -7,31 +7,38 @@
 # Module metadata
 $ModuleVersion = "1.0.0"
 
+# Define fallback logging function first
+function Write-LogMessage {
+  param(
+    [string]$Message,
+    [ValidateSet('Info', 'Warning', 'Error', 'Success', 'Performance')]
+    [string]$Level = 'Info'
+  )
+
+  $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+  $colorMap = @{
+    'Info'        = 'White'
+    'Warning'     = 'Yellow'
+    'Error'       = 'Red'
+    'Success'     = 'Green'
+    'Performance' = 'Cyan'
+  }
+
+  Write-Host "[$timestamp] [$Level] $Message" -ForegroundColor $colorMap[$Level]
+}
+
 # Import required modules if available
 try {
-  if (Get-Module -Name "Core-Utils" -ListAvailable) {
-    Import-Module "Core-Utils" -Force -ErrorAction SilentlyContinue
+  $coreUtilsPath = Join-Path $PSScriptRoot "Core-Utils.psm1"
+  if (Test-Path $coreUtilsPath) {
+    Import-Module $coreUtilsPath -Force -ErrorAction SilentlyContinue
+    # Override with the imported function if successful
+    if (Get-Command Write-LogMessage -Module "Core-Utils" -ErrorAction SilentlyContinue) {
+      Write-LogMessage -Message "✅ Core-Utils imported successfully" -Level Info
+    }
   }
 } catch {
-  # Fallback logging function if Core-Utils is not available
-  function Write-LogMessage {
-    param(
-      [string]$Message,
-      [ValidateSet('Info', 'Warning', 'Error', 'Success', 'Performance')]
-      [string]$Level = 'Info'
-    )
-
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $colorMap = @{
-      'Info'        = 'White'
-      'Warning'     = 'Yellow'
-      'Error'       = 'Red'
-      'Success'     = 'Green'
-      'Performance' = 'Cyan'
-    }
-
-    Write-Host "[$timestamp] [$Level] $Message" -ForegroundColor $colorMap[$Level]
-  }
+  Write-LogMessage -Message "⚠️  Core-Utils import failed, using fallback logging" -Level Warning
 }
 
 # Configuration constants for extreme optimization
@@ -292,28 +299,32 @@ function Remove-DockerContainers {
     $runningContainers = docker ps -q 2>$null
     if ($runningContainers -and $runningContainers.Count -gt 0) {
       $runningContainers | ForEach-Object -Parallel {
+        $waitTime = $using:CLEANUP_FORCE_WAIT_TIME
         try {
-          docker stop $_ --time $using:CLEANUP_FORCE_WAIT_TIME 2>$null
+          docker stop $_ --time $waitTime 2>$null
         } catch {
           # Continue on error
         }
       } -ThrottleLimit $MaxParallel
     }
 
-    # Remove all containers (parallel) - use thread-safe collection
-    $removedContainers = [System.Collections.Concurrent.ConcurrentBag[string]]::new()
+    # Remove all containers (parallel) - collect results manually
+    $removedContainers = @()
     $allContainers | ForEach-Object -Parallel {
       try {
         $result = docker rm $_ --force 2>$null
         if ($result) {
-          ($using:removedContainers).Add($_)
+          return $_
         }
       } catch {
         # Continue on error
       }
-    } -ThrottleLimit $MaxParallel
+      return $null
+    } -ThrottleLimit $MaxParallel | Where-Object { $_ -ne $null } | ForEach-Object {
+      $removedContainers += $_
+    }
 
-    return @($removedContainers)
+    return $removedContainers
 
   } catch {
     Write-LogMessage -Message "❌ Container removal failed: $($_.Exception.Message)" -Level Error
@@ -341,7 +352,7 @@ function Remove-DockerImages {
   )
 
   try {
-    $removedImages = [System.Collections.Concurrent.ConcurrentBag[string]]::new()
+    $removedImages = @()
 
     # Remove dangling images first
     $danglingImages = docker images -f "dangling=true" -q 2>$null
@@ -351,12 +362,15 @@ function Remove-DockerImages {
         try {
           $result = docker rmi $_ --force 2>$null
           if ($result) {
-            ($using:removedImages).Add($_)
+            return $_
           }
         } catch {
           # Continue on error
         }
-      } -ThrottleLimit $MaxParallel
+        return $null
+      } -ThrottleLimit $MaxParallel | Where-Object { $_ -ne $null } | ForEach-Object {
+        $removedImages += $_
+      }
     }
 
     # In aggressive mode, remove unused images
@@ -369,7 +383,7 @@ function Remove-DockerImages {
       }
     }
 
-    return @($removedImages)
+    return $removedImages
 
   } catch {
     Write-LogMessage -Message "❌ Image removal failed: $($_.Exception.Message)" -Level Error
@@ -406,19 +420,22 @@ function Remove-DockerVolumes {
 
     Write-LogMessage -Message "💾 Removing $($unusedVolumes.Count) unused volumes..." -Level Info
 
-    $removedVolumes = [System.Collections.Concurrent.ConcurrentBag[string]]::new()
+    $removedVolumes = @()
     $unusedVolumes | ForEach-Object -Parallel {
       try {
         $result = docker volume rm $_ --force 2>$null
         if ($result) {
-          ($using:removedVolumes).Add($_)
+          return $_
         }
       } catch {
         # Continue on error
       }
-    } -ThrottleLimit $MaxParallel
+      return $null
+    } -ThrottleLimit $MaxParallel | Where-Object { $_ -ne $null } | ForEach-Object {
+      $removedVolumes += $_
+    }
 
-    return @($removedVolumes)
+    return $removedVolumes
 
   } catch {
     Write-LogMessage -Message "❌ Volume removal failed: $($_.Exception.Message)" -Level Error
@@ -463,21 +480,24 @@ function Remove-DockerNetworks {
 
     Write-LogMessage -Message "🌐 Removing $($customNetworks.Count) custom networks..." -Level Info
 
-    $removedNetworks = [System.Collections.Concurrent.ConcurrentBag[string]]::new()
+    $removedNetworks = @()
     $customNetworks | ForEach-Object -Parallel {
       try {
         $networkInfo = $_ -split ' '
         $networkId = $networkInfo[0]
         $result = docker network rm $networkId 2>$null
         if ($result) {
-          ($using:removedNetworks).Add($networkId)
+          return $networkId
         }
       } catch {
         # Continue on error - network might be in use
       }
-    } -ThrottleLimit $MaxParallel
+      return $null
+    } -ThrottleLimit $MaxParallel | Where-Object { $_ -ne $null } | ForEach-Object {
+      $removedNetworks += $_
+    }
 
-    return @($removedNetworks)
+    return $removedNetworks
 
   } catch {
     Write-LogMessage -Message "❌ Network removal failed: $($_.Exception.Message)" -Level Error
