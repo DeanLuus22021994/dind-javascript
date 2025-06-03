@@ -16,8 +16,8 @@ $script:BuildConfig = @{
       Dockerfile   = '.devcontainer/docker/files/Dockerfile.devcontainer'
       Context      = '.devcontainer'
       BuildArgs    = @{
-        'NODE_VERSION'     = '20'
-        'BUILDKIT_VERSION' = 'latest'
+        BUILDKIT_INLINE_CACHE = '1'
+        NODE_VERSION          = 'lts'
       }
       Dependencies = @('buildkit', 'node')
       Priority     = 1
@@ -27,7 +27,7 @@ $script:BuildConfig = @{
       Dockerfile   = '.devcontainer/docker/files/Dockerfile.buildkit'
       Context      = '.devcontainer/docker'
       BuildArgs    = @{
-        'BUILDKIT_VERSION' = 'latest'
+        BUILDKIT_INLINE_CACHE = '1'
       }
       Dependencies = @()
       Priority     = 3
@@ -37,7 +37,7 @@ $script:BuildConfig = @{
       Dockerfile   = '.devcontainer/docker/files/Dockerfile.redis'
       Context      = '.devcontainer/docker'
       BuildArgs    = @{
-        'REDIS_VERSION' = '7-alpine'
+        BUILDKIT_INLINE_CACHE = '1'
       }
       Dependencies = @()
       Priority     = 3
@@ -47,7 +47,7 @@ $script:BuildConfig = @{
       Dockerfile   = '.devcontainer/docker/files/Dockerfile.postgres'
       Context      = '.devcontainer/docker'
       BuildArgs    = @{
-        'POSTGRES_VERSION' = '16-alpine'
+        BUILDKIT_INLINE_CACHE = '1'
       }
       Dependencies = @()
       Priority     = 3
@@ -57,7 +57,7 @@ $script:BuildConfig = @{
       Dockerfile   = '.devcontainer/docker/files/Dockerfile.registry'
       Context      = '.devcontainer/docker'
       BuildArgs    = @{
-        'REGISTRY_VERSION' = '2'
+        BUILDKIT_INLINE_CACHE = '1'
       }
       Dependencies = @()
       Priority     = 2
@@ -67,7 +67,7 @@ $script:BuildConfig = @{
       Dockerfile   = '.devcontainer/docker/files/Dockerfile.node'
       Context      = '.devcontainer/docker'
       BuildArgs    = @{
-        'NODE_VERSION' = '20-alpine'
+        BUILDKIT_INLINE_CACHE = '1'
       }
       Dependencies = @()
       Priority     = 3
@@ -113,50 +113,12 @@ function Get-BuildableServices {
       $configResult = docker-compose -f $composeFile config --services 2>$null
       if ($LASTEXITCODE -eq 0 -and $configResult) {
         $services = $configResult | Where-Object { $_ -and $_.Trim() }
+        $allServices += $services
 
         foreach ($service in $services) {
-          if ($service -notin $allServices) {
-            # Check if service has build configuration
-            $serviceConfig = docker-compose -f $composeFile config --format json 2>$null | ConvertFrom-Json
-
-            if ($serviceConfig.services.$service.build -or $serviceConfig.services.$service.dockerfile) {
-              $buildInfo = $serviceConfig.services.$service.build
-              $dockerfile = $serviceConfig.services.$service.dockerfile
-
-              $serviceDefinitions[$service] = @{
-                ComposeFile  = $composeFile
-                HasBuild     = $true
-                BuildContext = if ($buildInfo.context) { $buildInfo.context } else { "." }
-                Dockerfile   = if ($buildInfo.dockerfile) { $buildInfo.dockerfile } elseif ($dockerfile) { $dockerfile } else { "Dockerfile" }
-                BuildArgs    = if ($buildInfo.args) { $buildInfo.args } else { @{} }
-                Target       = if ($buildInfo.target) { $buildInfo.target } else { $null }
-              }
-
-              $allServices += $service
-            } elseif ($script:BuildConfig.ServiceMappings.ContainsKey($service)) {
-              # Service has predefined build configuration
-              $mappingConfig = $script:BuildConfig.ServiceMappings[$service]
-              $serviceDefinitions[$service] = @{
-                ComposeFile  = $composeFile
-                HasBuild     = $true
-                BuildContext = $mappingConfig.Context
-                Dockerfile   = $mappingConfig.Dockerfile
-                BuildArgs    = $mappingConfig.BuildArgs
-                Target       = $null
-                IsMapped     = $true
-              }
-
-              $allServices += $service
-            } elseif ($IncludeOptional) {
-              # Include non-build services if requested
-              $serviceDefinitions[$service] = @{
-                ComposeFile = $composeFile
-                HasBuild    = $false
-                Image       = $serviceConfig.services.$service.image
-              }
-
-              $allServices += $service
-            }
+          $serviceDefinitions[$service] = @{
+            HasBuild    = $true
+            ComposeFile = $composeFile
           }
         }
       }
@@ -217,7 +179,7 @@ class BuildOrchestrator {
       $dependencies = if ($script:BuildConfig.ServiceMappings.ContainsKey($service)) {
         $script:BuildConfig.ServiceMappings[$service].Dependencies
       } else {
-        @()  # No dependencies for services not in mapping
+        @()
       }
       $dependencyGraph[$service] = $dependencies
     }
@@ -225,8 +187,7 @@ class BuildOrchestrator {
     # Topological sort with priority consideration
     function ResolveBuildOrder($serviceName, $graph, $processed, $order, $visiting = @()) {
       if ($serviceName -in $visiting) {
-        Write-LogMessage -Message "⚠️  Circular dependency detected involving: $($visiting -join ' → ') → $serviceName" -Level Warning
-        return
+        throw "Circular dependency detected involving service: $serviceName"
       }
 
       if ($serviceName -in $processed) {
@@ -235,18 +196,12 @@ class BuildOrchestrator {
 
       $visiting += $serviceName
 
-      if ($graph.ContainsKey($serviceName)) {
-        $dependencies = $graph[$serviceName]
-        foreach ($dep in $dependencies) {
-          if ($dep -in $this.Services.Services) {
-            ResolveBuildOrder $dep $graph $processed $order $visiting
-          }
-        }
+      foreach ($dependency in $graph[$serviceName]) {
+        ResolveBuildOrder $dependency $graph $processed $order $visiting
       }
 
-      $order.Add($serviceName)
       $processed += $serviceName
-      $visiting = $visiting | Where-Object { $_ -ne $serviceName }
+      $order += $serviceName
     }
 
     # Sort services by priority first, then resolve dependencies
@@ -254,12 +209,14 @@ class BuildOrchestrator {
       if ($script:BuildConfig.ServiceMappings.ContainsKey($_)) {
         $script:BuildConfig.ServiceMappings[$_].Priority
       } else {
-        2  # Default priority
+        99
       }
     } -Descending
 
     foreach ($service in $prioritizedServices) {
-      ResolveBuildOrder $service $dependencyGraph $processed $buildOrder
+      if ($service -notin $processed) {
+        ResolveBuildOrder $service $dependencyGraph ([ref]$processed) ([ref]$buildOrder)
+      }
     }
 
     return $buildOrder
@@ -271,64 +228,37 @@ class BuildOrchestrator {
 
     switch ($this.Strategy) {
       'sequential' {
-        # One service per batch
         foreach ($service in $buildOrder) {
           $batches += , @($service)
         }
       }
       'parallel' {
-        # Simple batching without dependency consideration
+        $batches += , $buildOrder
+      }
+      'optimized' {
+        # Group by dependency levels
+        $dependencyLevels = @{}
+        foreach ($service in $buildOrder) {
+          $level = 0
+          if ($script:BuildConfig.ServiceMappings.ContainsKey($service)) {
+            $level = $script:BuildConfig.ServiceMappings[$service].Dependencies.Count
+          }
+          if (-not $dependencyLevels.ContainsKey($level)) {
+            $dependencyLevels[$level] = @()
+          }
+          $dependencyLevels[$level] += $service
+        }
+
+        foreach ($level in ($dependencyLevels.Keys | Sort-Object)) {
+          $batches += , $dependencyLevels[$level]
+        }
+      }
+      'aggressive' {
+        # Split into smaller batches for maximum concurrency
         for ($i = 0; $i -lt $buildOrder.Count; $i += $MaxConcurrency) {
           $end = [Math]::Min($i + $MaxConcurrency - 1, $buildOrder.Count - 1)
-          $batches += , @($buildOrder[$i..$end])
+          $batches += , $buildOrder[$i..$end]
         }
-      }
-      'optimized' -or 'aggressive' {
-        # Dependency-aware batching
-        $remaining = $buildOrder.Clone()
-        $currentBatch = @()
-
-        while ($remaining.Count -gt 0) {
-          $canBuild = @()
-
-          foreach ($service in $remaining) {
-            $dependencies = if ($script:BuildConfig.ServiceMappings.ContainsKey($service)) {
-              $script:BuildConfig.ServiceMappings[$service].Dependencies
-            } else {
-              @()
-            }
-
-            $dependenciesMet = $true
-            foreach ($dep in $dependencies) {
-              if ($dep -in $remaining) {
-                $dependenciesMet = $false
-                break
-              }
-            }
-
-            if ($dependenciesMet) {
-              $canBuild += $service
-            }
-          }
-
-          if ($canBuild.Count -eq 0) {
-            # Force include next service to break deadlock
-            $canBuild += $remaining[0]
-            Write-LogMessage -Message "⚠️  Breaking potential deadlock by force-including: $($remaining[0])" -Level Warning
-          }
-
-          # Limit batch size
-          $batchSize = [Math]::Min($MaxConcurrency, $canBuild.Count)
-          $currentBatch = $canBuild | Select-Object -First $batchSize
-          $batches += , $currentBatch
-
-          # Remove built services from remaining
-          $remaining = $remaining | Where-Object { $_ -notin $currentBatch }
-        }
-      }
-      default {
-        # Fallback to optimized
-        return $this.GetBuildBatches($MaxConcurrency)
       }
     }
 
@@ -355,8 +285,7 @@ class BuildOrchestrator {
 
     Write-LogMessage -Message "   📋 Build plan: $($batches.Count) batches" -Level Info
     for ($i = 0; $i -lt $batches.Count; $i++) {
-      $batch = $batches[$i]
-      Write-LogMessage -Message "      Batch $($i + 1): $($batch -join ', ')" -Level Debug
+      Write-LogMessage -Message "      Batch $($i + 1): $($batches[$i] -join ', ')" -Level Info
     }
 
     $totalBuildTime = 0
@@ -366,47 +295,26 @@ class BuildOrchestrator {
     # Execute build batches
     for ($batchIndex = 0; $batchIndex -lt $batches.Count; $batchIndex++) {
       $batch = $batches[$batchIndex]
-      $batchNumber = $batchIndex + 1
+      $batchStart = Get-Date
 
-      Write-LogMessage -Message "🔄 Building batch $batchNumber/$($batches.Count): $($batch -join ', ')" -Level Performance
+      Write-LogMessage -Message "🔨 Building batch $($batchIndex + 1)/$($batches.Count): $($batch -join ', ')" -Level Info
 
-      $batchStartTime = Get-Date
-      $this.Monitor.StartTimer("batch-$batchNumber")
-
-      # Build services in batch
       $batchResults = $this.BuildServiceBatch($batch, $BuildOptions)
 
-      $this.Monitor.StopTimer("batch-$batchNumber")
-      $batchEndTime = Get-Date
-      $batchDuration = ($batchEndTime - $batchStartTime).TotalSeconds
+      $batchEnd = Get-Date
+      $batchDuration = ($batchEnd - $batchStart).TotalSeconds
       $totalBuildTime += $batchDuration
 
-      # Process batch results
-      $batchSuccesses = $batchResults | Where-Object { $_.Success }
-      $batchFailures = $batchResults | Where-Object { -not $_.Success }
-
-      $successfulBuilds += $batchSuccesses.Count
-      $failedBuilds += $batchFailures.Count
-
-      Write-LogMessage -Message "   ⚡ Batch $batchNumber completed: $($batchSuccesses.Count)/$($batch.Count) successful ($($batchDuration.ToString('F1'))s)" -Level Success
-
-      if ($batchFailures.Count -gt 0) {
-        Write-LogMessage -Message "   ❌ Failed builds in batch $batchNumber`:" -Level Error
-        foreach ($failure in $batchFailures) {
-          Write-LogMessage -Message "      $($failure.Service): $($failure.Error)" -Level Error
-        }
-
-        if (-not $BuildOptions.ContinueOnError) {
-          Write-LogMessage -Message "❌ Build stopped due to failures (ContinueOnError not set)" -Level Error
-          return $false
-        }
-      }
-
-      # Add results to build results
       foreach ($result in $batchResults) {
-        $this.BuildResults[$result.Service] = $result
-        $this.DockerMonitor.MonitorBuildPerformance($result.Service, $result.Duration, $result.Success)
+        if ($result.Success) {
+          $successfulBuilds++
+        } else {
+          $failedBuilds++
+        }
+        $this.BuildResults[$result.ServiceName] = $result
       }
+
+      Write-LogMessage -Message "   ✅ Batch $($batchIndex + 1) completed in $($batchDuration.ToString('F1'))s" -Level Success
     }
 
     $this.Monitor.StopTimer("total-build")
@@ -421,7 +329,7 @@ class BuildOrchestrator {
     # Show build performance summary
     $buildSummary = $this.DockerMonitor.GetBuildSummary()
     if ($buildSummary.TotalBuilds -gt 0) {
-      Write-LogMessage -Message "   📈 Performance: $($buildSummary.SuccessRate.ToString('F1'))% success rate, avg $($buildSummary.AverageTimeSeconds.ToString('F1'))s per build" -Level Performance
+      Write-LogMessage -Message "   🏗️  Build Performance: avg $($buildSummary.AverageBuildTime.ToString('F1'))s/service" -Level Info
     }
 
     return $failedBuilds -eq 0
@@ -431,15 +339,47 @@ class BuildOrchestrator {
     $results = @()
 
     if ($Services.Count -eq 1) {
-      # Single service - build directly
       $result = $this.BuildSingleService($Services[0], $BuildOptions)
       $results += $result
     } else {
-      # Multiple services - build in parallel
-      $results = Invoke-UltraParallelExecution -Items $Services -ScriptBlock {
-        param($service)
-        return $using:this.BuildSingleService($service, $using:BuildOptions)
-      } -Description "Building services in parallel" -CustomThrottleLimit $Services.Count -ContinueOnError:$BuildOptions.ContinueOnError
+      # Build services in parallel within batch
+      $parallelResults = $Services | ForEach-Object -Parallel {
+        $serviceName = $_
+        $buildOptions = $using:BuildOptions
+
+        try {
+          $startTime = Get-Date
+
+          # Build the service
+          $buildArgs = @('docker', 'build')
+          if ($buildOptions.NoCache) { $buildArgs += '--no-cache' }
+          if ($buildOptions.Pull) { $buildArgs += '--pull' }
+
+          $buildCommand = $buildArgs -join ' '
+          $buildResult = & $buildCommand 2>&1
+
+          $endTime = Get-Date
+          $duration = ($endTime - $startTime).TotalSeconds
+
+          return @{
+            ServiceName = $serviceName
+            Success     = $LASTEXITCODE -eq 0
+            Duration    = $duration
+            Output      = $buildResult
+            Error       = if ($LASTEXITCODE -ne 0) { $buildResult } else { $null }
+          }
+        } catch {
+          return @{
+            ServiceName = $serviceName
+            Success     = $false
+            Duration    = 0
+            Output      = $null
+            Error       = $_.Exception.Message
+          }
+        }
+      } -ThrottleLimit $Services.Count
+
+      $results += $parallelResults
     }
 
     return $results
@@ -449,115 +389,52 @@ class BuildOrchestrator {
     $startTime = Get-Date
 
     try {
-      Write-LogMessage -Message "   🔨 Building service: $ServiceName" -Level Info
+      Write-LogMessage -Message "🏗️  Building service: $ServiceName" -Level Info
 
-      # Get service definition
-      $serviceDefinition = $this.ServiceDefinitions[$ServiceName]
-      if (-not $serviceDefinition) {
-        throw "Service definition not found for: $ServiceName"
-      }
+      # Build logic here
+      $buildArgs = @('docker', 'build')
+      if ($BuildOptions.NoCache) { $buildArgs += '--no-cache' }
+      if ($BuildOptions.Pull) { $buildArgs += '--pull' }
 
-      # Prepare build command
-      $buildCommand = @('docker-compose')
+      $buildCommand = $buildArgs -join ' '
+      $buildResult = & $buildCommand 2>&1
 
-      # Add compose files
-      foreach ($file in $this.ComposeFiles) {
-        $buildCommand += '-f', $file
-      }
-
-      $buildCommand += 'build'
-
-      # Add build options
-      if ($BuildOptions.NoCache) {
-        $buildCommand += '--no-cache'
-      }
-
-      if ($BuildOptions.Pull) {
-        $buildCommand += '--pull'
-      }
-
-      if ($BuildOptions.Parallel -and $BuildOptions.Parallel -gt 1) {
-        $buildCommand += '--parallel'
-      }
-
-      # Add build args from definition and options
-      $allBuildArgs = @{}
-      if ($serviceDefinition.BuildArgs) {
-        foreach ($key in $serviceDefinition.BuildArgs.Keys) {
-          $allBuildArgs[$key] = $serviceDefinition.BuildArgs[$key]
-        }
-      }
-      if ($BuildOptions.BuildArgs) {
-        foreach ($key in $BuildOptions.BuildArgs.Keys) {
-          $allBuildArgs[$key] = $BuildOptions.BuildArgs[$key]
-        }
-      }
-
-      foreach ($key in $allBuildArgs.Keys) {
-        $buildCommand += '--build-arg', "$key=$($allBuildArgs[$key])"
-      }
-
-      $buildCommand += $ServiceName
-
-      Write-LogMessage -Message "      🚀 Executing: $($buildCommand -join ' ')" -Level Debug
-
-      # Execute build with timeout
-      $buildOutput = & $buildCommand[0] $buildCommand[1..($buildCommand.Length - 1)] 2>&1
       $endTime = Get-Date
-      $duration = $endTime - $startTime
+      $duration = ($endTime - $startTime).TotalSeconds
 
-      if ($LASTEXITCODE -eq 0) {
-        Write-LogMessage -Message "      ✅ $ServiceName built successfully ($($duration.TotalSeconds.ToString('F1'))s)" -Level Success
-        return @{
-          Service   = $ServiceName
-          Success   = $true
-          Duration  = $duration
-          Output    = $buildOutput -join "`n"
-          Error     = $null
-          StartTime = $startTime
-          EndTime   = $endTime
-        }
-      } else {
-        $errorMsg = "Build failed with exit code: $LASTEXITCODE"
-        Write-LogMessage -Message "      ❌ $ServiceName build failed: $errorMsg" -Level Error
-        return @{
-          Service   = $ServiceName
-          Success   = $false
-          Duration  = $duration
-          Output    = $buildOutput -join "`n"
-          Error     = $errorMsg
-          StartTime = $startTime
-          EndTime   = $endTime
-        }
+      $success = $LASTEXITCODE -eq 0
+
+      $this.DockerMonitor.MonitorBuildPerformance($ServiceName, [timespan]::FromSeconds($duration), $success)
+
+      return @{
+        ServiceName = $ServiceName
+        Success     = $success
+        Duration    = $duration
+        Output      = $buildResult
+        Error       = if (-not $success) { $buildResult } else { $null }
       }
-
     } catch {
       $endTime = Get-Date
-      $duration = $endTime - $startTime
-      $errorMsg = $_.Exception.Message
-      Write-LogMessage -Message "      ❌ $ServiceName build error: $errorMsg" -Level Error
+      $duration = ($endTime - $startTime).TotalSeconds
+
       return @{
-        Service   = $ServiceName
-        Success   = $false
-        Duration  = $duration
-        Output    = ""
-        Error     = $errorMsg
-        StartTime = $startTime
-        EndTime   = $endTime
+        ServiceName = $ServiceName
+        Success     = $false
+        Duration    = $duration
+        Output      = $null
+        Error       = $_.Exception.Message
       }
     }
   }
 
   [hashtable]GetBuildSummary() {
     return @{
-      Strategy           = $this.Strategy
-      ServicesBuilt      = $this.BuildResults.Count
-      SuccessfulBuilds   = ($this.BuildResults.Values | Where-Object { $_.Success }).Count
-      FailedBuilds       = ($this.BuildResults.Values | Where-Object { -not $_.Success }).Count
-      TotalDuration      = $this.Monitor.GetDuration("total-build")
-      BuildResults       = $this.BuildResults
-      DockerMetrics      = $this.DockerMonitor.GetBuildSummary()
-      PerformanceMetrics = $this.Monitor.GetSummary()
+      Strategy         = $this.Strategy
+      ServicesBuilt    = $this.BuildResults.Count
+      SuccessfulBuilds = ($this.BuildResults.Values | Where-Object { $_.Success }).Count
+      FailedBuilds     = ($this.BuildResults.Values | Where-Object { -not $_.Success }).Count
+      TotalDuration    = $this.Monitor.GetDuration("total-build")
+      Results          = $this.BuildResults
     }
   }
 }
@@ -601,37 +478,25 @@ function Invoke-DevContainerBuild {
   try {
     # Optimize system if requested
     if ($OptimizeSystem) {
-      Optimize-SystemForDocker -AggressiveOptimization:($Strategy -eq 'aggressive')
+      Write-LogMessage -Message "🚀 Optimizing system for build..." -Level Info
+      $null = Optimize-SystemForDocker
     }
 
     # Validate compose files
     if (-not (Test-DockerComposeFiles -ComposeFiles $ComposeFiles)) {
-      Write-LogMessage -Message "❌ Compose file validation failed" -Level Error
-      return $false
+      throw "Compose file validation failed"
     }
 
     # Get buildable services
     $serviceInfo = Get-BuildableServices -ComposeFiles $ComposeFiles
     if ($serviceInfo.Services.Count -eq 0) {
-      Write-LogMessage -Message "⚠️  No buildable services found in compose files" -Level Warning
-      return $true
+      throw "No buildable services found"
     }
 
     # Filter services if specific ones requested
     if ($Services.Count -gt 0) {
-      $requestedServices = $Services | Where-Object { $_ -in $serviceInfo.Services }
-      $invalidServices = $Services | Where-Object { $_ -notin $serviceInfo.Services }
-
-      if ($invalidServices.Count -gt 0) {
-        Write-LogMessage -Message "⚠️  Invalid services requested: $($invalidServices -join ', ')" -Level Warning
-      }
-
-      if ($requestedServices.Count -eq 0) {
-        Write-LogMessage -Message "❌ No valid services found in the requested list" -Level Error
-        return $false
-      }
-
-      $serviceInfo.Services = $requestedServices
+      $filteredServices = $serviceInfo.Services | Where-Object { $_ -in $Services }
+      $serviceInfo.Services = $filteredServices
     }
 
     # Create build orchestrator
