@@ -475,7 +475,6 @@ function Clear-DockerSystemCache {
     $completed = 0
     $startTime = Get-Date
     while ($completed -lt $cleanupJobs.Count) {
-      $runningJobs = $cleanupJobs | Where-Object { $_.State -eq "Running" }
       $completedJobs = $cleanupJobs | Where-Object { $_.State -eq "Completed" }
       $failedJobs = $cleanupJobs | Where-Object { $_.State -eq "Failed" }
 
@@ -490,8 +489,9 @@ function Clear-DockerSystemCache {
       }
 
       # Monitor running jobs status
-      if ($runningJobs.Count -gt 0) {
-        Write-Host "   🔄 $($runningJobs.Count) jobs still running..." -ForegroundColor DarkCyan
+      $stillRunning = $cleanupJobs | Where-Object { $_.State -eq "Running" }
+      if ($stillRunning.Count -gt 0) {
+        Write-Host "   🔄 $($stillRunning.Count) jobs still running..." -ForegroundColor DarkCyan
       }
 
       Start-Sleep -Milliseconds 250  # Faster polling for better responsiveness
