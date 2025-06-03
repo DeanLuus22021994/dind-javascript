@@ -8,11 +8,11 @@ function Rm {
         [Parameter(Mandatory = $false)]
         [switch]$Force
     )
-    $args = @('rm')
-    if ($Force) { $args += '-f' }
-    $args += $Container
-    Write-Host "🐳 docker $($args -join ' ')"
-    & docker @args
+    $dockerRmArgs = @('rm')
+    if ($Force) { $dockerRmArgs += '-f' }
+    $dockerRmArgs += $Container
+    Write-Host "🐳 docker $($dockerRmArgs -join ' ')"
+    & docker @dockerRmArgs
     return $LASTEXITCODE -eq 0
 }
 Export-ModuleMember -Function Rm
