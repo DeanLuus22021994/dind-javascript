@@ -1,14 +1,14 @@
-# syntax=docker/dockerfile:1.8
+# Use the official DevContainer base image for minimal footprint
 FROM mcr.microsoft.com/devcontainers/base:bullseye AS base
 
-# Build arguments for maximum optimization
+# Build arguments for optimization
 ARG BUILDKIT_INLINE_CACHE=1
 ARG NODE_VERSION=lts
 ARG DEBIAN_FRONTEND=noninteractive
 ARG BUILDPLATFORM
 ARG TARGETPLATFORM
 
-# Set up environment variables for performance
+# Set environment variables for performance and security
 ENV DEBIAN_FRONTEND=noninteractive \
   TZ=UTC \
   SHELL=/bin/bash \
@@ -16,13 +16,14 @@ ENV DEBIAN_FRONTEND=noninteractive \
   DOCKER_BUILDKIT=1 \
   COMPOSE_DOCKER_CLI_BUILD=1 \
   BUILDKIT_PROGRESS=plain \
-  BUILDKIT_INLINE_CACHE=1
+  BUILDKIT_INLINE_CACHE=1 \
+  PATH="/home/vscode/.yarn/bin:$PATH"
 
-# Create cache mount points
+# Create cache directories for persistent caching
 RUN mkdir -p /cache/{buildkit,docker,npm,yarn,pnpm,apt,pip} \
   && chmod 777 /cache/*
 
-# Install essential packages with aggressive caching
+# Stage 1: System dependencies with aggressive caching
 FROM base AS system-deps
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked,id=apt-cache-$TARGETPLATFORM \
   --mount=type=cache,target=/var/lib/apt,sharing=locked,id=apt-lib-$TARGETPLATFORM \
@@ -44,7 +45,6 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked,id=apt-cache-$TARGET
   git \
   vim \
   nano \
-  htop \
   jq \
   unzip \
   zip \
@@ -52,49 +52,43 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked,id=apt-cache-$TARGET
   net-tools \
   iputils-ping \
   telnet \
-  tcpdump \
-  strace \
-  procps \
-  file \
   rsync \
   openssh-client \
   sudo \
   && mkdir -p /etc/apt/keyrings
 
-
-# Install Docker CLI with aggressive caching (add Docker's official GPG key and repo)
+# Stage 2: Docker CLI installation with caching
 FROM system-deps AS docker-install
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked,id=apt-cache-docker-$TARGETPLATFORM \
   --mount=type=cache,target=/var/lib/apt,sharing=locked,id=apt-lib-docker-$TARGETPLATFORM \
   set -eux; \
   install -m 0755 -d /etc/apt/keyrings; \
   curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg; \
-  echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list; \
+  echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpa] https://download.docker.com/linux/debian $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list; \
   apt-get update; \
-  apt-get install -y docker-ce-cli;
+  apt-get install -y docker-ce-cli
 
-# Install Node.js with caching
+# Stage 3: Node.js installation with caching
 FROM docker-install AS node-install
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked,id=apt-cache-node-$TARGETPLATFORM \
   curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - \
   && apt-get install -y nodejs
 
-# Install global Node.js tools with aggressive npm caching
+# Stage 4: Global Node.js tools with aggressive caching
 FROM node-install AS npm-global
 RUN --mount=type=cache,target=/root/.npm,sharing=locked,id=npm-root-$TARGETPLATFORM \
   npm install -g npm@latest yarn
 
-# Install development tools with caching
+# Stage 5: Development tools with caching
 FROM npm-global AS dev-tools
 RUN --mount=type=cache,target=/cache/tools,sharing=locked,id=dev-tools-$TARGETPLATFORM \
   yarn global add typescript ts-node eslint prettier
 
-# Final optimized stage
+# Final Stage: Optimized runtime environment
 FROM dev-tools AS final
 
 # Configure buildkit for maximum performance
-ENV BUILDKIT_HOST=docker-container://buildkit \
-  PATH="/home/vscode/.yarn/bin:$PATH"
+ENV BUILDKIT_HOST=docker-container://buildkit
 
 # Create optimized cache structure
 RUN mkdir -p /home/vscode/{.cache,.local/share,.config}
@@ -111,20 +105,11 @@ USER vscode
 # Configure package managers for maximum caching
 RUN npm config set cache /cache/npm
 
-USER root
-
-# Optimized health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node --version || exit 1
-
-
-# Copy package files and preinstall dependencies into /workspace/node_modules (volume mount target)
+# Copy package files and preinstall dependencies
 COPY --chown=vscode:vscode package.json package-lock.json /workspace/
-USER vscode
 WORKDIR /workspace
 RUN npm config set cache /cache/npm \
   && if [ -f package-lock.json ]; then npm ci; else npm install; fi
-USER root
 
 # Final cleanup with cache preservation
 RUN apt-get autoremove -y
