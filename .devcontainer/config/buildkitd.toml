@@ -17,7 +17,6 @@ root = "/var/lib/buildkit"
   [[worker.oci.gcpolicy]]
     all = true
     keepBytes = 1024000000
-    keepBytes = 1024000000
 
 [worker.containerd]
   enabled = false
