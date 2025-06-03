@@ -2,6 +2,87 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "DevContainer: Build (PowerShell)",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-File",
+        ".devcontainer/scripts/powershell/build.ps1"
+      ],
+      "group": "build",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "DevContainer: Clean (PowerShell)",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-File",
+        ".devcontainer/scripts/powershell/clean.ps1"
+      ],
+      "group": "build",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "DevContainer: Build (Bash)",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        ".devcontainer/scripts/bash/build.sh"
+      ],
+      "group": "build",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "DevContainer: Clean (Bash)",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        ".devcontainer/scripts/bash/clean.sh"
+      ],
+      "group": "build",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "DevContainer: View Status",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        ".devcontainer/scripts/bash/dev-status.sh"
+      ],
+      "group": "build",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "DevContainer: Health Check",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        ".devcontainer/scripts/bash/validate.sh"
+      ],
+      "group": "test",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    // --- NPM, Lint, Format, Compose, Logs, DB tasks below ---
+    {
       "label": "npm: test",
       "type": "shell",
       "command": "npm",
@@ -285,36 +366,40 @@
       "problemMatcher": []
     },
     {
-      "label": "DevContainer: View Status",
+      "label": "Logs: View All Services",
       "type": "shell",
-      "command": "bash",
+      "command": "docker-compose",
       "args": [
-        ".devcontainer/scripts/bash/dev-status.sh"
+        "logs",
+        "-f"
       ],
       "group": "build",
+      "isBackground": true,
       "presentation": {
         "echo": true,
         "reveal": "always",
-        "focus": true,
+        "focus": false,
         "panel": "dedicated"
       },
       "options": {
-        "cwd": "${workspaceFolder}"
+        "cwd": "${workspaceFolder}/.devcontainer"
       },
       "problemMatcher": []
     },
     {
-      "label": "DevContainer: Health Check",
+      "label": "Logs: Application Logs",
       "type": "shell",
-      "command": "bash",
+      "command": "tail",
       "args": [
-        ".devcontainer/scripts/bash/validate.sh"
+        "-f",
+        "logs/combined.log"
       ],
-      "group": "test",
+      "group": "build",
+      "isBackground": true,
       "presentation": {
         "echo": true,
         "reveal": "always",
-        "focus": true,
+        "focus": false,
         "panel": "dedicated"
       },
       "options": {
@@ -405,48 +490,6 @@
         "echo": true,
         "reveal": "always",
         "focus": true,
-        "panel": "dedicated"
-      },
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "problemMatcher": []
-    },
-    {
-      "label": "Logs: View All Services",
-      "type": "shell",
-      "command": "docker-compose",
-      "args": [
-        "logs",
-        "-f"
-      ],
-      "group": "build",
-      "isBackground": true,
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": false,
-        "panel": "dedicated"
-      },
-      "options": {
-        "cwd": "${workspaceFolder}/.devcontainer"
-      },
-      "problemMatcher": []
-    },
-    {
-      "label": "Logs: Application Logs",
-      "type": "shell",
-      "command": "tail",
-      "args": [
-        "-f",
-        "logs/combined.log"
-      ],
-      "group": "build",
-      "isBackground": true,
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": false,
         "panel": "dedicated"
       },
       "options": {
