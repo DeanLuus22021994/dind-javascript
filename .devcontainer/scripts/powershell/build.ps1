@@ -150,8 +150,8 @@ function Invoke-UltraParallelPreBuildCleanup {
 
   # Job 1: Stop and remove containers
   $cleanupJobs += Start-Job -ScriptBlock {
-    param($args)
-    docker-compose @args down --remove-orphans 2>$null
+    param($composeArguments)
+    docker-compose @composeArguments down --remove-orphans 2>$null
     docker container prune -f 2>$null
   } -ArgumentList $composeArgs
 
@@ -177,8 +177,8 @@ function Invoke-UltraParallelPreBuildCleanup {
     $completedJobs = $cleanupJobs | Where-Object { $_.State -eq 'Completed' }
     $completed = $completedJobs.Count
 
-    $elapsed = ((Get-Date) - $startTime).TotalSeconds
-    Write-Host "   Progress: $completed/$($cleanupJobs.Count) operations completed ($($elapsed.ToString('F1'))s elapsed)" -ForegroundColor DarkYellow
+    $elapsedTime = ((Get-Date) - $startTime).TotalSeconds
+    Write-Host "   Progress: $completed/$($cleanupJobs.Count) operations completed ($($elapsedTime.ToString('F1'))s elapsed)" -ForegroundColor DarkYellow
 
     if ($runningJobs.Count -gt 0) {
       Start-Sleep -Seconds 2
