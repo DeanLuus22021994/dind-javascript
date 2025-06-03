@@ -1,8 +1,8 @@
 /* Resuming problem checks */
-const mongoose = require('mongoose');
-const logger = require('./logger');
-const config = require('../config');
-const memoryDatabase = require('./memoryDatabase');
+import mongoose from 'mongoose';
+import logger from './logger.js';
+import config from '../config/index.js';
+import memoryDatabase from './memoryDatabase.js';
 
 class Database {
   constructor() {
@@ -115,4 +115,4 @@ class Database {
   }
 }
 
-module.exports = new Database();
+export default new Database();
