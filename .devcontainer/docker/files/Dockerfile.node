@@ -9,9 +9,8 @@ ENV YARN_CACHE_FOLDER=/opt/yarn-cache
 # Create application directory
 WORKDIR /app
 
-# Create non-root user for security
-RUN groupadd --gid 1000 node \
-  && useradd --uid 1000 --gid node --shell /bin/bash --create-home node
+# The node user already exists in node:slim, so we don't need to create it
+# Just ensure proper ownership of directories
 
 # Install system dependencies for Node.js development
 RUN apt-get update && apt-get install -y \
