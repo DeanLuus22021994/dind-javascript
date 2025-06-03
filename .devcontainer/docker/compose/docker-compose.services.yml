@@ -32,7 +32,6 @@ services:
       - "6379:6379"
     volumes:
       - dind-redis-data:/data
-      - ../../config/redis.conf:/usr/local/etc/redis/redis.conf:ro
     networks:
       - devcontainer-network
     environment:

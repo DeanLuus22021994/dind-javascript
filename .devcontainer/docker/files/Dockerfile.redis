@@ -22,24 +22,33 @@ RUN --mount=type=cache,target=/cache/redis,sharing=locked,id=redis-cache-$TARGET
   && chown redis:redis /data /cache/redis \
   && chmod 755 /data /cache/redis
 
-# Create Redis configuration directory and optimize Redis configuration for development performance
+# Create Redis configuration directory and create complete Redis configuration
 RUN mkdir -p /usr/local/etc/redis \
-  && echo '# Redis Performance Optimizations' > /usr/local/etc/redis/redis-perf.conf \
-  && echo 'save 900 1' >> /usr/local/etc/redis/redis-perf.conf \
-  && echo 'save 300 10' >> /usr/local/etc/redis/redis-perf.conf \
-  && echo 'save 60 10000' >> /usr/local/etc/redis/redis-perf.conf \
-  && echo 'rdbcompression yes' >> /usr/local/etc/redis/redis-perf.conf \
-  && echo 'rdbchecksum yes' >> /usr/local/etc/redis/redis-perf.conf \
-  && echo 'tcp-keepalive 300' >> /usr/local/etc/redis/redis-perf.conf \
-  && echo 'tcp-backlog 511' >> /usr/local/etc/redis/redis-perf.conf \
-  && echo 'timeout 0' >> /usr/local/etc/redis/redis-perf.conf
+  && echo '# Redis Configuration - Optimized for Development' > /usr/local/etc/redis/redis.conf \
+  && echo 'bind 0.0.0.0' >> /usr/local/etc/redis/redis.conf \
+  && echo 'protected-mode no' >> /usr/local/etc/redis/redis.conf \
+  && echo 'port 6379' >> /usr/local/etc/redis/redis.conf \
+  && echo 'dir /data' >> /usr/local/etc/redis/redis.conf \
+  && echo 'dbfilename dump.rdb' >> /usr/local/etc/redis/redis.conf \
+  && echo 'appendonly yes' >> /usr/local/etc/redis/redis.conf \
+  && echo 'appendfilename "appendonly.aof"' >> /usr/local/etc/redis/redis.conf \
+  && echo 'appendfsync everysec' >> /usr/local/etc/redis/redis.conf \
+  && echo 'save 900 1' >> /usr/local/etc/redis/redis.conf \
+  && echo 'save 300 10' >> /usr/local/etc/redis/redis.conf \
+  && echo 'save 60 10000' >> /usr/local/etc/redis/redis.conf \
+  && echo 'rdbcompression yes' >> /usr/local/etc/redis/redis.conf \
+  && echo 'rdbchecksum yes' >> /usr/local/etc/redis/redis.conf \
+  && echo 'tcp-keepalive 300' >> /usr/local/etc/redis/redis.conf \
+  && echo 'tcp-backlog 511' >> /usr/local/etc/redis/redis.conf \
+  && echo 'timeout 0' >> /usr/local/etc/redis/redis.conf \
+  && echo 'maxmemory 256mb' >> /usr/local/etc/redis/redis.conf \
+  && echo 'maxmemory-policy allkeys-lru' >> /usr/local/etc/redis/redis.conf \
+  && echo 'databases 16' >> /usr/local/etc/redis/redis.conf \
+  && echo 'loglevel notice' >> /usr/local/etc/redis/redis.conf
 
 # High-performance health check
 HEALTHCHECK --interval=5s --timeout=2s --retries=2 --start-period=5s \
   CMD redis-cli ping | grep -q PONG || exit 1
 
 # Performance-optimized startup
-CMD ["redis-server", "/usr/local/etc/redis/redis.conf", \
-  "--include", "/usr/local/etc/redis/redis-perf.conf", \
-  "--appendonly", "yes", \
-  "--appendfsync", "everysec"]
+CMD ["redis-server", "/usr/local/etc/redis/redis.conf"]

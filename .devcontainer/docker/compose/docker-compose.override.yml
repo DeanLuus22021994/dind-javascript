@@ -26,7 +26,6 @@ services:
     command: >
       redis-server /usr/local/etc/redis/redis.conf
       --loglevel debug
-      --appendonly yes
       --save 60 1
 
   postgres:
