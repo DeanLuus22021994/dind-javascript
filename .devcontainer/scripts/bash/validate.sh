@@ -45,7 +45,11 @@ validate_tools() {
         fi
     done
 
-    return $([[ "$all_tools_ok" == "true" ]] && echo 0 || echo 1)
+    if [[ "$all_tools_ok" == "true" ]]; then
+        return 0
+    else
+        return 1
+    fi
 }
 
 # Function to validate Docker setup
@@ -87,7 +91,8 @@ validate_network() {
         log_success "Network $network_name exists"
 
         # Check network configuration
-        local subnet=$(docker network inspect "$network_name" | jq -r '.[0].IPAM.Config[0].Subnet')
+        local subnet
+        subnet=$(docker network inspect "$network_name" | jq -r '.[0].IPAM.Config[0].Subnet')
         log_info "Network subnet: $subnet"
     else
         log_warn "Network $network_name does not exist (will be created on startup)"
@@ -172,7 +177,11 @@ validate_configuration() {
         fi
     done
 
-    return $([[ "$all_configs_ok" == "true" ]] && echo 0 || echo 1)
+    if [[ "$all_configs_ok" == "true" ]]; then
+        return 0
+    else
+        return 1
+    fi
 }
 
 # Function to validate port availability
@@ -236,7 +245,11 @@ validate_workspace() {
         fi
     done
 
-    return $([[ "$structure_ok" == "true" ]] && echo 0 || echo 1)
+    if [[ "$structure_ok" == "true" ]]; then
+        return 0
+    else
+        return 1
+    fi
 }
 
 # Function to run comprehensive validation

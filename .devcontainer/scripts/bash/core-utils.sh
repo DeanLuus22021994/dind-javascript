@@ -42,7 +42,8 @@ print_status() {
     local color="$1"
     local icon="$2"
     local message="$3"
-    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    local timestamp
+    timestamp=$(date '+%Y-%m-%d %H:%M:%S')
     echo -e "${color}[${timestamp}] ${icon} ${message}${NC}"
 }
 
@@ -127,7 +128,8 @@ check_docker() {
         return 1
     fi
 
-    local docker_version=$(docker --version | cut -d' ' -f3 | tr -d ',')
+    local docker_version
+    docker_version=$(docker --version | cut -d' ' -f3 | tr -d ',')
     log_success "Docker is running (version: $docker_version)"
     return 0
 }
@@ -135,11 +137,13 @@ check_docker() {
 # Function to check if Docker Compose is available
 check_docker_compose() {
     if command_exists docker-compose; then
-        local compose_version=$(docker-compose --version | cut -d' ' -f3 | tr -d ',')
+        local compose_version
+        compose_version=$(docker-compose --version | cut -d' ' -f3 | tr -d ',')
         log_success "Docker Compose is available (version: $compose_version)"
         return 0
     elif docker compose version >/dev/null 2>&1; then
-        local compose_version=$(docker compose version --short)
+        local compose_version
+        compose_version=$(docker compose version --short)
         log_success "Docker Compose (plugin) is available (version: $compose_version)"
         return 0
     else
@@ -208,6 +212,7 @@ load_env_file() {
     if [[ -f "$env_file" ]]; then
         log_info "Loading environment from: $env_file"
         set -a
+        # shellcheck source=/dev/null
         source "$env_file"
         set +a
     else

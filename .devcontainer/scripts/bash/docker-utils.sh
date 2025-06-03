@@ -14,11 +14,13 @@ check_docker_system() {
     fi
 
     # Check Docker daemon configuration
-    local daemon_config=$(docker system info --format '{{json .}}' | jq -r '.ServerVersion')
+    local daemon_config
+    daemon_config=$(docker system info --format '{{json .}}' | jq -r '.ServerVersion')
     log_info "Docker daemon version: $daemon_config"
 
     # Check available space
-    local disk_usage=$(docker system df --format "table {{.Type}}\t{{.TotalCount}}\t{{.Size}}")
+    local disk_usage
+    disk_usage=$(docker system df --format "table {{.Type}}\t{{.TotalCount}}\t{{.Size}}")
     log_info "Docker disk usage:\n$disk_usage"
 
     # Check BuildKit status
