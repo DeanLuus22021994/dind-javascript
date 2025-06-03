@@ -79,6 +79,7 @@ class ServicePerformanceMonitor {
       $elapsed = (Get-Date) - $this.Timers[$Name]
       $this.Metrics[$Name] = $elapsed.TotalSeconds
       $this.Timers.Remove($Name)
+      Write-LogMessage -Message ("Timer '{0}' completed in {1:F2}s" -f $Name, $elapsed.TotalSeconds) -Level Debug
     }
   }
 
@@ -276,6 +277,7 @@ class ServiceManager {
 
     $startTime = Get-Date
     $attempts = 0
+    $elapsedTime = 0
 
     while (((Get-Date) - $startTime).TotalSeconds -lt $timeout) {
       $attempts++
@@ -287,10 +289,10 @@ class ServiceManager {
       }
 
       Start-Sleep -Seconds 2
+      $elapsedTime = ((Get-Date) - $startTime).TotalSeconds
     }
 
-    $elapsedTime = ((Get-Date) - $startTime).TotalSeconds
-    Write-LogMessage -Message "❌ '$ServiceName' health check timed out after ${elapsedTime:F1}s (${attempts} attempts)" -Level Error
+    Write-LogMessage -Message ("❌ '{0}' health check timed out after {1:F1}s ({2} attempts)" -f $ServiceName, $elapsedTime, $attempts) -Level Error
     return $false
   }
 
