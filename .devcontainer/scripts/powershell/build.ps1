@@ -27,20 +27,33 @@ try {
     Write-Host "✅ Found: $file" -ForegroundColor Green
   }
 
-  # Build with explicit context
-  docker-compose -f .devcontainer/docker/compose/docker-compose.main.yml -f .devcontainer/docker/compose/docker-compose.services.yml -f .devcontainer/docker/compose/docker-compose.override.yml build --no-cache
+  # Clean up any existing containers first
+  Write-Host "🧹 Cleaning up existing containers..." -ForegroundColor Yellow
+  docker-compose -f .devcontainer/docker/compose/docker-compose.main.yml -f .devcontainer/docker/compose/docker-compose.services.yml -f .devcontainer/docker/compose/docker-compose.override.yml down --remove-orphans 2>$null
+
+  # Build with explicit context and better error handling
+  Write-Host "🔨 Building containers..." -ForegroundColor Yellow
+  $buildResult = docker-compose -f .devcontainer/docker/compose/docker-compose.main.yml -f .devcontainer/docker/compose/docker-compose.services.yml -f .devcontainer/docker/compose/docker-compose.override.yml build --no-cache --parallel
 
   if ($LASTEXITCODE -eq 0) {
     Write-Host "✅ DevContainer build completed successfully!" -ForegroundColor Green
 
     # Show the built images
     Write-Host "📦 Built images:" -ForegroundColor Cyan
-    docker images --filter "reference=dind-*"
+    docker images --filter "reference=dind-*" --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}"
+
+    Write-Host "" -ForegroundColor White
+    Write-Host "🎉 Next steps:" -ForegroundColor Green
+    Write-Host "   🚀 Run: docker-compose up -d" -ForegroundColor Cyan
+    Write-Host "   🔍 Check: docker-compose ps" -ForegroundColor Cyan
+    Write-Host "   📊 Status: ./dev-status.sh" -ForegroundColor Cyan
   } else {
     Write-Host "❌ DevContainer build failed!" -ForegroundColor Red
+    Write-Host "💡 Try running the clean script first: pwsh .devcontainer\scripts\powershell\clean.ps1" -ForegroundColor Yellow
     exit 1
   }
 } catch {
   Write-Host "❌ Error during build: $_" -ForegroundColor Red
+  Write-Host "💡 Check the error details above and try again" -ForegroundColor Yellow
   exit 1
 }
