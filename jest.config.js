@@ -1,7 +1,7 @@
 export default {
   testEnvironment: 'node',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
-  extensionsToTreatAsEsm: ['.js'],
+  // extensionsToTreatAsEsm removed: .js is already treated as ESM due to "type": "module"
   testMatch: ['**/__tests__/**/*.js', '**/src/tests/**/*.test.js', '**/?(*.)+(spec|test).js'],
   testPathIgnorePatterns: ['/node_modules/', '/src/tests/test-setup.js'],
   collectCoverageFrom: [
