@@ -93,7 +93,7 @@ function Invoke-DockerSystemCleanup {
       throw "Docker is not available or not responding"
     }
 
-    # Get initial disk usage
+    # Get initial disk usage with proper error handling
     $initialUsage = Get-DockerDiskUsage
     Write-LogMessage -Message "📊 Initial Docker disk usage: $($initialUsage.Total)" -Level Info
 
@@ -163,10 +163,19 @@ function Invoke-DockerSystemCleanup {
       Write-LogMessage -Message "⚠️  System prune had issues: $($_.Exception.Message)" -Level Warning
     }
 
-    # Calculate space reclaimed
+    # Calculate space reclaimed with proper error handling
     $finalUsage = Get-DockerDiskUsage
-    $spaceReclaimed = Get-SpaceReclaimed -Initial $initialUsage.TotalBytes -Final $finalUsage.TotalBytes
-    $cleanupResults.SpaceReclaimed = $spaceReclaimed
+    try {
+      # Ensure we have valid numeric values before calling Get-SpaceReclaimed
+      $initialBytes = if ($initialUsage.TotalBytes -is [long]) { $initialUsage.TotalBytes } else { [long]0 }
+      $finalBytes = if ($finalUsage.TotalBytes -is [long]) { $finalUsage.TotalBytes } else { [long]0 }
+
+      $spaceReclaimed = Get-SpaceReclaimed -Initial $initialBytes -Final $finalBytes
+      $cleanupResults.SpaceReclaimed = $spaceReclaimed
+    } catch {
+      Write-LogMessage -Message "⚠️  Could not calculate space reclaimed: $($_.Exception.Message)" -Level Warning
+      $cleanupResults.SpaceReclaimed = "Unknown"
+    }
 
     $cleanupDuration = ((Get-Date) - $cleanupStartTime).TotalSeconds
 
@@ -228,8 +237,8 @@ function Get-DockerDiskUsage {
     $systemDf = docker system df --format "table {{.Type}}\t{{.Total}}\t{{.Active}}\t{{.Size}}\t{{.Reclaimable}}" 2>$null
     if ($LASTEXITCODE -eq 0 -and $systemDf) {
       $lines = $systemDf -split "`n" | Where-Object { $_ -and $_ -notmatch "TYPE" }
-      $totalSize = 0
-      $reclaimableSize = 0
+      $totalSize = [long]0
+      $reclaimableSize = [long]0
 
       foreach ($line in $lines) {
         $parts = $line -split "\s+"
@@ -258,9 +267,9 @@ function Get-DockerDiskUsage {
   } catch {
     Write-LogMessage -Message "⚠️  Could not get Docker disk usage: $($_.Exception.Message)" -Level Warning
     return @{
-      Total            = "Unknown"
+      Total            = "0 B"
       TotalBytes       = [long]0
-      Reclaimable      = "Unknown"
+      Reclaimable      = "0 B"
       ReclaimableBytes = [long]0
     }
   }
@@ -609,11 +618,11 @@ function Get-SpaceReclaimed {
   )
 
   try {
-    # Ensure both values are valid numbers
-    if ($Initial -isnot [long]) {
+    # Ensure both values are valid long integers
+    if ($Initial -isnot [long] -or $Initial -lt 0) {
       $Initial = [long]0
     }
-    if ($Final -isnot [long]) {
+    if ($Final -isnot [long] -or $Final -lt 0) {
       $Final = [long]0
     }
 
