@@ -120,8 +120,7 @@ validate_volumes() {
         "dind-registry-data"
     )
 
-    local volumes_ok=true
-
+    # Check volumes exist
     for volume in "${volumes[@]}"; do
         if docker volume ls | grep -q "$volume"; then
             log_success "Volume $volume exists"
@@ -192,7 +191,6 @@ validate_ports() {
     log_info "Validating port availability..."
 
     local ports=("3000" "4000" "5432" "6379" "5001" "8080" "9229")
-    local ports_ok=true
 
     for port in "${ports[@]}"; do
         if nc -z localhost "$port" 2>/dev/null; then
