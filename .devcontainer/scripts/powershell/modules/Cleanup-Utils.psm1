@@ -226,7 +226,7 @@ function Get-DockerDiskUsage {
 
   try {
     $systemDf = docker system df --format "table {{.Type}}\t{{.Total}}\t{{.Active}}\t{{.Size}}\t{{.Reclaimable}}" 2>$null
-    if ($systemDf) {
+    if ($LASTEXITCODE -eq 0 -and $systemDf) {
       $lines = $systemDf -split "`n" | Where-Object { $_ -and $_ -notmatch "TYPE" }
       $totalSize = 0
       $reclaimableSize = 0
@@ -251,17 +251,17 @@ function Get-DockerDiskUsage {
 
     return @{
       Total            = "0 B"
-      TotalBytes       = 0
+      TotalBytes       = [long]0
       Reclaimable      = "0 B"
-      ReclaimableBytes = 0
+      ReclaimableBytes = [long]0
     }
   } catch {
     Write-LogMessage -Message "⚠️  Could not get Docker disk usage: $($_.Exception.Message)" -Level Warning
     return @{
       Total            = "Unknown"
-      TotalBytes       = 0
+      TotalBytes       = [long]0
       Reclaimable      = "Unknown"
-      ReclaimableBytes = 0
+      ReclaimableBytes = [long]0
     }
   }
 }
@@ -288,7 +288,7 @@ function Remove-DockerContainers {
   try {
     # Get all containers (running and stopped)
     $allContainers = docker ps -aq 2>$null
-    if (-not $allContainers -or $allContainers.Count -eq 0) {
+    if ($LASTEXITCODE -ne 0 -or -not $allContainers -or $allContainers.Count -eq 0) {
       Write-LogMessage -Message "ℹ️  No containers found to remove" -Level Info
       return @()
     }
@@ -297,7 +297,7 @@ function Remove-DockerContainers {
 
     # Stop running containers first (parallel)
     $runningContainers = docker ps -q 2>$null
-    if ($runningContainers -and $runningContainers.Count -gt 0) {
+    if ($LASTEXITCODE -eq 0 -and $runningContainers -and $runningContainers.Count -gt 0) {
       $runningContainers | ForEach-Object -Parallel {
         $waitTime = $using:CLEANUP_FORCE_WAIT_TIME
         try {
@@ -313,7 +313,7 @@ function Remove-DockerContainers {
     $allContainers | ForEach-Object -Parallel {
       try {
         $result = docker rm $_ --force 2>$null
-        if ($result) {
+        if ($LASTEXITCODE -eq 0 -and $result) {
           return $_
         }
       } catch {
@@ -356,12 +356,12 @@ function Remove-DockerImages {
 
     # Remove dangling images first
     $danglingImages = docker images -f "dangling=true" -q 2>$null
-    if ($danglingImages -and $danglingImages.Count -gt 0) {
+    if ($LASTEXITCODE -eq 0 -and $danglingImages -and $danglingImages.Count -gt 0) {
       Write-LogMessage -Message "🗑️  Removing $($danglingImages.Count) dangling images..." -Level Info
       $danglingImages | ForEach-Object -Parallel {
         try {
           $result = docker rmi $_ --force 2>$null
-          if ($result) {
+          if ($LASTEXITCODE -eq 0 -and $result) {
             return $_
           }
         } catch {
@@ -413,7 +413,7 @@ function Remove-DockerVolumes {
   try {
     # Get unused volumes
     $unusedVolumes = docker volume ls -f "dangling=true" -q 2>$null
-    if (-not $unusedVolumes -or $unusedVolumes.Count -eq 0) {
+    if ($LASTEXITCODE -ne 0 -or -not $unusedVolumes -or $unusedVolumes.Count -eq 0) {
       Write-LogMessage -Message "ℹ️  No unused volumes found to remove" -Level Info
       return @()
     }
@@ -424,7 +424,7 @@ function Remove-DockerVolumes {
     $unusedVolumes | ForEach-Object -Parallel {
       try {
         $result = docker volume rm $_ --force 2>$null
-        if ($result) {
+        if ($LASTEXITCODE -eq 0 -and $result) {
           return $_
         }
       } catch {
@@ -465,12 +465,21 @@ function Remove-DockerNetworks {
   try {
     # Get all networks except system ones
     $allNetworks = docker network ls --format "{{.ID}} {{.Name}}" 2>$null
+    if ($LASTEXITCODE -ne 0) {
+      Write-LogMessage -Message "ℹ️  Could not list networks" -Level Warning
+      return @()
+    }
+
     $systemNetworks = @('bridge', 'host', 'none')
 
     $customNetworks = $allNetworks | Where-Object {
       $networkInfo = $_ -split ' '
-      $networkName = $networkInfo[1]
-      $networkName -notin $systemNetworks
+      if ($networkInfo.Length -ge 2) {
+        $networkName = $networkInfo[1]
+        $networkName -notin $systemNetworks
+      } else {
+        $false
+      }
     }
 
     if (-not $customNetworks -or $customNetworks.Count -eq 0) {
@@ -484,10 +493,12 @@ function Remove-DockerNetworks {
     $customNetworks | ForEach-Object -Parallel {
       try {
         $networkInfo = $_ -split ' '
-        $networkId = $networkInfo[0]
-        $result = docker network rm $networkId 2>$null
-        if ($result) {
-          return $networkId
+        if ($networkInfo.Length -ge 1) {
+          $networkId = $networkInfo[0]
+          $result = docker network rm $networkId 2>$null
+          if ($LASTEXITCODE -eq 0 -and $result) {
+            return $networkId
+          }
         }
       } catch {
         # Continue on error - network might be in use
@@ -521,15 +532,15 @@ function Convert-DockerSizeToBytes {
     [string]$SizeString
   )
 
-  if (-not $SizeString -or $SizeString -eq "0B" -or $SizeString -eq "-") {
-    return 0
+  if (-not $SizeString -or $SizeString -eq "0B" -or $SizeString -eq "-" -or $SizeString -eq "0" -or [string]::IsNullOrWhiteSpace($SizeString)) {
+    return [long]0
   }
 
   try {
     # Extract number and unit
-    if ($SizeString -match '([0-9.]+)([A-Za-z]+)') {
+    if ($SizeString -match '([0-9.]+)([A-Za-z]*)') {
       $number = [double]$matches[1]
-      $unit = $matches[2].ToUpper()
+      $unit = if ($matches[2]) { $matches[2].ToUpper() } else { "B" }
 
       switch ($unit) {
         'B' { return [long]$number }
@@ -537,12 +548,12 @@ function Convert-DockerSizeToBytes {
         'MB' { return [long]($number * 1024 * 1024) }
         'GB' { return [long]($number * 1024 * 1024 * 1024) }
         'TB' { return [long]($number * 1024 * 1024 * 1024 * 1024) }
-        default { return 0 }
+        default { return [long]0 }
       }
     }
-    return 0
+    return [long]0
   } catch {
-    return 0
+    return [long]0
   }
 }
 
@@ -591,14 +602,31 @@ function Format-BytesToHumanReadable {
 function Get-SpaceReclaimed {
   [CmdletBinding()]
   param(
+    [Parameter(Mandatory = $true)]
     [long]$Initial,
+    [Parameter(Mandatory = $true)]
     [long]$Final
   )
 
-  $reclaimedBytes = $Initial - $Final
-  if ($reclaimedBytes -lt 0) { $reclaimedBytes = 0 }
+  try {
+    # Ensure both values are valid numbers
+    if ($Initial -isnot [long]) {
+      $Initial = [long]0
+    }
+    if ($Final -isnot [long]) {
+      $Final = [long]0
+    }
 
-  return Format-BytesToHumanReadable -Bytes $reclaimedBytes
+    $reclaimedBytes = $Initial - $Final
+    if ($reclaimedBytes -lt 0) {
+      $reclaimedBytes = [long]0
+    }
+
+    return Format-BytesToHumanReadable -Bytes $reclaimedBytes
+  } catch {
+    Write-LogMessage -Message "Error calculating space reclaimed: $($_.Exception.Message)" -Level Warning
+    return "0 B"
+  }
 }
 
 <#
@@ -627,7 +655,7 @@ function Invoke-SystemCleanup {
     # Phase 1: PowerShell module cache cleanup
     Write-LogMessage -Message "🔧 Cleaning PowerShell module cache..." -Level Info
     try {
-      if (Test-Path $env:PSModulePath) {
+      if ($env:PSModulePath -and (Test-Path variable:env:PSModulePath)) {
         $moduleCachePaths = $env:PSModulePath -split ';' | Where-Object { $_ -like "*Cache*" }
         foreach ($cachePath in $moduleCachePaths) {
           if (Test-Path $cachePath) {
@@ -646,7 +674,11 @@ function Invoke-SystemCleanup {
     if ($IncludeUserTemp) {
       Write-LogMessage -Message "🗂️  Cleaning temporary files..." -Level Info
       try {
-        $tempPaths = @($env:TEMP, $env:TMP, "$env:USERPROFILE\AppData\Local\Temp")
+        $tempPaths = @()
+        if ($env:TEMP) { $tempPaths += $env:TEMP }
+        if ($env:TMP) { $tempPaths += $env:TMP }
+        if ($env:USERPROFILE) { $tempPaths += "$env:USERPROFILE\AppData\Local\Temp" }
+
         foreach ($tempPath in $tempPaths) {
           if (Test-Path $tempPath) {
             Get-ChildItem $tempPath -Force -ErrorAction SilentlyContinue |
