@@ -22,8 +22,9 @@ RUN --mount=type=cache,target=/cache/redis,sharing=locked,id=redis-cache-$TARGET
   && chown redis:redis /data /cache/redis \
   && chmod 755 /data /cache/redis
 
-# Optimize Redis configuration for development performance
-RUN echo '# Redis Performance Optimizations' > /usr/local/etc/redis/redis-perf.conf \
+# Create Redis configuration directory and optimize Redis configuration for development performance
+RUN mkdir -p /usr/local/etc/redis \
+  && echo '# Redis Performance Optimizations' > /usr/local/etc/redis/redis-perf.conf \
   && echo 'save 900 1' >> /usr/local/etc/redis/redis-perf.conf \
   && echo 'save 300 10' >> /usr/local/etc/redis/redis-perf.conf \
   && echo 'save 60 10000' >> /usr/local/etc/redis/redis-perf.conf \
