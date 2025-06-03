@@ -1,5 +1,4 @@
 FROM mcr.microsoft.com/devcontainers/base:bullseye
-FROM mcr.microsoft.com/devcontainers/base:bullseye
 
 # Set up environment variables
 ENV DEBIAN_FRONTEND=noninteractive
@@ -80,8 +79,9 @@ RUN npm install -g \
 RUN curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose \
   && chmod +x /usr/local/bin/docker-compose
 
-# Install ctop for container monitoring
-RUN wget https://github.com/bcicen/ctop/releases/download/0.7.7/ctop-0.7.7-linux-amd64 -O /usr/local/bin/ctop \
+# Install ctop for container monitoring - use latest release
+RUN CTOP_VERSION=$(curl -s https://api.github.com/repos/bcicen/ctop/releases/latest | jq -r .tag_name) \
+  && wget -O /usr/local/bin/ctop "https://github.com/bcicen/ctop/releases/download/${CTOP_VERSION}/ctop-${CTOP_VERSION#v}-linux-amd64" \
   && chmod +x /usr/local/bin/ctop
 
 # Install lazydocker for Docker management
