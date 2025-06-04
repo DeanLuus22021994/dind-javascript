@@ -23,7 +23,7 @@ export default [
     }
   },
   {
-    // Enable Jest globals for test files
+    // Enable Jest and Node.js globals for test files
     files: ['**/src/tests/**/*.js', '**/__tests__/**/*.js'],
     languageOptions: {
       globals: {
@@ -42,12 +42,39 @@ export default [
         __dirname: 'readonly',
         require: 'readonly',
         module: 'readonly',
-        URL: 'readonly'
+        URL: 'readonly',
+        console: 'readonly',
+        global: 'readonly',
+        clearTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearInterval: 'readonly',
+        __filename: 'readonly'
       }
     },
     rules: {
       'no-unused-expressions': 'off',
       'no-empty-function': 'off'
+    }
+  },
+  {
+    // Enable Node.js globals for all source files
+    files: ['src/**/*.js'],
+    languageOptions: {
+      globals: {
+        process: 'readonly',
+        Buffer: 'readonly',
+        setTimeout: 'readonly',
+        __dirname: 'readonly',
+        require: 'readonly',
+        module: 'readonly',
+        URL: 'readonly',
+        console: 'readonly',
+        global: 'readonly',
+        clearTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearInterval: 'readonly',
+        __filename: 'readonly'
+      }
     }
   },
   prettier
