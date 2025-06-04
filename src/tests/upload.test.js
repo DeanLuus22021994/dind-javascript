@@ -15,7 +15,7 @@ describe('File Upload Routes', () => {
     // Create test upload directory
     try {
       await fs.mkdir(uploadDir, { recursive: true });
-    } catch (error) {
+    } catch {
       // Directory might already exist
     }
   });
@@ -26,7 +26,7 @@ describe('File Upload Routes', () => {
       const files = await fs.readdir(uploadDir);
       await Promise.all(files.map(file => fs.unlink(path.join(uploadDir, file))));
       await fs.rmdir(uploadDir);
-    } catch (error) {
+    } catch {
       // Directory might not exist
     }
   });

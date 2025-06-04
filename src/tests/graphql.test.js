@@ -1,6 +1,6 @@
 import request from 'supertest';
 import express from 'express';
-import mongoose from 'mongoose';
+// import mongoose from 'mongoose';
 import User from '../models/User.js';
 import { generateToken } from '../utils/auth.js';
 import { createApolloServer } from '../graphql/server.js';

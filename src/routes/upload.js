@@ -167,8 +167,8 @@ router.get('/files', conditionalAuth, async (req, res) => {
     );
 
     res.status(200).json({ files: fileDetails });
-  } catch (error) {
-    logger.error('Error listing files:', error);
+  } catch {
+    logger.error('Error listing files');
     res.status(500).json({ error: 'Failed to list files' });
   }
 });
@@ -205,8 +205,8 @@ router.delete('/files/:filename', conditionalAuth, async (req, res) => {
     await fs.unlink(filePath);
 
     res.status(200).json({ message: 'File deleted successfully' });
-  } catch (error) {
-    logger.error('Error deleting file:', error);
+  } catch {
+    logger.error('Error deleting file');
     res.status(500).json({ error: 'Failed to delete file' });
   }
 });

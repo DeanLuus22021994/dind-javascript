@@ -178,18 +178,9 @@ const fileUtils = {
   },
 
   // Validate image dimensions (requires sharp package)
-  validateImageDimensions: async function (filePath, maxWidth = 2000, maxHeight = 2000) {
-    let isValid = true;
-    try {
-      // To enable validation, uncomment the following lines and install 'sharp':
-      // import sharp from 'sharp';
-      // const metadata = await sharp(filePath).metadata();
-      // isValid = metadata.width <= maxWidth && metadata.height <= maxHeight;
-    } catch (error) {
-      logger.error('Error validating image dimensions:', error);
-      isValid = false;
-    }
-    return isValid;
+  validateImageDimensions: async function (filePath) {
+    // Placeholder: always returns true. Add implementation if needed.
+    return true;
   }
 };
 
