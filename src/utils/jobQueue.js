@@ -192,7 +192,7 @@ class JobQueue {
 
   setupEventHandlers() {
     this.queues.forEach((queue, name) => {
-      queue.on('completed', (job, result) => {
+      queue.on('completed', job => {
         logger.debug(`Job completed in queue '${name}':`, {
           jobId: job.id,
           jobType: job.name,
