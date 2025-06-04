@@ -1,9 +1,9 @@
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
-const { v4: uuidv4 } = require('uuid');
-const config = require('../config');
-const logger = require('./logger');
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+import { v4 as uuidv4 } from 'uuid';
+import config from '../config/index.js';
+import logger from './logger.js';
 
 // Ensure upload directory exists
 const uploadDir = path.join(process.cwd(), config.upload.uploadPath);
@@ -182,7 +182,7 @@ const fileUtils = {
     let isValid = true;
     try {
       // To enable validation, uncomment the following lines and install 'sharp':
-      // const sharp = require('sharp');
+      // import sharp from 'sharp';
       // const metadata = await sharp(filePath).metadata();
       // isValid = metadata.width <= maxWidth && metadata.height <= maxHeight;
     } catch (error) {
@@ -193,9 +193,4 @@ const fileUtils = {
   }
 };
 
-module.exports = {
-  uploadMiddleware,
-  handleUploadError,
-  fileUtils,
-  uploadDir
-};
+export { uploadMiddleware, handleUploadError, fileUtils, uploadDir };

@@ -1,8 +1,7 @@
-const express = require('express');
-const User = require('../models/User');
-const { generateToken, requireAuth } = require('../utils/auth');
-const logger = require('../utils/logger');
-
+import express from 'express';
+import User from '../models/User.js';
+import { generateToken, requireAuth } from '../utils/auth.js';
+import logger from '../utils/logger.js';
 const router = express.Router();
 
 /**
@@ -198,4 +197,4 @@ router.post('/logout', requireAuth, async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

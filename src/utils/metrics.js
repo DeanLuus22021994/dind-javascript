@@ -1,4 +1,4 @@
-const promClient = require('prom-client');
+import promClient from 'prom-client';
 
 // Create a Registry
 const register = new promClient.Registry();
@@ -50,10 +50,4 @@ const metricsMiddleware = (req, res, next) => {
   next();
 };
 
-module.exports = {
-  register,
-  metricsMiddleware,
-  httpRequestDuration,
-  httpRequestTotal,
-  activeConnections
-};
+export { register, metricsMiddleware, httpRequestDuration, httpRequestTotal, activeConnections };

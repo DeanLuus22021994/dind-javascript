@@ -1,6 +1,6 @@
-const nodemailer = require('nodemailer');
-const config = require('../config');
-const logger = require('./logger');
+import nodemailer from 'nodemailer';
+import config from '../config/index.js';
+import logger from './logger.js';
 
 class EmailService {
   constructor() {
@@ -213,4 +213,4 @@ class EmailService {
   }
 }
 
-module.exports = new EmailService();
+export default new EmailService();

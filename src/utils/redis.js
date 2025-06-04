@@ -1,6 +1,6 @@
-const redis = require('redis');
-const logger = require('./logger');
-const config = require('../config');
+import redis from 'redis';
+import logger from './logger.js';
+import config from '../config/index.js';
 
 class RedisClient {
   constructor() {
@@ -173,4 +173,4 @@ class RedisClient {
   }
 }
 
-module.exports = new RedisClient();
+export default new RedisClient();

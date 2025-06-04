@@ -1,5 +1,5 @@
-const User = require('../models/User');
-const { generateToken } = require('../utils/auth');
+import User from '../models/User.js';
+import { generateToken } from '../utils/auth.js';
 
 const resolvers = {
   Query: {
@@ -133,4 +133,4 @@ const resolvers = {
   }
 };
 
-module.exports = resolvers;
+export default resolvers;

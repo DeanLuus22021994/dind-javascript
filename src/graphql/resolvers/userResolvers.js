@@ -1,7 +1,7 @@
-const { AuthenticationError, ForbiddenError, UserInputError } = require('apollo-server-express');
-const User = require('../../models/User');
-const { generateToken } = require('../../utils/auth');
-const logger = require('../../utils/logger');
+import { AuthenticationError, ForbiddenError, UserInputError } from 'apollo-server-express';
+import User from '../../models/User.js';
+import { generateToken } from '../../utils/auth.js';
+import logger from '../../utils/logger.js';
 
 const userResolvers = {
   Query: {
@@ -232,4 +232,4 @@ const userResolvers = {
   }
 };
 
-module.exports = userResolvers;
+export default userResolvers;

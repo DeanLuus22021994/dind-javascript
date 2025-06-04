@@ -1,8 +1,8 @@
-const express = require('express');
+import express from 'express';
+import os from 'os';
+import config from '../config/index.js';
+import logger from '../utils/logger.js';
 const router = express.Router();
-const os = require('os');
-const config = require('../config');
-const logger = require('../utils/logger');
 
 /**
  * @route GET /api/health
@@ -314,4 +314,4 @@ async function checkWebSocketStatus() {
   };
 }
 
-module.exports = router;
+export default router;

@@ -1,8 +1,7 @@
-const express = require('express');
-const { body, query, validationResult } = require('express-validator');
-const logger = require('../utils/logger');
-const config = require('../config');
-
+import express from 'express';
+import { body, query, validationResult } from 'express-validator';
+import logger from '../utils/logger.js';
+import config from '../config/index.js';
 const router = express.Router();
 
 // Validation error handler
@@ -318,4 +317,4 @@ function formatUptime(uptime) {
   return parts.join(' ');
 }
 
-module.exports = router;
+export default router;

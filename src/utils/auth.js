@@ -1,7 +1,7 @@
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
-const config = require('../config');
-const logger = require('./logger');
+import jwt from 'jsonwebtoken';
+import User from '../models/User.js';
+import config from '../config/index.js';
+import logger from './logger.js';
 
 /**
  * Generate JWT token for user
@@ -111,9 +111,4 @@ function requireRole(roles) {
   };
 }
 
-module.exports = {
-  generateToken,
-  verifyToken,
-  requireAuth,
-  requireRole
-};
+export { generateToken, verifyToken, requireAuth, requireRole };

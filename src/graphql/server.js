@@ -1,13 +1,11 @@
-const { ApolloServer } = require('apollo-server-express');
-const { makeExecutableSchema } = require('@graphql-tools/schema');
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
-const config = require('../config');
-const logger = require('../utils/logger');
-
-// Import type definitions and resolvers
-const typeDefs = require('./schema');
-const userResolvers = require('./resolvers/userResolvers');
+import { ApolloServer } from 'apollo-server-express';
+import { makeExecutableSchema } from '@graphql-tools/schema';
+import jwt from 'jsonwebtoken';
+import User from '../models/User.js';
+import config from '../config/index.js';
+import logger from '../utils/logger.js';
+import typeDefs from './schema/index.js';
+import userResolvers from './resolvers/userResolvers.js';
 
 // Combine resolvers
 const resolvers = {
@@ -73,8 +71,4 @@ async function createApolloServer() {
   return server;
 }
 
-module.exports = {
-  createApolloServer,
-  schema,
-  resolvers
-};
+export { createApolloServer, schema, resolvers };

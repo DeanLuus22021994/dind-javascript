@@ -1,8 +1,8 @@
-const socketIO = require('socket.io');
-const jwt = require('jsonwebtoken');
-const logger = require('./logger');
-const config = require('../config');
-const redisClient = require('./redis');
+import socketIO from 'socket.io';
+import jwt from 'jsonwebtoken';
+import logger from './logger.js';
+import config from '../config/index.js';
+import redisClient from './redis.js';
 
 class WebSocketServer {
   constructor() {
@@ -372,4 +372,4 @@ class WebSocketServer {
   }
 }
 
-module.exports = new WebSocketServer();
+export default new WebSocketServer();

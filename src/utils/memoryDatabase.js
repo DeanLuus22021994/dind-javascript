@@ -1,5 +1,5 @@
-const { MongoMemoryServer } = require('mongodb-memory-server');
-const logger = require('./logger');
+import { MongoMemoryServer } from 'mongodb-memory-server';
+import logger from './logger.js';
 
 class MemoryDatabase {
   constructor() {
@@ -40,4 +40,4 @@ class MemoryDatabase {
   }
 }
 
-module.exports = new MemoryDatabase();
+export default new MemoryDatabase();

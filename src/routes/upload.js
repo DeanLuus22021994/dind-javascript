@@ -1,11 +1,11 @@
-const express = require('express');
+import express from 'express';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs/promises';
+import { v4 as uuidv4 } from 'uuid';
+import { requireAuth } from '../utils/auth.js';
+import logger from '../utils/logger.js';
 const router = express.Router();
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs').promises;
-const { v4: uuidv4 } = require('uuid');
-const { requireAuth } = require('../utils/auth');
-const logger = require('../utils/logger');
 
 // Configure storage
 const storage = multer.diskStorage({
@@ -211,4 +211,4 @@ router.delete('/files/:filename', conditionalAuth, async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

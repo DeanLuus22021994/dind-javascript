@@ -1,7 +1,7 @@
-const Bull = require('bull');
-const config = require('../config');
-const logger = require('./logger');
-const emailService = require('./email');
+import Bull from 'bull';
+import config from '../config/index.js';
+import logger from './logger.js';
+import emailService from './email.js';
 
 class JobQueue {
   constructor() {
@@ -375,4 +375,4 @@ class JobQueue {
   }
 }
 
-module.exports = new JobQueue();
+export default new JobQueue();
