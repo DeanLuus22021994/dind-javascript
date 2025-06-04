@@ -1,7 +1,7 @@
-const request = require('supertest');
-const express = require('express');
-const path = require('path');
-const fs = require('fs').promises;
+import request from 'supertest';
+import express from 'express';
+import path from 'path';
+import fs from 'fs/promises';
 
 describe('File Upload Routes', () => {
   let app;
@@ -9,8 +9,8 @@ describe('File Upload Routes', () => {
 
   beforeAll(async () => {
     app = express(); // Import and use upload routes
-    const uploadRoutes = require('../routes/upload');
-    app.use('/api/upload', uploadRoutes);
+    const uploadRoutesModule = await import('../routes/upload.js');
+    app.use('/api/upload', uploadRoutesModule.default || uploadRoutesModule);
 
     // Create test upload directory
     try {

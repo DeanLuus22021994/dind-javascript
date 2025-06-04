@@ -1,10 +1,12 @@
-const jwt = require('jsonwebtoken');
-const { generateToken, verifyToken, requireAuth, requireRole } = require('../../utils/auth');
-const User = require('../../models/User');
-const config = require('../../config');
+import jwt from 'jsonwebtoken';
+import { generateToken, verifyToken, requireAuth, requireRole } from '../../utils/auth.js';
+import User from '../../models/User.js';
+import config from '../../config/index.js';
 
-// Mock User model
-jest.mock('../../models/User');
+jest.unstable_mockModule('../../models/User.js', () => ({
+  __esModule: true,
+  default: jest.fn()
+}));
 
 describe('Authentication Utilities', () => {
   describe('generateToken', () => {

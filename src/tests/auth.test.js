@@ -1,7 +1,7 @@
-const request = require('supertest');
-const express = require('express');
-const mongoose = require('mongoose');
-const User = require('../models/User');
+import request from 'supertest';
+import express from 'express';
+import mongoose from 'mongoose';
+import User from '../models/User.js';
 
 describe('Authentication Routes', () => {
   let app;
@@ -10,8 +10,8 @@ describe('Authentication Routes', () => {
     // Setup Express app with routes
     app = express();
     app.use(express.json());
-    const authRoutes = require('../routes/auth');
-    app.use('/api/auth', authRoutes);
+    const authRoutesModule = await import('../routes/auth.js');
+    app.use('/api/auth', authRoutesModule.default || authRoutesModule);
   });
 
   beforeEach(async () => {

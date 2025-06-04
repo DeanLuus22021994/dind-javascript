@@ -1,9 +1,9 @@
-const request = require('supertest');
-const express = require('express');
-const mongoose = require('mongoose');
-const User = require('../models/User');
-const { generateToken } = require('../utils/auth');
-const { createApolloServer } = require('../graphql/server');
+import request from 'supertest';
+import express from 'express';
+import mongoose from 'mongoose';
+import User from '../models/User.js';
+import { generateToken } from '../utils/auth.js';
+import { createApolloServer } from '../graphql/server.js';
 
 describe('GraphQL API', () => {
   let app;

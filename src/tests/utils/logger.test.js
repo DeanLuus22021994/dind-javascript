@@ -1,4 +1,4 @@
-const logger = require('../../utils/logger');
+import logger from '../../utils/logger.js';
 
 describe('Logger Utility', () => {
   let originalConsoleLog;
