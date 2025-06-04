@@ -197,7 +197,7 @@ router.delete('/files/:filename', conditionalAuth, async (req, res) => {
     // Check if file exists
     try {
       await fs.access(filePath);
-    } catch (error) {
+    } catch {
       return res.status(404).json({ error: 'File not found' });
     }
 

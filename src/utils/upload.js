@@ -178,7 +178,7 @@ const fileUtils = {
   },
 
   // Validate image dimensions (requires sharp package)
-  validateImageDimensions: async function (filePath) {
+  validateImageDimensions: async function () {
     // Placeholder: always returns true. Add implementation if needed.
     return true;
   }
