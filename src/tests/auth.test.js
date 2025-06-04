@@ -91,12 +91,7 @@ describe('Authentication Routes', () => {
         lastName: 'User'
       };
 
-      const registerResponse = await request(app)
-        .post('/api/auth/register')
-        .send(userData)
-        .expect(201);
-
-      // registeredUser = registerResponse.body.user;
+      await request(app).post('/api/auth/register').send(userData).expect(201);
     });
 
     test('should login with valid credentials', async () => {
@@ -253,12 +248,7 @@ describe('Authentication Routes', () => {
         lastName: 'User'
       };
 
-      const registerResponse = await request(app)
-        .post('/api/auth/register')
-        .send(userData)
-        .expect(201);
-
-      token = registerResponse.body.token;
+      token = (await request(app).post('/api/auth/register').send(userData).expect(201)).body.token;
     });
 
     test('should logout with valid token', async () => {
