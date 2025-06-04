@@ -10,24 +10,24 @@ export default [
     files: ['**/*.js'],
     languageOptions: {
       ecmaVersion: 2022,
-      sourceType: 'module',
+      sourceType: 'module'
     },
     plugins: {
-      prettier: prettierPlugin,
+      prettier: prettierPlugin
     },
     rules: {
       'no-unused-vars': 'warn',
       'no-console': 'off',
       'no-debugger': 'warn',
-      'prettier/prettier': 'error',
-    },
+      'prettier/prettier': 'error'
+    }
   },
   {
     files: ['**/src/tests/**/*.js', '**/__tests__/**/*.js'],
     rules: {
       'no-unused-expressions': 'off',
-      'no-empty-function': 'off',
-    },
+      'no-empty-function': 'off'
+    }
   },
-  prettier,
+  prettier
 ];
