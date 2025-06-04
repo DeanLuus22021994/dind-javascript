@@ -37,7 +37,7 @@ export default async function globalTestSetup() {
         if (fs.existsSync(testUploadDir)) {
           fs.rmSync(testUploadDir, { recursive: true, force: true });
         }
-      } catch (error) {
+      } catch {
         // Ignore cleanup errors
       }
     });
