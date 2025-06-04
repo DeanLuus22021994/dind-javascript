@@ -1,16 +1,15 @@
-const request = require('supertest');
-const express = require('express');
+import request from 'supertest';
+import express from 'express';
 
 describe('Health Check Routes', () => {
   let app;
 
-  beforeAll(() => {
+  beforeAll(async () => {
     // Ensure we're in test environment
     process.env.NODE_ENV = 'test';
-
     app = express();
-    const healthRoutes = require('../routes/health');
-    app.use('/api/health', healthRoutes);
+    const healthRoutesModule = await import('../routes/health.js');
+    app.use('/api/health', healthRoutesModule.default || healthRoutesModule);
   });
 
   describe('GET /api/health', () => {
