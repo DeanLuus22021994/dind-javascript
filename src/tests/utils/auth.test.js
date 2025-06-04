@@ -1,3 +1,4 @@
+import '../test-setup.js';
 import jwt from 'jsonwebtoken';
 import { generateToken, verifyToken, requireAuth, requireRole } from '../../utils/auth.js';
 import User from '../../models/User.js';

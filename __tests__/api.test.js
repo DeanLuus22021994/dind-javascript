@@ -1,3 +1,4 @@
+import '../src/tests/test-setup.js';
 import request from 'supertest';
 import { app } from '../src/index.js';
 

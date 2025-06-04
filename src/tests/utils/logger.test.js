@@ -1,3 +1,4 @@
+import '../test-setup.js';
 import logger from '../../utils/logger.js';
 
 describe('Logger Utility', () => {

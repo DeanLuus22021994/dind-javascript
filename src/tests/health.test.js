@@ -1,3 +1,4 @@
+import './test-setup.js';
 import request from 'supertest';
 import express from 'express';
 

@@ -1,3 +1,4 @@
+import '../src/tests/test-setup.js';
 const originalEnv = process.env;
 
 describe('Configuration', () => {
