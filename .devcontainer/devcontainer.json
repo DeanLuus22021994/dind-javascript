@@ -17,7 +17,7 @@
       "azureDnsAutoDetection": true,
       "dockerDefaultAddressPool": "base=192.168.0.0/16,size=24"
     },
-    "ghcr.io/devcontainers/features/nvidia-cuda:1": {
+    "ghcr.io/devcontainers/features/nvidia-cuda:2": {
       "installToolkit": true
     },
     "ghcr.io/devcontainers/features/node:1": {
